@@ -38,9 +38,13 @@ Diese Datei + `Raum5_Paket.zip` + `raumsteuerung.html` in einem neuen Chat hochl
 - Nach der Registrierung kam Signal: InputPort #11/#12 und NeInPostFader #1/#2 (Grundpegel ~0x61, Spitzen ~0x78). Zuordnung Kanal ↔ Mikrofon noch nicht sicher (ein RM-TT kann 2 Kanäle liefern).
 
 ## Nächster Schritt
-1. Zuordnung testen: Meter RM:NeInPostFader laufen lassen, nacheinander in Mikro 1 und 2 sprechen, Kanäle notieren.
-2. Mikro-Automatik in Companion: Pegel-Erkennung → r5_pmic setzen → Publikum-Preset (Mikro→Zone: 1→p_vl, 2→p_vr, 3→p_hl, 4→p_hr, 5→p_hl). Regeln: 3 s Stille → p_all, zwei gleichzeitig → p_all, max. 1 Bewegung / 4 s, OBS-Freeze-Filter beim Schwenk.
-3. Buttons 3/1/6–7 + Variablen r5_pauto/r5_pmic anlegen; Paket (Companion-Export ohne OBS-Passwort) neu bauen.
+Erledigt (Repo, Branch claude/website-testing-fixes-ahd51r): Tablet-Seite überarbeitet, Mikrofon-Automatik
+als `Raumsteuerung/mikro-automatik.ps1` (+ `.json`, `mikrofone-testen.cmd`), Tests in `test/`.
+1. Zuordnung testen: `mikrofone-testen.cmd` starten, nacheinander in Mikro 1 und 2 sprechen, Kanäle + Grundrauschen
+   in `mikro-automatik.json` eintragen (Schwellen schwelleHex/schwelleAusHex).
+2. In Companion: r5_pauto/r5_pmic anlegen, Buttons 3/1/6–7; 1/0/1–2 sollen r5_room setzen;
+   Trigger „Auto-Aus nach 2 h“ prüfen (drückt noch 2/0/1). Prüfen, ob „rmcr“ grün bleibt, während die Automatik läuft.
+3. Paket (Companion-Export ohne OBS-Passwort) neu bauen.
 
 ## Hardware-Lücken (für Ausstattungsplan v7)
 Tablet (Galaxy Tab A9+, ~209 €) + Halterung; HDMI-Matrix mit LAN (TESmart HMA404-E23, Companion-Modul vorhanden); 3. AOC-HDMI für Tisch-Laptop; WLAN-AP fürs AV-Netz (TP-Link EAP225 ~57 €); 3. Netzwerkkarte für RM-CR-Steuerung; LAN zu den ViewSonic-Displays. Publikum-Kamera mittig über den Displays montieren (FoMaKo 60° reicht nicht für ganze Reihen → Zonen).

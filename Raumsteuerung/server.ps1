@@ -18,7 +18,7 @@ while ($true) {
     if ([string]::IsNullOrEmpty($name)) { $name = 'raumsteuerung.html' }
     $file = Join-Path $root $name
     $ext = [System.IO.Path]::GetExtension($name).ToLower()
-    if ((Test-Path -LiteralPath $file -PathType Leaf) -and $types.ContainsKey($ext)) {
+    if ((Test-Path -LiteralPath $file -PathType Leaf) -and $types.ContainsKey($ext) -and ($ext -ne '.json' -or $name -eq 'manifest.json')) {
       $body = [System.IO.File]::ReadAllBytes($file); $status = '200 OK'; $ct = $types[$ext]
     } else {
       $body = [System.Text.Encoding]::UTF8.GetBytes('Nicht gefunden'); $status = '404 Not Found'; $ct = 'text/plain; charset=utf-8'

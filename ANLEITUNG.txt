@@ -8,7 +8,10 @@ Raumsteuerung\                    Tablet-Seite + kleiner Webserver
   raumsteuerung.html              Die Tablet-Seite
   server.ps1                      Webserver (Port 8080)
   installieren.ps1                Richtet alles ein (als Administrator)
-  deinstallieren.ps1              Entfernt Webserver und Firewall-Regeln
+  deinstallieren.ps1              Entfernt Webserver, Mikrofon-Automatik und Firewall-Regeln
+  mikro-automatik.ps1             Publikum-Kamera folgt dem Tischmikrofon (läuft im Hintergrund)
+  mikro-automatik.json            Einstellungen dazu (Mikrofon -> Kanal, Schwellen, Zeiten)
+  mikrofone-testen.cmd            Doppelklick: Pegel aller Kanäle live (Zuordnung herausfinden)
 Raum5_OBS_Szenen_Backup.json      OBS-Szenen  (bitte vom Test-PC-Desktop hier hineinkopieren)
 
 
@@ -54,6 +57,7 @@ Raum5_OBS_Szenen_Backup.json      OBS-Szenen  (bitte vom Test-PC-Desktop hier hi
   * kopiert alles nach C:\Raumsteuerung
   * öffnet Port 8080 und 8000 in der Firewall (nur Domäne/Privat)
   * startet den Webserver automatisch bei jedem Systemstart
+  * startet die Mikrofon-Automatik automatisch bei jedem Systemstart
   * zeigt am Ende die Adresse für das Tablet an, z. B. http://192.168.1.50:8080
 - Die Seite findet Companion automatisch (gleicher PC, Port 8000).
 - Wichtig: Der Raum-PC braucht eine feste IP-Adresse (oder DHCP-Reservierung).
@@ -102,7 +106,51 @@ iPad (Safari):
 Bei Problemen: IT-Service 2020
 
 
-7. Companion – noch zu prüfen
+7. Mikrofon-Automatik (Publikum-Kamera folgt dem Tischmikrofon)
+-----------------------------------------------------------------
+So funktioniert es: mikro-automatik.ps1 liest die Pegel vom RM-CR (Meter RM:NeInPostFader)
+und drückt in Companion den passenden Publikum-Button. Regeln:
+  - ein Mikrofon spricht (mind. 0,4 s)  -> Zone dieses Mikrofons
+  - zwei gleichzeitig                    -> Ganzer Raum
+  - 3 s Stille                           -> Ganzer Raum
+  - höchstens eine Bewegung alle 4 s; Husten/Klopfen (< 0,4 s) wird ignoriert
+  - Wortwechsel zwischen zwei Mikrofonen schaltet direkt um (kein Umweg über "Ganzer Raum")
+  - nur wenn auf dem Tablet "Automatisch" an ist (r5_pauto = 1)
+Mikrofon -> Zone: 1 -> 3/1/1 (Reihe 1-2 links), 2 -> 3/1/2, 3 -> 3/1/3, 4 -> 3/1/4, 5 -> 3/1/3.
+
+a) Zuordnung herausfinden
+   - C:\Raumsteuerung\mikrofone-testen.cmd doppelklicken.
+   - Nacheinander in Mikrofon 1, 2, ... sprechen. Der Kanal mit "<-- SPRICHT" gehört dazu.
+     Spitze = höchster Wert der letzten 3 s. 7E = 0 dBFS.
+   - Grundrauschen ohne Sprache notieren (im Test ca. 61). Es muss unter "schwelleAusHex" liegen.
+   - In mikro-automatik.json eintragen, z. B. "1": [1], "2": [2]
+     (liefert ein RM-TT zwei Kanäle: "1": [1, 2]). Nicht vorhandene Mikrofone: [].
+   - Schwellen anpassen: "schwelleHex" = Sprache sicher darüber (Standard 6C),
+     "schwelleAusHex" etwas niedriger (Standard 68).
+   - Danach die Aufgabe neu starten: Aufgabenplanung -> "Raumsteuerung Mikrofon-Automatik"
+     -> Beenden, Ausführen (oder PC neu starten).
+   - Alternative zum Testen: Meter "RM:NeInAutomixGain" (zeigt, wem der Automixer das Wort gibt).
+
+b) In Companion anlegen
+   - Custom Variables: r5_pauto (Standard 1, Wert behalten), r5_pmic (Standard 0).
+   - Button 3/1/6 "Automatik an":  r5_pauto = 1
+     Button 3/1/7 "Automatik aus": r5_pauto = 0
+   - Buttons 3/1/1 bis 3/1/5: Preset der Publikum-Kamera abrufen (sobald die Kamera da ist).
+   - Optional Bild einfrieren beim Schwenk: Buttons 3/1/8 (Freeze an) und 3/1/9 (Freeze aus)
+     mit OBS-Aktion "Filter sichtbar" auf der Publikum-Quelle (Freeze-Filter-Plugin nötig),
+     dann in mikro-automatik.json "freezeAn": "3/1/8", "freezeAus": "3/1/9".
+
+c) Prüfen
+   - Companion-Verbindung "rmcr" muss grün bleiben, während die Automatik läuft
+     (das Skript hat eine eigene RCP-Verbindung zum RM-CR).
+   - Protokoll: C:\Raumsteuerung\mikro-automatik.log (wer spricht, welcher Button gedrückt wurde).
+   - Ohne Kamera gefahrlos testen: in Admin-PowerShell
+       C:\Raumsteuerung\mikro-automatik.ps1 -Trocken
+     (zeigt nur an, was es tun würde; vorher die Aufgabe beenden).
+   - Tablet, Kamera-Seite: das sprechende Mikrofon leuchtet grün.
+
+
+8. Companion – noch zu prüfen
 -----------------------------
 - Button 1/0/1 (Raum an) soll zusätzlich r5_room = 1 und r5_last_use = $(internal:time_unix)
   setzen, Button 1/0/2 (Raum aus) r5_room = 0.
