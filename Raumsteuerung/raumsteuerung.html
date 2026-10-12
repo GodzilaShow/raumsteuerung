@@ -44,6 +44,7 @@ h2{margin:0;font-size:21px;font-weight:600}
 .seg{display:flex;border:1px solid var(--line2);border-radius:6px;overflow:hidden}
 .seg button{height:52px;min-width:150px;padding:0 18px;border:0;border-left:1px solid var(--line2);background:#fff;font-size:17px;font-weight:600}
 .seg button:first-child{border-left:0}
+#camSeg{flex-shrink:0}
 .seg button.on{background:var(--blue);color:#fff}
 .toggle{display:flex;align-items:center;gap:14px;min-height:52px;border:0;background:none;font-size:17px;padding:0;text-align:left}
 .toggle i{width:52px;height:30px;border-radius:15px;padding:3px;display:flex;background:#9AA8B5;flex-shrink:0;transition:background .25s ease}
@@ -95,9 +96,9 @@ h2{margin:0;font-size:21px;font-weight:600}
 .zone.on .rows i{background:var(--lime)}
 .dpad{display:grid;grid-template-columns:repeat(3,84px);gap:8px;justify-content:center}
 .hold{touch-action:none}
-.dpad button{height:76px;border-radius:6px;border:1px solid var(--line2);background:#fff;display:flex;align-items:center;justify-content:center}
+.dpad button{height:70px;border-radius:6px;border:1px solid var(--line2);background:#fff;display:flex;align-items:center;justify-content:center}
 .dpad button:active,.hold:active{background:#E6F1F8}
-.dpad .home{height:76px;border-radius:38px;border:1px solid var(--line2);background:var(--bg);color:var(--blue);display:flex;align-items:center;justify-content:center;transition:background-color .2s ease,transform .15s ease}
+.dpad .home{height:70px;border-radius:35px;border:1px solid var(--line2);background:var(--bg);color:var(--blue);display:flex;align-items:center;justify-content:center;transition:background-color .2s ease,transform .15s ease}
 .dpad .home:active{transform:scale(.92);background:#E6F1F8}
 #homeBtn.done{background:#F1F8E8;color:#27500A;border-color:var(--lime);animation:bump .35s ease}
 .autobar{display:flex;align-items:center;gap:14px;min-height:64px;padding:8px 14px;border:1px solid var(--line2);border-radius:6px;background:#fff;text-align:left;transition:background-color .22s ease,border-color .22s ease}
@@ -306,7 +307,7 @@ h2{margin:0;font-size:21px;font-weight:600}
 </div>
 </div>
 </div>
-<div class="panel">
+<div class="panel" style="gap:10px">
 <h2>Genauer einstellen</h2>
 <div class="seg" id="camSeg" style="display:grid;grid-template-columns:1fr 1fr"><button data-cam="r">Redner-Kamera</button><button data-cam="p">Publikum-Kamera</button></div>
 <div class="dpad">
