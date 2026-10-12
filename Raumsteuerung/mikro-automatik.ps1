@@ -84,14 +84,16 @@ function Parse-Levels([string]$line) {
 
 $levels = @()     # letzte Pegel je Kanal (Index 0 = Kanal 1)
 $peaks = @{}      # Spitzenwert je Kanal fuer die Anzeige
-$state = @{ Zone = $null; Mic = -1; LastMove = -100000; LastSpeech = 0; FreezeOff = 0; Auto = $false; AutoCheck = 0 }
+$state = @{ Zone = $null; Mic = -1; LastMove = -100000; LastSpeech = 0; FreezeOff = 0; Auto = $false; AutoCheck = 0; LastDecide = 0 }
 
 function Decide {
   $t = Now
+  # Glaettung nach Zeit, nicht nach Schleifendurchlaeufen (langsamer PC = gleiches Verhalten)
+  $glatt = 1 - [Math]::Exp(-[Math]::Max(1, $t - $state.LastDecide) / 150.0); $state.LastDecide = $t
   foreach ($m in $mics) {
     $lvl = 0
     foreach ($k in $m.Kanaele) { if ($k -ge 1 -and $k -le $levels.Length -and $levels[$k - 1] -gt $lvl) { $lvl = $levels[$k - 1] } }
-    $m.Avg += ($lvl - $m.Avg) * 0.15   # geglaetteter Pegel fuer den Lautstaerke-Vergleich
+    $m.Avg += ($lvl - $m.Avg) * $glatt   # geglaetteter Pegel (Zeitkonstante 150 ms) fuer den Lautstaerke-Vergleich
     if ($lvl -ge $schwelle) { if ($m.LoudSince -eq 0) { $m.LoudSince = $t } } else { $m.LoudSince = 0 }
     if ($lvl -ge $schwelleAus -and ($m.Active -or $m.LoudSince -ne 0)) { $m.LastLoud = $t }
     if (-not $m.Active -and $m.LoudSince -ne 0 -and ($t - $m.LoudSince) -ge $cfg.ansprechMs) {

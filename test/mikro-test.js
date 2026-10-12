@@ -1,7 +1,7 @@
 // Szenario-Test der Mikrofon-Automatik (mikro-automatik.ps1) gegen Mock-Companion und Mock-RM-CR.
 // Vorher: node test/mock-companion.js & node test/mock-rmcr.js &     Aufruf: PWSH=/pfad/pwsh node test/mikro-test.js
 const { spawn } = require('child_process'), fs = require('fs'), os = require('os'), path = require('path');
-const API = 'http://127.0.0.1:8000', RM = 'http://127.0.0.1:8001';
+const API = 'http://127.0.0.1:' + (process.env.API_PORT || 8000), RM = 'http://127.0.0.1:8001';
 let ok = 0, bad = 0;
 const check = (c, m) => { c ? ok++ : bad++; console.log((c ? '  ✔ ' : '  ✘ ') + m); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -12,7 +12,7 @@ const clear = () => fetch(API + '/_test/clear');
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mikro-'));
   const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'Raumsteuerung', 'mikro-automatik.json'), 'utf8').replace(/^﻿/, ''));
-  Object.assign(cfg, { rmcrIp: '127.0.0.1', mikrofone: { 1: [1], 2: [2], 3: [3], 4: [4], 5: [5, 6] }, freezeAn: '3/1/8', freezeAus: '3/1/9' });
+  Object.assign(cfg, { rmcrIp: '127.0.0.1', companion: API, mikrofone: { 1: [1], 2: [2], 3: [3], 4: [4], 5: [5, 6] }, freezeAn: '3/1/8', freezeAus: '3/1/9' });
   fs.writeFileSync(path.join(dir, 'cfg.json'), JSON.stringify(cfg));
   await lvl('1=61&2=61&3=61&4=61&5=61&6=61');
   await fetch(API + '/_test/set?r5_pauto=1&r5_pmic=0&down=0'); await clear();
@@ -21,7 +21,7 @@ const clear = () => fetch(API + '/_test/clear');
 
   console.log('Sofort nach dem Start');
   await lvl('2=76');
-  let t0 = Date.now(); while (Date.now() - t0 < 6000 && (await state()).vars.r5_pmic !== '2') await sleep(100);
+  let t0 = Date.now(); while (Date.now() - t0 < 10000 && (await state()).vars.r5_pmic !== '2') await sleep(100);
   check((await state()).vars.r5_pmic === '2', 'Pegel kommen gleich nach dem Start an (' + (Date.now() - t0) + ' ms inkl. Start von PowerShell)');
   await sleep(500); await clear(); await lvl('2=61');
   console.log('Mikrofon 2 verstummt');
@@ -37,7 +37,8 @@ const clear = () => fetch(API + '/_test/clear');
   check(!(await presses()).includes('3/1/3'), 'kein Schwenk bei Husten/Klopfen');
 
   console.log('Mikrofon 1 spricht');
-  await clear(); await lvl('1=75'); await sleep(1500);
+  await clear(); await lvl('1=75');
+  t0 = Date.now(); while (Date.now() - t0 < 3500 && !(await state()).log.includes('3/1/1 press')) await sleep(100);   // langsamer PC: 4-s-Sperre kann knapp sein
   let st = await state();
   check(st.vars.r5_pmic === '1', 'r5_pmic = 1');
   check(st.log.includes('3/1/1 press'), 'Kamera auf Reihe 1–2 links (3/1/1)');

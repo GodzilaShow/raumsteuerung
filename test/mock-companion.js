@@ -3,6 +3,8 @@
 // Liefert die Variablen wie Companion 5 (HTTP-API) und protokolliert jeden Button-Druck.
 // Mit  --config Raum5_Companion.companionconfig  werden die Buttons aus der echten Konfiguration ausgeführt
 // (Variablen setzen, OBS-Szene, Virtual Cam, Warten, Gruppen, Button drücken) – so wird der Export mitgetestet.
+// Ports per Umgebung aenderbar (z. B. wenn echter Companion/Webserver auf 8000/8080 laufen)
+const API_PORT = +process.env.API_PORT || 8000, PAGE_PORT = +process.env.PAGE_PORT || 8080;
 const http = require('http'), fs = require('fs'), path = require('path'), zlib = require('zlib');
 const ci = process.argv.indexOf('--config');
 const CC = ci > 0 ? JSON.parse(zlib.gunzipSync(fs.readFileSync(process.argv[ci + 1])).toString('utf8')) : null;
@@ -84,13 +86,13 @@ http.createServer((req, res) => {
     res.end(vars[k]); return;
   }
   res.statusCode = 404; res.end('Not found');
-}).listen(8000, '127.0.0.1');
+}).listen(API_PORT, '127.0.0.1');
 const types = { '.html': 'text/html; charset=utf-8', '.json': 'application/manifest+json', '.png': 'image/png' };
 http.createServer((req, res) => {
   let name = path.basename(decodeURIComponent(new URL(req.url, 'http://x').pathname)) || 'raumsteuerung.html';
   const f = path.join(root, name), ext = path.extname(name);
   if (!types[ext] || !fs.existsSync(f)) { res.statusCode = 404; res.end('Nicht gefunden'); return; }
   res.setHeader('Content-Type', types[ext]); res.end(fs.readFileSync(f));
-}).listen(8080, '127.0.0.1');
+}).listen(PAGE_PORT, '127.0.0.1');
 console.log(CC ? 'Konfiguration geladen: ' + Object.keys(CC.pages).length + ' Seiten' : 'ohne Konfiguration');
-console.log('Mock: Seite http://127.0.0.1:8080/  Companion http://127.0.0.1:8000');
+console.log('Mock: Seite http://127.0.0.1:' + PAGE_PORT + '/  Companion http://127.0.0.1:' + API_PORT);

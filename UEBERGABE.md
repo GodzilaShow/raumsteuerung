@@ -1,7 +1,7 @@
 # Übergabe: Raumsteuerung Sitzungszimmer 5 (KH II) – Stand 12.10.2026
 
-Diese Datei + `Raum5_Paket.zip` + `raumsteuerung.html` in einem neuen Chat hochladen und schreiben:
-„Wir machen hier weiter. Lies die Übergabe und setz bei ‚Nächster Schritt‘ an. Antworte auf Russisch."
+Neuer Chat: Repo https://github.com/godzilashow/raumsteuerung, Branch `claude/website-testing-fixes-ahd51r`.
+Schreiben: „Wir machen hier weiter. Lies UEBERGABE.md und setz bei ‚Nächster Schritt‘ an. Antworte auf Russisch."
 
 ## Projekt
 - Hybrider Teams-Raum „Sitzungszimmer 5", Landkreis Emsland. Tablet-Steuerung (eine HTML-Datei, Vanilla JS) → Bitfocus Companion 5.0.6 (HTTP-API) → OBS (WebSocket 4455) + Yamaha RM-CR (RCP, TCP 49280).
@@ -23,7 +23,8 @@ Diese Datei + `Raum5_Paket.zip` + `raumsteuerung.html` in einem neuen Chat hochl
 - Custom Variables: r5_cmd (RCP-Befehl für Button 1/0/3 „send“), r5_vol_db, r5_live, r5_room, r5_last_use, r5_vol.
 - Buttons Seite 1: 1/0/1 Raum an, 1/0/2 Raum aus, 1/0/3 RCP-Befehl aus r5_cmd senden, 1/1/1–5 Szenen, 1/3/1 Lautstärke anwenden, 1/3/6 Ton reset (On=1, Level −10 dB, r5_vol_db=−1000).
 - Trigger: „Raum 5: Auto-Aus nach 2 h“, „Raum 5: Live-Status an/aus“ (alle 2–3 s, Bedingung obs Output Active Virtual Camera → r5_live 1/0).
-- Noch NICHT angelegt: Quellen/Displays/Kamera-Buttons (Hardware fehlt), 3/1/6–7, r5_pauto, r5_pmic, Mikro-Automatik.
+- Seit 12.10. ist `Raum5_Companion.companionconfig` importiert (alle Tablet-Buttons, 3/1/6–7, r5_pauto, r5_pmic).
+  Geräte-Aktionen für Quellen/Displays/Kameras fehlen noch (Hardware fehlt), die Buttons setzen nur Variablen.
 
 ## OBS
 - Szenen mit Platzhaltern (Hintergrund #0B3A5B, Präsentation/Redner/Publikum als Farbflächen, Pausentext), gesperrt. Backup: Desktop `Raum5_OBS_Szenen_Backup.json`. OBS immer über Datei → Beenden schließen.
@@ -37,21 +38,35 @@ Diese Datei + `Raum5_Paket.zip` + `raumsteuerung.html` in einem neuen Chat hochl
 - Meter: `mtrnum` = 26, `mtrstart <ID> <ms>` (alle ≤10 s erneuern), Antwort `NOTIFY mtr <ID> level <hex…>` (7E = 0 dBFS). Wichtig: RM:NeInPostFader (16 Kanäle), RM:InputPort (26), RM:NeInAutomixGain (16).
 - Nach der Registrierung kam Signal: InputPort #11/#12 und NeInPostFader #1/#2 (Grundpegel ~0x61, Spitzen ~0x78). Zuordnung Kanal ↔ Mikrofon noch nicht sicher (ein RM-TT kann 2 Kanäle liefern).
 
-## Nächster Schritt
-Erledigt (Repo, Branch claude/website-testing-fixes-ahd51r):
-- Tablet-Seite überarbeitet (Fehler, offline-fähig, Vollbild, folgt r5_room, „Weiter nutzen“ -> 1/3/8).
-- Mikrofon-Automatik `Raumsteuerung/mikro-automatik.ps1` (+ `.json`, `mikrofone-testen.cmd`), startet per Aufgabenplanung.
-- Neue `Raum5_Companion.companionconfig` (Generator `tools/companion_config.py`): alle Buttons für Tablet + Automatik,
-  r5_pauto/r5_pmic, Raum an/aus setzen r5_room, Auto-Aus-Trigger repariert (1/0/2, 2 h 10 min), Seite 3 neu
-  (alte Belegung war um eine Spalte verschoben), „Kamera neu starten“ = Virtual Cam aus, 2 s, an.
-- Tests: `test/alle-tests.sh` (Mocks führen die echte Companion-Konfiguration aus).
+## Stand Test-PC (Arsenijs Laptop, 12.10.2026)
+- Repo geklont nach `C:\Raum5`, mit `installieren.ps1` nach `C:\Raumsteuerung` installiert (Aufgaben „Raumsteuerung Webserver“
+  und „Raumsteuerung Mikrofon-Automatik“ als SYSTEM). Alte Companion-DB gesichert in `C:\Raum5_Sicherung\`.
+- Companion: Konfiguration importiert („Import Preserving Unselected“, Settings blieben), OBS-Verbindung blieb grün
+  (Passwort musste nicht neu eingetragen werden), GUI-Interface auf 0.0.0.0 (für Telefon/Tablet).
+- Live geprüft mit echtem Companion/OBS/RM-CR: Raum an (Virtual Cam, „Live in Teams“), 5 Szenen, Rück-Sync aus OBS,
+  Lautstärke ±, Kamera-Seite mit „Mikrofon 1 spricht“, Raum aus (Pausenbild, Startbildschirm). Telefon im WLAN: läuft.
+- Mikrofone: RM-TT liefern auf NeInPostFader Kanal 1 und 2, Kanäle 3–16 still. Am Testtisch stehen beide Mikros
+  nebeneinander und hören dieselbe Stimme (Spitzen 7A/77) -> Zuordnung erst im Raum sicher. Beide muten gemeinsam
+  (vermutlich MicMute-Kopplung im RM-CR).
+- Laptop: WLAN „Besprechung 6“ und Ethernet sind „Öffentlich“ -> Firewall-Regeln (Domain/Private) greifen nicht.
 
-Vor Ort (nur mit Hardware möglich):
-1. In Companion aktuelle Konfiguration exportieren (Sicherung), dann `Raum5_Companion.companionconfig` importieren,
-   OBS-Passwort eintragen, HTTP API an.
-2. `installieren.ps1` auf dem Raum-PC ausführen.
-3. `mikrofone-testen.cmd`: Mikrofon -> Kanal + Grundrauschen in `mikro-automatik.json`; prüfen, ob „rmcr“ grün bleibt.
-4. Test-Checkliste ANLEITUNG Abschnitt 6.
+Am 12.10. geändert (alles gepusht):
+- `server.ps1`: wartet, wenn Port 8080 belegt ist (lief vorher ohne Listener weiter).
+- `installieren.ps1`: Aufgaben laufen auch im Akkubetrieb (Windows beendete sie beim Ziehen des Netzsteckers).
+- Mikrofon-Automatik: bei zwei aktiven Mikros gewinnt ein deutlich lauteres (`vorsprungStufen`, Standard 8); Glättung zeitbasiert (150 ms).
+- Schrift Source Sans 3 eingebettet (statt Asap), Seite 155 -> 110 KB.
+- Kamera-Seite: Umschalter Redner/Publikum war abgeschnitten (Panel zu hoch) -> behoben.
+- Tests: Ports per `API_PORT`/`PAGE_PORT` änderbar (wenn echter Companion/Webserver laufen), Chromium-Pfad mit Fallback.
+  Ergebnis 12.10. auf dem Laptop: Config 64/64, Tablet-Seite 39/39, Mikro-Automatik 21/21.
+  Aufruf: `API_PORT=8100 PAGE_PORT=8180 bash test/alle-tests.sh` (Playwright global installiert).
+
+## Nächster Schritt
+Im Raum (Raum-PC):
+1. OBS + Szenen-Backup, Companion + `Raum5_Companion.companionconfig` (vorher exportieren), `installieren.ps1`.
+2. Feste IP für den Raum-PC; Netzwerkprofil „Privat“, sonst erreicht das Tablet Port 8080/8000 nicht.
+3. `mikrofone-testen.cmd` mit Mikros an ihren echten Plätzen -> Kanäle + Grundrauschen in `mikro-automatik.json`,
+   danach Aufgabe „Raumsteuerung Mikrofon-Automatik“ neu starten.
+4. Checkliste ANLEITUNG Abschnitt 6 komplett, Test mit echtem Teams-Meeting.
 5. Wenn Hardware kommt: Geräte-Aktionen in die vorhandenen Buttons legen (ANLEITUNG Abschnitt 8).
 
 ## Hardware-Lücken (für Ausstattungsplan v7)

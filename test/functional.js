@@ -1,7 +1,8 @@
 // Funktionstest der Tablet-Seite gegen den Mock (node test/mock-companion.js muss laufen).
 // Aufruf: NODE_PATH=$(npm root -g) node test/functional.js
 const { chromium } = require('playwright');
-const API = 'http://127.0.0.1:8000';
+const API = 'http://127.0.0.1:' + (process.env.API_PORT || 8000);
+const PAGE = 'http://127.0.0.1:' + (process.env.PAGE_PORT || 8080) + '/?companion=' + encodeURIComponent(API);
 let ok = 0, bad = 0;
 const check = (cond, msg) => { if (cond) { ok++; console.log('  ✔ ' + msg); } else { bad++; console.log('  ✘ ' + msg); } };
 const state = async () => (await fetch(API + '/_test/state')).json();
@@ -9,13 +10,13 @@ const set = (q) => fetch(API + '/_test/set?' + q);
 const clear = () => fetch(API + '/_test/clear');
 (async () => {
   await set('obs:scene_active=Alles im Blick&r5_vol_db=-1300&r5_live=1&r5_pauto=1&r5_pmic=0&r5_room=0&down=0');
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' }).catch(() => chromium.launch());
   const ctx = await b.newContext({ viewport: { width: 1280, height: 800 }, hasTouch: true });
   const p = await ctx.newPage();
   const errs = [];
   p.on('pageerror', e => errs.push(e.message));
   p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|ERR_CONNECTION|ERR_EMPTY/.test(m.text())) errs.push(m.text()); });
-  await p.goto('http://127.0.0.1:8080/');
+  await p.goto(PAGE);
   await p.evaluate(() => localStorage.clear()); await p.reload(); await p.waitForTimeout(500);
 
   console.log('Start');
