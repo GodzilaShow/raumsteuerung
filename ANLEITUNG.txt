@@ -41,11 +41,15 @@ Raum5_OBS_Szenen_Backup.json      OBS-Szenen  (bitte vom Test-PC-Desktop hier hi
 ---------------------
 - Companion installieren (gleiche Version oder neuer, getestet mit 5.0.6).
 - Web-Oberfläche öffnen: http://127.0.0.1:8000
+- VORHER die laufende Konfiguration sichern: Import / Export -> Export (Datei aufheben).
 - Import / Export -> Raum5_Companion.companionconfig importieren (alles übernehmen).
+  Enthält alle Buttons für Tablet und Mikrofon-Automatik (Seite 1 Steuerung, Seite 3 Kamera),
+  die Variablen (r5_room, r5_pauto, r5_pmic, ...) und die Trigger.
 - Connections -> obs -> Passwort von OBS eintragen (ist im Paket absichtlich leer).
 - Connections -> rmcr -> IP-Adresse des RM-CR prüfen.
 - Beide Verbindungen müssen grün sein.
 - Settings: Companion beim Windows-Start automatisch starten lassen.
+- Settings, Abschnitt HTTP: "HTTP API" muss eingeschaltet sein (Standard; Tablet und Automatik nutzen sie).
 
 
 4. Webserver für das Tablet
@@ -131,11 +135,11 @@ a) Zuordnung herausfinden
      -> Beenden, Ausführen (oder PC neu starten).
    - Alternative zum Testen: Meter "RM:NeInAutomixGain" (zeigt, wem der Automixer das Wort gibt).
 
-b) In Companion anlegen
-   - Custom Variables: r5_pauto (Standard 1, Wert behalten), r5_pmic (Standard 0).
-   - Button 3/1/6 "Automatik an":  r5_pauto = 1
-     Button 3/1/7 "Automatik aus": r5_pauto = 0
-   - Buttons 3/1/1 bis 3/1/5: Preset der Publikum-Kamera abrufen (sobald die Kamera da ist).
+b) Companion (ist in Raum5_Companion.companionconfig schon enthalten)
+   - Variablen r5_pauto (1 = Automatik an) und r5_pmic (sprechendes Mikrofon).
+   - Buttons 3/1/6 / 3/1/7: Automatik an / aus.
+   - Buttons 3/1/1 bis 3/1/5: setzen r5_ppreset. Sobald die Publikum-Kamera da ist,
+     dort zusätzlich "Preset abrufen" der Kamera eintragen.
    - Optional Bild einfrieren beim Schwenk: Buttons 3/1/8 (Freeze an) und 3/1/9 (Freeze aus)
      mit OBS-Aktion "Filter sichtbar" auf der Publikum-Quelle (Freeze-Filter-Plugin nötig),
      dann in mikro-automatik.json "freezeAn": "3/1/8", "freezeAus": "3/1/9".
@@ -150,14 +154,19 @@ c) Prüfen
    - Tablet, Kamera-Seite: das sprechende Mikrofon leuchtet grün.
 
 
-8. Companion – noch zu prüfen
------------------------------
-- Button 1/0/1 (Raum an) soll zusätzlich r5_room = 1 und r5_last_use = $(internal:time_unix)
-  setzen, Button 1/0/2 (Raum aus) r5_room = 0.
-- Trigger "Raum 5: Auto-Aus nach 2 h" drückt im Export noch 2/0/1 (alte Seite, schaltet nur
-  Variablen um, nicht OBS). Auf 1/0/2 umstellen – oder löschen, weil das Tablet selbst nach
-  2 Stunden ohne Bedienung abfragt und ausschaltet.
-- Fehlende Buttons (Hardware noch nicht da): Quellen 1/2/1-3, Ausblenden/Displays 1/2/4-7,
-  Tracking 1/3/3-4, Hilfe 1/3/5 + 1/3/7, Kamera Seite 3, Publikum-Automatik 3/1/6-7.
-  Solange sie fehlen, passiert beim Tippen nichts.
+8. Wenn die fehlende Hardware kommt – wo in Companion ergänzen
+----------------------------------------------------------------
+Die Buttons gibt es schon; sie setzen bisher nur die Zustandsvariable.
+Jeweils die Geräte-Aktion in den Button dazulegen (Tablet muss nicht geändert werden):
+  HDMI-Matrix (TESmart)      1/2/1 Raum-PC, 1/2/2 Laptop, 1/2/3 Kabellos
+  Präsentation ausblenden    1/2/4 aus, 1/2/5 an
+  Displays (ViewSonic, LAN)  1/2/6 an, 1/2/7 aus, 1/3/7 "Displays neu starten"
+                             und in 1/0/1 (Raum an) / 1/0/2 (Raum aus)
+  Redner-Kamera              3/0/1-3 Presets, 3/2/1-6 Bewegung (Taste DRÜCKEN = fahren,
+                             LOSLASSEN = stoppen), 3/2/7 Grundstellung, 1/3/3-4 Tracking
+  Publikum-Kamera            3/1/1-5 Presets, 3/3/1-6 Bewegung, 3/3/7 Grundstellung
+Danach den Test aus Abschnitt 6 wiederholen.
 
+Trigger "Raum 5: Auto-Aus nach 2 h (Sicherheitsnetz)": schaltet den Raum (Button 1/0/2) aus,
+wenn 2 h 10 min niemand etwas bedient hat. Normalerweise fragt vorher das Tablet
+("Wird der Raum noch genutzt?"); "Weiter nutzen" meldet sich über Button 1/3/8 bei Companion.

@@ -38,13 +38,21 @@ Diese Datei + `Raum5_Paket.zip` + `raumsteuerung.html` in einem neuen Chat hochl
 - Nach der Registrierung kam Signal: InputPort #11/#12 und NeInPostFader #1/#2 (Grundpegel ~0x61, Spitzen ~0x78). Zuordnung Kanal ↔ Mikrofon noch nicht sicher (ein RM-TT kann 2 Kanäle liefern).
 
 ## Nächster Schritt
-Erledigt (Repo, Branch claude/website-testing-fixes-ahd51r): Tablet-Seite überarbeitet, Mikrofon-Automatik
-als `Raumsteuerung/mikro-automatik.ps1` (+ `.json`, `mikrofone-testen.cmd`), Tests in `test/`.
-1. Zuordnung testen: `mikrofone-testen.cmd` starten, nacheinander in Mikro 1 und 2 sprechen, Kanäle + Grundrauschen
-   in `mikro-automatik.json` eintragen (Schwellen schwelleHex/schwelleAusHex).
-2. In Companion: r5_pauto/r5_pmic anlegen, Buttons 3/1/6–7; 1/0/1–2 sollen r5_room setzen;
-   Trigger „Auto-Aus nach 2 h“ prüfen (drückt noch 2/0/1). Prüfen, ob „rmcr“ grün bleibt, während die Automatik läuft.
-3. Paket (Companion-Export ohne OBS-Passwort) neu bauen.
+Erledigt (Repo, Branch claude/website-testing-fixes-ahd51r):
+- Tablet-Seite überarbeitet (Fehler, offline-fähig, Vollbild, folgt r5_room, „Weiter nutzen“ -> 1/3/8).
+- Mikrofon-Automatik `Raumsteuerung/mikro-automatik.ps1` (+ `.json`, `mikrofone-testen.cmd`), startet per Aufgabenplanung.
+- Neue `Raum5_Companion.companionconfig` (Generator `tools/companion_config.py`): alle Buttons für Tablet + Automatik,
+  r5_pauto/r5_pmic, Raum an/aus setzen r5_room, Auto-Aus-Trigger repariert (1/0/2, 2 h 10 min), Seite 3 neu
+  (alte Belegung war um eine Spalte verschoben), „Kamera neu starten“ = Virtual Cam aus, 2 s, an.
+- Tests: `test/alle-tests.sh` (Mocks führen die echte Companion-Konfiguration aus).
+
+Vor Ort (nur mit Hardware möglich):
+1. In Companion aktuelle Konfiguration exportieren (Sicherung), dann `Raum5_Companion.companionconfig` importieren,
+   OBS-Passwort eintragen, HTTP API an.
+2. `installieren.ps1` auf dem Raum-PC ausführen.
+3. `mikrofone-testen.cmd`: Mikrofon -> Kanal + Grundrauschen in `mikro-automatik.json`; prüfen, ob „rmcr“ grün bleibt.
+4. Test-Checkliste ANLEITUNG Abschnitt 6.
+5. Wenn Hardware kommt: Geräte-Aktionen in die vorhandenen Buttons legen (ANLEITUNG Abschnitt 8).
 
 ## Hardware-Lücken (für Ausstattungsplan v7)
 Tablet (Galaxy Tab A9+, ~209 €) + Halterung; HDMI-Matrix mit LAN (TESmart HMA404-E23, Companion-Modul vorhanden); 3. AOC-HDMI für Tisch-Laptop; WLAN-AP fürs AV-Netz (TP-Link EAP225 ~57 €); 3. Netzwerkkarte für RM-CR-Steuerung; LAN zu den ViewSonic-Displays. Publikum-Kamera mittig über den Displays montieren (FoMaKo 60° reicht nicht für ganze Reihen → Zonen).
