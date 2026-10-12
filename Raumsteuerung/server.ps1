@@ -4,7 +4,8 @@ param([int]$Port = 8080)
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $types = @{ '.html'='text/html; charset=utf-8'; '.json'='application/manifest+json'; '.png'='image/png'; '.ico'='image/x-icon' }
 $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Any, $Port)
-$listener.Start()
+# Port evtl. noch belegt (z. B. alte Instanz) -> warten statt ohne Listener weiterzulaufen
+while ($true) { try { $listener.Start(); break } catch { Start-Sleep -Seconds 5 } }
 while ($true) {
   $client = $listener.AcceptTcpClient()
   try {
