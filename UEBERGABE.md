@@ -16,7 +16,7 @@ Diese Datei + `Raum5_Paket.zip` + `raumsteuerung.html` in einem neuen Chat hochl
   - Publikum-Kamera: grafischer Saalplan (5 Reihen, 3 Tischblöcke, 5 Mikrofon-Symbole). 4 Zonen antippen: p_vl/p_vr = Reihe 1–2 links/rechts, p_hl/p_hr = Reihe 3–5 links/rechts, p_all = Ganzer Raum. Schalter „Automatisch – folgt dem Tischmikrofon“ (p_auto_on 3/1/6, p_auto_off 3/1/7). Aktives Mikro pulsiert grün.
 - Synchronisiert alle 3 s: obs:scene_active, custom r5_vol_db, r5_live, r5_pauto, r5_pmic.
 - Animationen per CSS; Regel `prefers-reduced-motion` schaltet sie ab (evtl. entfernen).
-- Offene Design-Entscheidung: Schrift (Empfehlung Source Sans 3 eingebettet statt Google Fonts Asap).
+- Schrift: Source Sans 3 (variabel, SIL OFL) als base64 eingebettet, ersetzt Asap (12.10.).
 
 ## Companion (Ist-Stand)
 - Verbindungen: `obs` (OBS Studio, 127.0.0.1:4455, Passwort gesetzt), `rmcr` (Generic TCP 192.168.137.185:49280, Save Response → $(rmcr:tcp_response)).

@@ -22,7 +22,8 @@ foreach ($p in 8080, 8000) {
 # Aufgabe: Webserver startet bei jedem Systemstart (auch ohne Anmeldung)
 $action  = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$ziel\server.ps1`""
 $trigger = New-ScheduledTaskTrigger -AtStartup
-$set     = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero)
+# Auch im Akkubetrieb starten und weiterlaufen (Standard waere: beim Ziehen des Netzsteckers beenden)
+$set     = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 Register-ScheduledTask -TaskName 'Raumsteuerung Webserver' -Action $action -Trigger $trigger -Settings $set -User 'SYSTEM' -RunLevel Highest -Force | Out-Null
 Start-ScheduledTask -TaskName 'Raumsteuerung Webserver'
 # Aufgabe: Mikrofon-Automatik (Publikum-Kamera folgt dem Tischmikrofon), Einstellungen in mikro-automatik.json
