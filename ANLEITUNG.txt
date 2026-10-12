@@ -12,7 +12,7 @@ Raumsteuerung\                    Tablet-Seite + kleiner Webserver
   mikro-automatik.ps1             Publikum-Kamera folgt dem Tischmikrofon (läuft im Hintergrund)
   mikro-automatik.json            Einstellungen dazu (Mikrofon -> Kanal, Schwellen, Zeiten)
   mikrofone-testen.cmd            Doppelklick: Pegel aller Kanäle live (Zuordnung herausfinden)
-Raum5_OBS_Szenen_Backup.json      OBS-Szenen  (bitte vom Test-PC-Desktop hier hineinkopieren)
+Raum5_OBS_Szenen_Backup.json      OBS-Szenen (Stand 05.10., Platzhalter statt echter Quellen)
 
 
 1. Yamaha RM-CR

@@ -16,7 +16,8 @@ Mit einem neueren Export aus dem Raum geht es genauso (erster Parameter = neuer 
 ## Testen ohne Raum-PC
 
 ```
-PWSH=pwsh test/alle-tests.sh     # Konfiguration (64), Tablet (39), Mikrofon-Automatik (20)
+PWSH=pwsh test/alle-tests.sh     # Konfiguration (64), Tablet (39), Mikrofon-Automatik (21)
+API_PORT=8100 PAGE_PORT=8180 PWSH=pwsh test/alle-tests.sh   # wenn echter Companion/Webserver 8000/8080 belegen
 ```
 
 Die Mocks (`test/mock-companion.js --config …`, `test/mock-rmcr.js`) führen die Buttons aus der
