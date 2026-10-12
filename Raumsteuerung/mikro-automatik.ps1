@@ -3,7 +3,7 @@
 # Liest die Pegel der Tischmikrofone vom Yamaha RM-CR (RCP, TCP 49280, Meter) und
 # schwenkt die Publikum-Kamera ueber Companion auf die Zone des sprechenden Mikrofons.
 #   - Ein Mikrofon spricht          -> Zone dieses Mikrofons, r5_pmic = Nummer
-#   - Zwei oder mehr gleichzeitig   -> Ganzer Raum
+#   - Zwei oder mehr gleichzeitig   -> Ganzer Raum (ausser einer ist deutlich lauter -> dessen Zone)
 #   - 3 s Stille                    -> Ganzer Raum
 #   - hoechstens eine Bewegung alle 4 s, optional OBS-Freeze waehrend des Schwenks
 #   - nur wenn r5_pauto = 1 (Schalter "Automatisch" auf dem Tablet)
@@ -40,11 +40,13 @@ foreach ($p in $cfg.mikrofone.PSObject.Properties) {
   $k = @($p.Value | ForEach-Object { [int]$_ })
   if ($k.Count -gt 0) {
     $zone = $cfg.zonen.($p.Name)
-    $mics += @{ Nr = [int]$p.Name; Kanaele = $k; Zone = [string]$zone; LoudSince = 0; LastLoud = 0; Active = $false }
+    $mics += @{ Nr = [int]$p.Name; Kanaele = $k; Zone = [string]$zone; LoudSince = 0; LastLoud = 0; Active = $false; Avg = 0 }
   }
 }
 $schwelle = [Convert]::ToInt32($cfg.schwelleHex, 16)
 $schwelleAus = [Convert]::ToInt32($cfg.schwelleAusHex, 16)
+# Zwei Mikrofone gleichzeitig: ist eines um so viele Meter-Stufen lauter (geglaettet), gilt nur dieses (0 = aus)
+$vorsprung = if ($null -ne $cfg.vorsprungStufen) { [int]$cfg.vorsprungStufen } else { 8 }
 
 # ---------- Companion (HTTP-API) ----------
 function Invoke-Companion([string]$method, [string]$path) {
@@ -89,6 +91,7 @@ function Decide {
   foreach ($m in $mics) {
     $lvl = 0
     foreach ($k in $m.Kanaele) { if ($k -ge 1 -and $k -le $levels.Length -and $levels[$k - 1] -gt $lvl) { $lvl = $levels[$k - 1] } }
+    $m.Avg += ($lvl - $m.Avg) * 0.15   # geglaetteter Pegel fuer den Lautstaerke-Vergleich
     if ($lvl -ge $schwelle) { if ($m.LoudSince -eq 0) { $m.LoudSince = $t } } else { $m.LoudSince = 0 }
     if ($lvl -ge $schwelleAus -and ($m.Active -or $m.LoudSince -ne 0)) { $m.LastLoud = $t }
     if (-not $m.Active -and $m.LoudSince -ne 0 -and ($t - $m.LoudSince) -ge $cfg.ansprechMs) {
@@ -99,6 +102,11 @@ function Decide {
     if ($m.Active -and ($t - $m.LastLoud) -ge $cfg.halteMs) { $m.Active = $false }
   }
   $act = @($mics | Where-Object { $_.Active })
+  if ($act.Count -ge 2 -and $vorsprung -gt 0) {
+    # Nachbarmikrofon hoert mit: deutlich lauteres Mikrofon gewinnt statt "Ganzer Raum"
+    $sorted = @($act | Sort-Object { $_.Avg } -Descending)
+    if (($sorted[0].Avg - $sorted[1].Avg) -ge $vorsprung) { $act = @($sorted[0]) }
+  }
   if ($act.Count -eq 1) { $mic = $act[0].Nr; $zone = $act[0].Zone; $state.LastSpeech = $t }
   elseif ($act.Count -ge 2) { $mic = 0; $zone = $cfg.ganzerRaum; $state.LastSpeech = $t }
   elseif (($t - $state.LastSpeech) -ge $cfg.stilleMs) { $mic = 0; $zone = $cfg.ganzerRaum }

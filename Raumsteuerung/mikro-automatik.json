@@ -21,6 +21,7 @@
  "ganzerRaum": "3/1/5",
  "schwelleHex": "6C",
  "schwelleAusHex": "68",
+ "vorsprungStufen": 8,
  "ansprechMs": 400,
  "halteMs": 1200,
  "stilleMs": 3000,

@@ -116,6 +116,8 @@ So funktioniert es: mikro-automatik.ps1 liest die Pegel vom RM-CR (Meter RM:NeIn
 und drückt in Companion den passenden Publikum-Button. Regeln:
   - ein Mikrofon spricht (mind. 0,4 s)  -> Zone dieses Mikrofons
   - zwei gleichzeitig                    -> Ganzer Raum
+    (ausser eines ist deutlich lauter, "vorsprungStufen", Standard 8 -> dessen Zone;
+     so stoert ein Nachbarmikrofon nicht, das dieselbe Stimme leiser mithoert)
   - 3 s Stille                           -> Ganzer Raum
   - höchstens eine Bewegung alle 4 s; Husten/Klopfen (< 0,4 s) wird ignoriert
   - Wortwechsel zwischen zwei Mikrofonen schaltet direkt um (kein Umweg über "Ganzer Raum")

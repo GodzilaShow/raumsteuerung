@@ -79,6 +79,13 @@ const clear = () => fetch(API + '/_test/clear');
   st = await state();
   check(st.vars.r5_pmic === '3' && !st.log.includes('3/1/3 press'), 'Wechsel 5 -> 3 in derselben Zone: kein unnötiger Schwenk');
 
+  console.log('Zwei Mikrofone hören dasselbe, eines deutlich lauter');
+  await lvl('3=61'); await sleep(9000); await clear();   // Stille -> Ganzer Raum, dann 4 s Sperre abwarten
+  await lvl('1=7A&2=6E'); await sleep(1500);
+  st = await state();
+  check(st.vars.r5_pmic === '1' && st.log.includes('3/1/1 press'), 'lauteres Mikrofon 1 gewinnt (Nachbar hört mit) -> 3/1/1');
+  await lvl('1=61&2=61'); await sleep(6000);
+
   console.log('Meter läuft länger als 10 s (Erneuerung)');
   check(/Verbunden/.test(out) && !/Keine Meter-Daten/.test(out), 'keine Unterbrechung der Pegel (' + Math.round(process.uptime()) + ' s Laufzeit)');
   check(!/Fehler/.test(out), 'keine Fehler im Protokoll');
