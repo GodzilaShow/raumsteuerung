@@ -1,0 +1,91 @@
+﻿RAUMSTEUERUNG SITZUNGSZIMMER 5 – EINRICHTUNG AUF DEM RAUM-PC
+=============================================================
+
+Inhalt des Pakets
+-----------------
+Raum5_Companion.companionconfig   Alle Companion-Buttons, Variablen, Verbindungen (OBS + RM-CR)
+Raumsteuerung\                    Tablet-Seite + kleiner Webserver
+  raumsteuerung.html              Die Tablet-Seite
+  server.ps1                      Webserver (Port 8080)
+  installieren.ps1                Richtet alles ein (als Administrator)
+  deinstallieren.ps1              Entfernt Webserver und Firewall-Regeln
+Raum5_OBS_Szenen_Backup.json      OBS-Szenen  (bitte vom Test-PC-Desktop hier hineinkopieren)
+
+
+1. Yamaha RM-CR
+---------------
+- RM-CR per Netzwerk mit dem Raum-PC verbinden.
+- Feste IP-Adresse prüfen (RM Device Finder). Im Test war es 192.168.137.185.
+- RM-CR per USB anschließen und in Windows als Standard-Audiogerät einstellen
+  (Wiedergabe UND Aufnahme). Dann geht der Ton aus Teams über den Prozessor.
+
+
+2. OBS Studio
+-------------
+- OBS installieren und starten.
+- Szenensammlung -> Importieren -> Raum5_OBS_Szenen_Backup.json auswählen,
+  dann unter Szenensammlung die importierte Sammlung anklicken.
+- Werkzeuge -> WebSocket-Servereinstellungen:
+  * "WebSocket-Server aktivieren" anhaken
+  * Port 4455
+  * "Authentifizierung aktivieren" anhaken, Passwort notieren
+- Die farbigen Platzhalter (Präsentation, Redner, Publikum) später durch
+  die echten Quellen ersetzen (Elgato HD60 X, NDI-Kameras). Position bleibt gleich.
+- OBS immer über Datei -> Beenden schließen, sonst gehen Änderungen verloren.
+
+
+3. Bitfocus Companion
+---------------------
+- Companion installieren (gleiche Version oder neuer, getestet mit 5.0.6).
+- Web-Oberfläche öffnen: http://127.0.0.1:8000
+- Import / Export -> Raum5_Companion.companionconfig importieren (alles übernehmen).
+- Connections -> obs -> Passwort von OBS eintragen (ist im Paket absichtlich leer).
+- Connections -> rmcr -> IP-Adresse des RM-CR prüfen.
+- Beide Verbindungen müssen grün sein.
+- Settings: Companion beim Windows-Start automatisch starten lassen.
+
+
+4. Webserver für das Tablet
+---------------------------
+- Ordner "Raumsteuerung" auf den Raum-PC kopieren.
+- Rechtsklick auf installieren.ps1 -> "Mit PowerShell ausführen"
+  (als Administrator; ggf. Admin-PowerShell öffnen und .\installieren.ps1 starten).
+- Das Skript:
+  * kopiert alles nach C:\Raumsteuerung
+  * öffnet Port 8080 und 8000 in der Firewall (nur Domäne/Privat)
+  * startet den Webserver automatisch bei jedem Systemstart
+  * zeigt am Ende die Adresse für das Tablet an, z. B. http://192.168.1.50:8080
+- Die Seite findet Companion automatisch (gleicher PC, Port 8000).
+- Wichtig: Der Raum-PC braucht eine feste IP-Adresse (oder DHCP-Reservierung).
+
+
+5. Tablet
+---------
+- Tablet ins gleiche Netzwerk wie den Raum-PC bringen.
+- Adresse aus Schritt 4 im Browser öffnen.
+
+Android (Chrome):
+- Menü (drei Punkte) -> "Zum Startbildschirm hinzufügen" -> startet dann im Vollbild.
+- Einstellungen -> Sicherheit -> "App anheften" einschalten, App öffnen und anheften.
+  So kann niemand die Seite aus Versehen verlassen.
+- Display: Bildschirm-Timeout auf "nie" oder lange Zeit; Tablet am Ladegerät lassen.
+
+iPad (Safari):
+- Teilen -> "Zum Home-Bildschirm".
+- Einstellungen -> Bedienungshilfen -> Geführter Zugriff einschalten,
+  App öffnen und dreimal die Seitentaste drücken.
+- Automatische Sperre: "Nie".
+
+
+6. Test nach der Einrichtung
+----------------------------
+[ ] Raum starten -> Virtual Cam läuft, oben steht "Live in Teams"
+[ ] Alle 5 Ansichten tippen -> OBS wechselt die Szene
+[ ] Lautstärke + / - -> Lautsprecher werden leiser / lauter
+[ ] Hilfe -> "Ton zurücksetzen" -> Ton an, mittlere Lautstärke
+[ ] In OBS direkt Szene wechseln -> Tablet zeigt nach ca. 3 Sekunden die richtige Ansicht
+[ ] Raum ausschalten -> Abfrage, danach Startbildschirm
+[ ] Companion beenden -> Tablet zeigt Hinweis "Keine Verbindung zum Raum-PC"
+
+
+Bei Problemen: IT-Service 2020

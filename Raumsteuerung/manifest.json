@@ -1,0 +1,16 @@
+{
+ "name": "Raumsteuerung Sitzungszimmer 5",
+ "short_name": "Raum 5",
+ "start_url": "./",
+ "display": "fullscreen",
+ "orientation": "landscape",
+ "background_color": "#EEF3F6",
+ "theme_color": "#0071BC",
+ "icons": [
+  {
+   "src": "icon.png",
+   "sizes": "any",
+   "type": "image/png"
+  }
+ ]
+}
