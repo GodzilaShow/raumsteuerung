@@ -114,8 +114,13 @@ def main(src, dst):
         extend(1, 1, col, setvar('r5_scene', scene), touch())
     for col, (src, label) in enumerate([('pc', 'Quelle Raum-PC'), ('laptop', 'Quelle Laptop'), ('cast', 'Quelle Kabellos')], start=1):
         put(1, 2, col, button(label, [setvar('r5_src', src), touch()]))       # später: TESmart-Matrix umschalten
-    put(1, 2, 4, button('Präsentation aus', [setvar('r5_blank', '1'), touch()]))
-    put(1, 2, 5, button('Präsentation an', [setvar('r5_blank', '0'), touch()]))
+    # Präsentation ausblenden: in OBS die Szene „Präsentation pausiert“ (Logo + Text) über den Präsentations-Rahmen legen.
+    # Teams sieht dann die Pause-Fläche statt des Bildschirms, die Kameras bleiben. (Später zusätzlich: Matrix/Displays.)
+    def blank(visible):
+        return [obs_act('toggle_scene_item', {'scene': opt(sc), 'all': opt(False), 'source': opt('Präsentation pausiert'),
+                                              'visible': opt(visible)}) for sc in ('Alles im Blick', 'Folien Groß')]
+    put(1, 2, 4, button('Präsentation aus', [setvar('r5_blank', '1'), *blank('true'), touch()]))
+    put(1, 2, 5, button('Präsentation an', [setvar('r5_blank', '0'), *blank('false'), touch()]))
     put(1, 2, 6, button('Displays an', [setvar('r5_disp', '1'), touch()]))  # später: ViewSonic per LAN
     put(1, 2, 7, button('Displays aus', [setvar('r5_disp', '0'), touch()]))
     extend(1, 3, 1, touch())
