@@ -111,6 +111,15 @@ if (Test-Path $log) {
 $auto = if ($c) { Get-Var 'custom-variable/r5_pauto' } else { $null }
 if ($auto) { Zeile INFO 'Publikum-Automatik' $(if ($auto -eq '1') { 'an (Tablet-Schalter)' } else { 'aus (Tablet-Schalter)' }) }
 
+$tlog = Join-Path $PSScriptRoot 'teams-steuerung.log'
+if (Test-Path $tlog) {
+  $tz = @(Get-Content $tlog -Tail 50 -Encoding UTF8)
+  $tstart = $tz | Where-Object { $_ -match 'Start Teams-Steuerung' } | Select-Object -Last 1
+  $tin = if ($c) { Get-Var 'custom-variable/r5_t_in' } else { $null }
+  $txt = $(if ($tstart) { 'gestartet ' + $tstart.Substring(0, 19) } else { 'laeuft' }) + $(if ($tin -eq '1') { ', Teams-Meeting offen' } else { ', kein Meeting' })
+  Zeile OK 'Teams-Steuerung' $txt
+} else { Zeile WARN 'Teams-Steuerung' 'kein Protokoll - Tablet kann Teams nicht bedienen' 'installieren.ps1 ausfuehren und Benutzer ab-/anmelden (Aufgabe startet bei Anmeldung)' }
+
 # ---------- Netzwerk / Firewall ----------
 $netz = @{}
 try { foreach ($p in Get-NetConnectionProfile) { $netz[$p.InterfaceAlias] = [string]$p.NetworkCategory } } catch { }

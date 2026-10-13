@@ -56,9 +56,10 @@ Am 12.10. geändert (alles gepusht):
 - Mikrofon-Automatik: bei zwei aktiven Mikros gewinnt ein deutlich lauteres (`vorsprungStufen`, Standard 8); Glättung zeitbasiert (150 ms).
 - Schrift Source Sans 3 eingebettet (statt Asap), Seite 155 -> 110 KB.
 - Kamera-Seite: Umschalter Redner/Publikum war abgeschnitten (Panel zu hoch) -> behoben.
-- Teams-Leiste auf dem Tablet (Mikro/Bild/Hand/Verlassen, nur im Meeting sichtbar), Companion 1/0/4–7,
-  Verbindung „teams“ (microsoft-teams 1.3.0, API 2.0.0) im Paket AUS – Einrichtung ANLEITUNG Abschnitt 9.
-  Auf dem Laptop nicht testbar: persönliches Teams-Konto hat „API verwalten“ nicht.
+- Teams-Leiste auf dem Tablet (Mikro/Bild/Verlassen, nur im Meeting sichtbar): `teams-steuerung.ps1` drückt die
+  Teams-Buttons per UI Automation (feste AutomationIds, sprachunabhängig), Companion 1/0/4–6 setzen `r5_tcmd`,
+  Zustand in `r5_t_in/_mute/_video`. Live getestet 13.10. (Tablet -> Companion -> Skript -> Teams stumm/an).
+  Teams-Drittanbieter-API war auf beiden Testkonten nicht verfügbar (kein „API verwalten“) -> nicht genutzt.
 - OBS-Pausenbild mit Emsland-Logo (`Raumsteuerung/emsland-logo.png`); OBS-Test mit Bildschirm + Laptop-Kamera
   in den Rahmen (Platzhalter nur ausgeblendet, Sicherung `C:\Raum5_Sicherung\obs_scenes_2026-10-13_0955`).
 - Tests: Ports per `API_PORT`/`PAGE_PORT` änderbar (wenn echter Companion/Webserver laufen), Chromium-Pfad mit Fallback.

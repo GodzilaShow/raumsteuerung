@@ -31,6 +31,12 @@ $action2 = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfi
 Register-ScheduledTask -TaskName 'Raumsteuerung Mikrofon-Automatik' -Action $action2 -Trigger $trigger -Settings $set -User 'SYSTEM' -RunLevel Highest -Force | Out-Null
 Stop-ScheduledTask -TaskName 'Raumsteuerung Mikrofon-Automatik' -ErrorAction SilentlyContinue
 Start-ScheduledTask -TaskName 'Raumsteuerung Mikrofon-Automatik'
+# Aufgabe: Teams-Steuerung (Tablet -> Mikro/Bild/Verlassen). Braucht den Desktop des angemeldeten Benutzers
+# (UI Automation), deshalb "bei Anmeldung" fuer alle Benutzer statt SYSTEM. Raum-PC: automatische Anmeldung.
+$action3  = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$ziel\teams-steuerung.ps1`""
+$trigger3 = New-ScheduledTaskTrigger -AtLogOn
+$princ3   = New-ScheduledTaskPrincipal -GroupId 'S-1-5-32-545' -RunLevel Limited   # Gruppe "Benutzer"
+Register-ScheduledTask -TaskName 'Raumsteuerung Teams-Steuerung' -Action $action3 -Trigger $trigger3 -Settings $set -Principal $princ3 -Force | Out-Null
 # Alle Netzwerkadressen anzeigen – das Tablet braucht die Adresse aus SEINEM Netz (z. B. AV-WLAN)
 $ips = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' }
 Write-Host ""

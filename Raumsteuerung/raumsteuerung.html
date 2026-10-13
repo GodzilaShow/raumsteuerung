@@ -48,7 +48,6 @@ header.tm .title b,header.tm .btn{white-space:nowrap}
 .teams .tlbl{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-right:2px}
 .tbtn{height:52px;padding:0 13px;white-space:nowrap;border-radius:6px;border:1px solid var(--line2);background:#fff;font-size:16px;font-weight:600;display:inline-flex;align-items:center;gap:8px;transition:background-color .2s ease,color .2s ease,border-color .2s ease}
 .tbtn.off{background:var(--red);border-color:var(--red);color:#fff}
-.tbtn.up{background:#F1F8E8;border-color:var(--lime);color:#27500A}
 .tbtn.arm{background:var(--red);border-color:var(--red);color:#fff}
 .btn:active{transform:scale(.98)}
 .btn:disabled,.btn[aria-disabled=true]{opacity:.4;pointer-events:none}
@@ -237,7 +236,7 @@ header.tm .title b,header.tm .btn{white-space:nowrap}
 <div class="vr"></div>
 <div class="title"><b>Sitzungszimmer 5</b><span>KH II</span></div>
 <div class="grow"></div>
-<div class="teams" id="teamsBar" hidden><span class="tlbl">Teams</span><button class="tbtn" data-act="tMic" id="tMic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span>Mikro an</span></button><button class="tbtn" data-act="tCam" id="tCam"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg><span>Bild an</span></button><button class="tbtn" data-act="tHand" id="tHand"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5a1.5 1.5 0 0 1 3 0v6"/><path d="M11 11V3.5a1.5 1.5 0 0 1 3 0V11"/><path d="M14 11V5a1.5 1.5 0 0 1 3 0v8"/><path d="M17 9a1.5 1.5 0 0 1 3 0v4a8 8 0 0 1-8 8h-1a7 7 0 0 1-5.6-2.8L3 15a1.6 1.6 0 0 1 2.4-2l2.6 2"/></svg><span>Hand</span></button><button class="tbtn" data-act="tLeave" id="tLeave"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/></svg><span>Verlassen</span></button></div>
+<div class="teams" id="teamsBar" hidden><span class="tlbl">Teams</span><button class="tbtn" data-act="tMic" id="tMic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span>Mikro an</span></button><button class="tbtn" data-act="tCam" id="tCam"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg><span>Bild an</span></button><button class="tbtn" data-act="tLeave" id="tLeave"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/></svg><span>Verlassen</span></button></div>
 <button class="btn danger" data-act="askOff"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg>Raum ausschalten</button>
 </header>
 <div class="stripe"></div>
@@ -412,7 +411,8 @@ var CONFIG = {
   // Pegel je Stufe 0..10 in 0,01 dB (RM-CR NeOut Kanal 0+1 = Lautsprecher). 10 = 0 dB, nie lauter.
   volSteps: [-32768, -4000, -3200, -2600, -2100, -1700, -1300, -1000, -700, -350, 0],
   obsConnection: 'obs',                        // Name der OBS-Verbindung in Companion
-  teamsConnection: 'teams',                    // Name der Teams-Verbindung in Companion (Modul microsoft-teams, API 2.0.0)
+  // Teams-Zustand von teams-steuerung.ps1 (Raum-PC, UI Automation): Meeting offen, Mikro stumm, Bild an (je 1/0)
+  teamsVariables: { inMeeting: 'r5_t_in', muted: 'r5_t_mute', video: 'r5_t_video' },
   // Szenennamen in OBS -> Karte auf dem Tablet
   obsScenes: { 'Alles im Blick': 'alles', 'Folien Groß': 'folien', 'Folien groß': 'folien', 'Diskussion': 'diskussion', 'Nur Redner': 'redner', 'Pausenbild': 'pause' },
   buttons: {
@@ -431,7 +431,7 @@ var CONFIG = {
     p_up: '3/3/1', p_down: '3/3/2', p_left: '3/3/3', p_right: '3/3/4', p_zoomin: '3/3/5', p_zoomout: '3/3/6',
     r_home: '3/2/7', p_home: '3/3/7',         // Kamera in Grundstellung (Mitte, Zoom zurück)
     p_auto_on: '3/1/6', p_auto_off: '3/1/7',  // Publikum-Kamera folgt dem Tischmikrofon an/aus
-    teams_mic: '1/0/4', teams_cam: '1/0/5', teams_hand: '1/0/6', teams_leave: '1/0/7'   // Teams im Meeting (Umschalten / Verlassen)
+    teams_mic: '1/0/4', teams_cam: '1/0/5', teams_leave: '1/0/6'   // Teams im Meeting: setzen r5_tcmd (mute/video/leave)
   }
 };
 
@@ -459,7 +459,7 @@ function save() { try { localStorage.setItem('raum5', JSON.stringify(S)); } catc
 /* ---- Companion ---- */
 var connTimer, MSG_NOCONN = 'Keine Verbindung zum Raum-PC. Bitte IT-Service ' + CONFIG.serviceNumber + ' anrufen.';
 var touched = { scene: 0, vol: 0, auto: 0, room: 0, teams: 0 };
-var T = { inMeeting: false, muted: false, video: true, hand: false };   // Teams-Zustand (nicht gespeichert)
+var T = { inMeeting: false, muted: false, video: true };   // Teams-Zustand (nicht gespeichert)
 function sendFailed() {
   var c = $('#conn'); c.textContent = MSG_NOCONN; c.classList.add('show');
   clearTimeout(connTimer); connTimer = setTimeout(function () { if (!fails) c.classList.remove('show'); }, 4000);
@@ -585,10 +585,9 @@ for (var n = 0; n < 10; n++) {
 function renderTeams() {
   $('#teamsBar').hidden = !T.inMeeting;
   $('#teamsBar').parentNode.classList.toggle('tm', T.inMeeting);
-  var m = $('#tMic'), c = $('#tCam'), h = $('#tHand');
+  var m = $('#tMic'), c = $('#tCam');
   m.classList.toggle('off', T.muted); m.lastChild.textContent = T.muted ? 'Mikro aus' : 'Mikro an';
   c.classList.toggle('off', !T.video); c.lastChild.textContent = T.video ? 'Bild an' : 'Bild aus';
-  h.classList.toggle('up', T.hand); h.lastChild.textContent = T.hand ? 'Hand unten' : 'Hand';
 }
 
 /* ---- Actions ---- */
@@ -619,7 +618,6 @@ var ACTIONS = {
   track: function () { S.track = !S.track; call(S.track ? 'track_on' : 'track_off'); },
   tMic: function () { T.muted = !T.muted; touched.teams = Date.now(); call('teams_mic'); },
   tCam: function () { T.video = !T.video; touched.teams = Date.now(); call('teams_cam'); },
-  tHand: function () { T.hand = !T.hand; touched.teams = Date.now(); call('teams_hand'); },
   tLeave: function () {
     var b = $('#tLeave');
     if (!b.classList.contains('arm')) {   // erstes Tippen: nachfragen, zweites Tippen innerhalb 4 s: verlassen
@@ -737,10 +735,9 @@ function poll() {
     getText(V + CONFIG.autoVariable + '/value'),
     getText(V + CONFIG.micVariable + '/value'),
     getText(V + CONFIG.roomVariable + '/value'),
-    getText(B + '/api/variable/' + CONFIG.teamsConnection + '/isInMeeting/value'),
-    getText(B + '/api/variable/' + CONFIG.teamsConnection + '/isMuted/value'),
-    getText(B + '/api/variable/' + CONFIG.teamsConnection + '/isVideoOn/value'),
-    getText(B + '/api/variable/' + CONFIG.teamsConnection + '/isHandRaised/value')
+    getText(V + CONFIG.teamsVariables.inMeeting + '/value'),
+    getText(V + CONFIG.teamsVariables.muted + '/value'),
+    getText(V + CONFIG.teamsVariables.video + '/value')
   ]).then(function (r) {
     polling = false;
     var scene = r[0], vol = r[1], live = r[2], room = r[5], changed = false, grace = 4000, now = Date.now();
@@ -773,12 +770,12 @@ function poll() {
       }
       roomPrev = ro;
     }
-    // Teams: Leiste nur im Meeting; ohne Teams-Verbindung (404) bleibt sie aus
+    // Teams: Leiste nur im Meeting (teams-steuerung.ps1 meldet r5_t_in = 1); ohne Skript bleibt sie aus
     var tin = r[6] !== null && isOn(r[6]);
     if (tin !== T.inMeeting) { T.inMeeting = tin; changed = true; }
     if (tin && now - touched.teams > grace) {
-      var tm = isOn(r[7]), tv = isOn(r[8]), th = isOn(r[9]);
-      if (tm !== T.muted || tv !== T.video || th !== T.hand) { T.muted = tm; T.video = tv; T.hand = th; changed = true; }
+      var tm = isOn(r[7]), tv = isOn(r[8]);
+      if (tm !== T.muted || tv !== T.video) { T.muted = tm; T.video = tv; changed = true; }
     }
     if (changed) { save(); render(); }
   });

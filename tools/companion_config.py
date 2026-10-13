@@ -102,6 +102,10 @@ def main(src, dst):
     var('r5_vol_db', 'Lautsprecherpegel in 0,01 dB (vom Tablet gesetzt)', '-1300', True)
     var('r5_pauto', 'Publikum-Kamera folgt dem Tischmikrofon (1/0)', '1', True)
     var('r5_pmic', 'Sprechendes Tischmikrofon (0 = keins/mehrere)', '0', False)
+    var('r5_tcmd', 'Teams-Befehl an teams-steuerung.ps1 (mute/video/leave, danach leer)', '', False)
+    var('r5_t_in', 'Teams-Meeting offen (1/0, von teams-steuerung.ps1)', '0', False)
+    var('r5_t_mute', 'Teams-Mikro stumm (1/0)', '0', False)
+    var('r5_t_video', 'Teams-Bild an (1/0)', '0', False)
 
     # ---------- Seite 1: Tablet ----------
     extend(1, 0, 1, setvar('r5_room', '1'), setvar('r5_disp', '1'), setvar('r5_blank', '0'), touch())
@@ -124,35 +128,10 @@ def main(src, dst):
     put(1, 3, 7, button('Displays neu starten', [setvar('r5_disp', '1'), touch()]))
     put(1, 3, 8, button('Noch in Benutzung', [touch()]))                   # Tablet: „Weiter nutzen“ / Bedienung
 
-    # ---------- Teams (Modul microsoft-teams, API 2.0.0) ----------
-    # Verbindung ist AUS: erst im Raum einschalten (Teams -> Einstellungen -> Datenschutz -> API verwalten,
-    # dann im Meeting einen Button drücken und in Teams „Zulassen“). Persönliche Teams-Konten haben die API nicht.
-    teams = next((k for k, v in d['instances'].items() if v.get('label') == 'teams'), None)
-    if teams is None:
-        teams = nid()
-        d['instances'][teams] = {'moduleInstanceType': 'connection', 'moduleId': 'microsoft-teams', 'moduleVersionId': '1.3.0',
-                                 'updatePolicy': 'stable', 'sortOrder': len(d['instances']) + 3, 'label': 'teams', 'isFirstInit': True,
-                                 'config': {'apiVersion': '2.0.0', 'targetIp': '127.0.0.1', 'apiToken': '', 'reconnect': True},
-                                 'secrets': {}, 'lastUpgradeIndex': 0, 'enabled': False}
-
-    def teams_act(definition):
-        a = act(definition, teams, {})
-        a['upgradeIndex'] = 0
-        return a
-
-    def teams_fb(definition, bg):
-        return {'type': 'feedback', 'id': nid(), 'connectionId': teams, 'definitionId': definition, 'options': {},
-                'isInverted': opt(False), 'upgradeIndex': 0,
-                'styleOverrides': [{'overrideId': nid(), 'elementId': 'text0', 'elementProperty': 'color', 'override': opt(16777215)},
-                                   {'overrideId': nid(), 'elementId': 'box0', 'elementProperty': 'color', 'override': opt(bg)}]}
-
-    for col, (label, definition, fb, bg) in enumerate([('Teams Mikro', 'toggleMute', 'isMuted', 0xB42318),
-                                                       ('Teams Bild', 'toggleVideo', 'isVideoOn', 0x3B6D11),
-                                                       ('Teams Hand', 'toggleHand', 'isHandRaised', 0x0071BC),
-                                                       ('Teams verlassen', 'leaveMeeting', 'isInMeeting', 0xB42318)], start=4):
-        c = button(label, [teams_act(definition), touch()])
-        c['feedbacks'] = [teams_fb(fb, bg)]
-        put(1, 0, col, c)
+    # ---------- Teams: Befehle an teams-steuerung.ps1 (UI Automation, keine Teams-API nötig) ----------
+    # Das Skript liest r5_tcmd, drückt den Button im Teams-Meetingfenster und leert r5_tcmd wieder.
+    for col, (label, cmd) in enumerate([('Teams Mikro', 'mute'), ('Teams Bild', 'video'), ('Teams verlassen', 'leave')], start=4):
+        put(1, 0, col, button(label, [setvar('r5_tcmd', cmd), touch()]))
 
     # ---------- Seite 3: Kamera (alte Belegung ab Spalte 0 ersetzen) ----------
     d['pages']['3']['controls'] = {}
