@@ -54,7 +54,7 @@ Was es **nicht kann**: Meetings beitreten, zuhören/zusehen, Chats lesen, andere
 
 | # | Risiko | Maßnahme | Status |
 |---|---|---|---|
-| 1 | Companion-Weboberfläche ohne Passwort über Netz erreichbar → Konfiguration manipulierbar | Companion → Settings → **Admin-Passwort** setzen (HTTP-API für Tablet/Automatik bleibt nutzbar) | offen |
+| 1 | Companion-Weboberfläche ohne Passwort über Netz erreichbar → Konfiguration manipulierbar | Companion → Settings → **Admin-Passwort** setzen (HTTP-API für Tablet/Automatik bleibt nutzbar – am 13.10. getestet: Weboberfläche „locked“, API, Mikro-Automatik und Teams-Steuerung laufen weiter) | Test-PC: gesetzt (Testpasswort). Raum-PC: eigenes, starkes Passwort |
 | 2 | Tablet-Seite und Companion-API ohne Anmeldung → jeder im Netz kann den Raum bedienen | **Eigenes AV-Netz/-WLAN** (TP-Link EAP225 im Ausstattungsplan) nur für Raum-PC, Tablet, AV-Geräte | offen (Hardware) |
 | 3 | Firewall-Regeln 8080/8000 gelten für alle Adressen der Profile Privat/Domäne | Regeln auf das AV-Subnetz beschränken: `Set-NetFirewallRule -DisplayName 'Raumsteuerung Port *' -RemoteAddress <AV-Netz>/24` | offen |
 | 4 | RM-CR per RCP ohne Login steuerbar | RM-CR nur im AV-Netz (3. Netzwerkkarte im Ausstattungsplan), nie im Verwaltungsnetz | offen (Hardware) |
