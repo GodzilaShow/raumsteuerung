@@ -163,7 +163,8 @@ c) Prüfen
 Die Buttons gibt es schon; sie setzen bisher nur die Zustandsvariable.
 Jeweils die Geräte-Aktion in den Button dazulegen (Tablet muss nicht geändert werden):
   HDMI-Matrix (TESmart)      1/2/1 Raum-PC, 1/2/2 Laptop, 1/2/3 Kabellos
-  Präsentation ausblenden    1/2/4 aus, 1/2/5 an
+  Präsentation ausblenden    1/2/4 aus, 1/2/5 an  (blendet schon jetzt in OBS die Szene "Präsentation pausiert"
+                             über den Präsentations-Rahmen; dazu später Matrix/Displays)
   Displays (ViewSonic, LAN)  1/2/6 an, 1/2/7 aus, 1/3/7 "Displays neu starten"
                              und in 1/0/1 (Raum an) / 1/0/2 (Raum aus)
   Redner-Kamera              3/0/1-3 Presets, 3/2/1-6 Bewegung (Taste DRÜCKEN = fahren,
