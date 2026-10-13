@@ -21,6 +21,16 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 $AE = [System.Windows.Automation.AutomationElement]
 $Scope = [System.Windows.Automation.TreeScope]
+Add-Type @'
+using System; using System.Runtime.InteropServices;
+public static class Fenster {
+  [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
+  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+}
+'@
 
 if (-not $Companion) {
   $Companion = 'http://127.0.0.1:8000'
@@ -60,15 +70,22 @@ $cHang = Cond 'hangup-button'
 function Find-Meeting {
   # gemerktes Fenster noch gueltig und noch im Meeting?
   if ($script:win) {
-    try { if ($script:win.FindFirst($Scope::Descendants, $cHang)) { return $script:win } } catch { }
+    # minimiert -> neu suchen (vielleicht gibt es jetzt die Kompaktleiste)
+    try { if (-not [Fenster]::IsIconic([IntPtr]$script:win.Current.NativeWindowHandle) -and $script:win.FindFirst($Scope::Descendants, $cHang)) { return $script:win } } catch { }
     $script:win = $null
   }
   $ids = @(Get-Process ms-teams -ErrorAction SilentlyContinue).Id
   if (-not $ids.Count) { return $null }
+  # Ist das Meetingfenster minimiert, zeigt Teams eine kleine Kompaktleiste (eigenes Fenster) - die bevorzugen,
+  # dann muss das grosse Fenster nicht aufgehen.
+  $treffer = @()
   foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
-    try { if ($ids -contains $w.Current.ProcessId -and $w.FindFirst($Scope::Descendants, $cHang)) { $script:win = $w; return $w } } catch { }
+    try { if ($ids -contains $w.Current.ProcessId -and $w.FindFirst($Scope::Descendants, $cHang)) { $treffer += $w } } catch { }
   }
-  return $null
+  if (-not $treffer.Count) { return $null }
+  $offen = @($treffer | Where-Object { -not [Fenster]::IsIconic([IntPtr]$_.Current.NativeWindowHandle) })
+  $script:win = if ($offen.Count) { $offen | Sort-Object { $_.Current.BoundingRectangle.Width } | Select-Object -First 1 } else { $treffer[0] }
+  return $script:win
 }
 function Get-TeamsState {
   $w = Find-Meeting
@@ -86,8 +103,18 @@ function Invoke-Teams([string]$cmd) {
   if (-not $w) { Write-Log "Befehl ${cmd}: kein Teams-Meeting offen"; return $false }
   $b = $w.FindFirst($Scope::Descendants, (Cond $IDS[$cmd]))
   if (-not $b) { Write-Log "Befehl ${cmd}: Button $($IDS[$cmd]) nicht gefunden"; return $false }
+  # Teams holt sein Fenster beim Druecken nach vorn. Auf dem Raum-PC laeuft evtl. eine Praesentation
+  # auf den Displays -> danach den vorherigen Zustand wiederherstellen.
+  $h = [IntPtr]$w.Current.NativeWindowHandle
+  $vorne = [Fenster]::GetForegroundWindow(); $warMin = [Fenster]::IsIconic($h)
+  $name = $b.Current.Name
   $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
-  Write-Log ("Befehl {0}: '{1}' gedrueckt" -f $cmd, $b.Current.Name)
+  Start-Sleep -Milliseconds 400
+  if ($warMin -and -not [Fenster]::IsIconic($h)) { [void][Fenster]::ShowWindow($h, 6) }      # 6 = SW_MINIMIZE
+  # nur ein sichtbares, nicht minimiertes Fenster zurueckholen (sonst taucht z. B. das versteckte Companion-Fenster auf)
+  if ($vorne -ne [IntPtr]::Zero -and $vorne -ne $h -and [Fenster]::IsWindowVisible($vorne) -and -not [Fenster]::IsIconic($vorne) -and
+      [Fenster]::GetForegroundWindow() -ne $vorne) { [void][Fenster]::SetForegroundWindow($vorne) }
+  Write-Log ("Befehl {0}: '{1}' gedrueckt" -f $cmd, $name)
   if ($cmd -eq 'leave') { $script:win = $null }
   return $true
 }
