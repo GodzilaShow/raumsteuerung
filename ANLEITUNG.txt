@@ -189,8 +189,8 @@ Einrichtung:
      Raum-PC: automatische Anmeldung des Raum-Kontos einrichten, sonst läuft sie erst nach Anmeldung.
   b) Nach der Installation einmal ab- und wieder anmelden.
   c) Test: Teams-Meeting starten -> Tablet zeigt die Leiste. "Mikro" tippen -> Teams schaltet stumm.
-     Ohne Tablet: C:\Raumsteuerung	eams-steuerung.ps1 -Status   bzw.  -Befehl mute
-  d) Protokoll: C:\Raumsteuerung	eams-steuerung.log
+     Ohne Tablet: C:\Raumsteuerung\teams-steuerung.ps1 -Status   bzw.  -Befehl mute
+  d) Protokoll: C:\Raumsteuerung\teams-steuerung.log
 Grenzen: Teams kennt keinen auslesbaren Zustand für "Hand heben" - deshalb keine Hand-Taste.
 Organisator übergeben, Wartebereich, andere stummschalten: nur in Teams selbst.
 Nach großen Teams-Updates kann eine Button-Kennung wechseln (microphone-button, video-button,
