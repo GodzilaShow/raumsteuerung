@@ -1,7 +1,7 @@
 # Raumsteuerung Sitzungszimmer 5 (KH II)
 
 Tablet-Seite (`Raumsteuerung/raumsteuerung.html`, Vanilla JS) → Bitfocus Companion (HTTP-API) → OBS + Yamaha RM-CR.
-Einrichtung auf dem Raum-PC: siehe `ANLEITUNG.txt`. Projektstand: `UEBERGABE.md`.
+Einrichtung auf dem Raum-PC: siehe `ANLEITUNG.txt`. Projektstand: `UEBERGABE.md`. Sicherheit/Netzwerk: `SICHERHEIT.md`.
 
 ## Companion-Konfiguration
 
