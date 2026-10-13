@@ -1,4 +1,4 @@
-# Übergabe: Raumsteuerung Sitzungszimmer 5 (KH II) – Stand 12.10.2026
+# Übergabe: Raumsteuerung Sitzungszimmer 5 (KH II) – Stand 13.10.2026
 
 Neuer Chat: Repo https://github.com/godzilashow/raumsteuerung, Branch `claude/website-testing-fixes-ahd51r`.
 Schreiben: „Wir machen hier weiter. Lies UEBERGABE.md und setz bei ‚Nächster Schritt‘ an. Antworte auf Russisch."
@@ -14,7 +14,8 @@ Schreiben: „Wir machen hier weiter. Lies UEBERGABE.md und setz bei ‚Nächste
 - Kamera:
   - Redner-Kamera: Am Sprecherplatz (r_pult 3/0/1), Bei den Displays (r_displays 3/0/2), Ganze Front (r_front 3/0/3); Pfeile/Zoom halten (3/2/x), „Zurück auf Standard“ (r_home 3/2/7, p_home 3/3/7); Schalter „Kamera folgt der sprechenden Person“.
   - Publikum-Kamera: grafischer Saalplan (5 Reihen, 3 Tischblöcke, 5 Mikrofon-Symbole). 4 Zonen antippen: p_vl/p_vr = Reihe 1–2 links/rechts, p_hl/p_hr = Reihe 3–5 links/rechts, p_all = Ganzer Raum. Schalter „Automatisch – folgt dem Tischmikrofon“ (p_auto_on 3/1/6, p_auto_off 3/1/7). Aktives Mikro pulsiert grün.
-- Synchronisiert alle 3 s: obs:scene_active, custom r5_vol_db, r5_live, r5_pauto, r5_pmic.
+- Teams-Leiste im Kopf der Steuerung (nur im Meeting): Mikro an/aus, Bild an/aus, Verlassen (zweimal tippen).
+- Synchronisiert alle 3 s: obs:scene_active, custom r5_vol_db, r5_live, r5_pauto, r5_pmic, r5_room, r5_t_in/_mute/_video.
 - Animationen per CSS; Regel `prefers-reduced-motion` schaltet sie ab (evtl. entfernen).
 - Schrift: Source Sans 3 (variabel, SIL OFL) als base64 eingebettet, ersetzt Asap (12.10.).
 
@@ -23,11 +24,19 @@ Schreiben: „Wir machen hier weiter. Lies UEBERGABE.md und setz bei ‚Nächste
 - Custom Variables: r5_cmd (RCP-Befehl für Button 1/0/3 „send“), r5_vol_db, r5_live, r5_room, r5_last_use, r5_vol.
 - Buttons Seite 1: 1/0/1 Raum an, 1/0/2 Raum aus, 1/0/3 RCP-Befehl aus r5_cmd senden, 1/1/1–5 Szenen, 1/3/1 Lautstärke anwenden, 1/3/6 Ton reset (On=1, Level −10 dB, r5_vol_db=−1000).
 - Trigger: „Raum 5: Auto-Aus nach 2 h“, „Raum 5: Live-Status an/aus“ (alle 2–3 s, Bedingung obs Output Active Virtual Camera → r5_live 1/0).
-- Seit 12.10. ist `Raum5_Companion.companionconfig` importiert (alle Tablet-Buttons, 3/1/6–7, r5_pauto, r5_pmic).
-  Geräte-Aktionen für Quellen/Displays/Kameras fehlen noch (Hardware fehlt), die Buttons setzen nur Variablen.
+- Seit 12.10. ist `Raum5_Companion.companionconfig` importiert (alle Tablet-Buttons, 3/1/6–7, r5_pauto, r5_pmic),
+  am 13.10. neu importiert mit Teams-Buttons 1/0/4–6 (r5_tcmd, r5_t_*) und Präsentation aus/an 1/2/4–5
+  (OBS „Set Source Visibility“ der Szene „Präsentation pausiert“ in „Alles im Blick“ und „Folien Groß“).
+  Geräte-Aktionen für Quelle/Displays/Kameras fehlen noch (Hardware fehlt), diese Buttons setzen nur Variablen.
+- Admin-Passwort der Weboberfläche gesetzt (Test-PC, Testpasswort). HTTP-API bleibt offen – getestet.
 
 ## OBS
-- Szenen mit Platzhaltern (Hintergrund #0B3A5B, Präsentation/Redner/Publikum als Farbflächen, Pausentext), gesperrt. Backup: Desktop `Raum5_OBS_Szenen_Backup.json`. OBS immer über Datei → Beenden schließen.
+- Szenen mit Platzhaltern (Hintergrund #0B3A5B, Präsentation/Redner/Publikum als Farbflächen), gesperrt.
+- Pausenbild: Text + Emsland-Logo (`C:/Raumsteuerung/emsland-logo.png`, kommt mit `installieren.ps1`).
+- Szene „Präsentation pausiert“ (Ink-Fläche, Logo, Text) liegt ausgeblendet über dem Präsentations-Rahmen.
+- Backup im Repo: `Raum5_OBS_Szenen_Backup.json` (Stand 13.10., Sammlung „Raum5“, ohne Test-Quellen und ohne
+  Audiogeräte des Laptops). OBS immer über Datei → Beenden schließen.
+- Auf dem Test-PC liegen zusätzlich Bildschirm + Laptop-Kamera exakt in den Rahmen (Platzhalter ausgeblendet).
 
 ## Yamaha RM-CR (Prozessor) – Erkenntnisse
 - IP 192.168.137.185 (statisch), Firmware V3.0.1. Web-UI: http://192.168.137.185 (Arsenij loggt sich selbst ein).
@@ -63,16 +72,26 @@ Am 12.10. geändert (alles gepusht):
 - OBS-Pausenbild mit Emsland-Logo (`Raumsteuerung/emsland-logo.png`); OBS-Test mit Bildschirm + Laptop-Kamera
   in den Rahmen (Platzhalter nur ausgeblendet, Sicherung `C:\Raum5_Sicherung\obs_scenes_2026-10-13_0955`).
 - Tests: Ports per `API_PORT`/`PAGE_PORT` änderbar (wenn echter Companion/Webserver laufen), Chromium-Pfad mit Fallback.
-  Ergebnis 12.10. auf dem Laptop: Config 64/64, Tablet-Seite 39/39, Mikro-Automatik 21/21.
+  Ergebnis 13.10. auf dem Laptop: Config 67/67, Tablet-Seite 48/48, Mikro-Automatik 21/21.
+
+Am 13.10. außerdem:
+- `pruefen.cmd`: Schnellprüfung (Companion, OBS, RM-CR, Webserver, Automatik, Teams-Steuerung, Netz, Firewall, Audio).
+- `teams-steuerung.ps1` holt das Teams-Fenster nicht mehr nach vorn (Kompaktleiste bevorzugt, Vordergrund zurück).
+- Präsentation ausblenden über OBS (siehe oben), live getestet.
+- `SICHERHEIT.md`: Verbindungen, Ports, Konten, Risiken, Checkliste für den Echtbetrieb.
+- Test-Laptop: Ethernet 192.168.137.1 ist die Windows-Internetfreigabe-Adresse (ICS) -> im Raum kein ICS verwenden.
+- Offen auf dem Test-PC (Aufräumen): Teams-Flag `enable_third_party_devices_service` in app_settings.json
+  zurücksetzen (Sicherung in `C:\Raum5_Sicherung\`), Testlink „Raum5 Test“ in Teams löschen.
   Aufruf: `API_PORT=8100 PAGE_PORT=8180 bash test/alle-tests.sh` (Playwright global installiert).
 
 ## Nächster Schritt
 Im Raum (Raum-PC):
 1. OBS + Szenen-Backup, Companion + `Raum5_Companion.companionconfig` (vorher exportieren), `installieren.ps1`.
-2. Feste IP für den Raum-PC; Netzwerkprofil „Privat“, sonst erreicht das Tablet Port 8080/8000 nicht.
+   Companion „Run at login“ + eigenes Admin-Passwort. Automatische Anmeldung des Raumkontos (für Teams-Steuerung).
+2. AV-Netz, feste IPs, Netzwerkprofil „Privat“ (sonst erreicht das Tablet Port 8080/8000 nicht) – siehe `SICHERHEIT.md`.
 3. `mikrofone-testen.cmd` mit Mikros an ihren echten Plätzen -> Kanäle + Grundrauschen in `mikro-automatik.json`,
    danach Aufgabe „Raumsteuerung Mikrofon-Automatik“ neu starten.
-4. Checkliste ANLEITUNG Abschnitt 6 komplett, Test mit echtem Teams-Meeting.
+4. `pruefen.cmd`, dann Checkliste ANLEITUNG Abschnitt 6 und 9 (Teams-Leiste) mit echtem Teams-Meeting.
 5. Wenn Hardware kommt: Geräte-Aktionen in die vorhandenen Buttons legen (ANLEITUNG Abschnitt 8).
 
 ## Hardware-Lücken (für Ausstattungsplan v7)
