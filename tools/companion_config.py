@@ -124,6 +124,36 @@ def main(src, dst):
     put(1, 3, 7, button('Displays neu starten', [setvar('r5_disp', '1'), touch()]))
     put(1, 3, 8, button('Noch in Benutzung', [touch()]))                   # Tablet: „Weiter nutzen“ / Bedienung
 
+    # ---------- Teams (Modul microsoft-teams, API 2.0.0) ----------
+    # Verbindung ist AUS: erst im Raum einschalten (Teams -> Einstellungen -> Datenschutz -> API verwalten,
+    # dann im Meeting einen Button drücken und in Teams „Zulassen“). Persönliche Teams-Konten haben die API nicht.
+    teams = next((k for k, v in d['instances'].items() if v.get('label') == 'teams'), None)
+    if teams is None:
+        teams = nid()
+        d['instances'][teams] = {'moduleInstanceType': 'connection', 'moduleId': 'microsoft-teams', 'moduleVersionId': '1.3.0',
+                                 'updatePolicy': 'stable', 'sortOrder': len(d['instances']) + 3, 'label': 'teams', 'isFirstInit': True,
+                                 'config': {'apiVersion': '2.0.0', 'targetIp': '127.0.0.1', 'apiToken': '', 'reconnect': True},
+                                 'secrets': {}, 'lastUpgradeIndex': 0, 'enabled': False}
+
+    def teams_act(definition):
+        a = act(definition, teams, {})
+        a['upgradeIndex'] = 0
+        return a
+
+    def teams_fb(definition, bg):
+        return {'type': 'feedback', 'id': nid(), 'connectionId': teams, 'definitionId': definition, 'options': {},
+                'isInverted': opt(False), 'upgradeIndex': 0,
+                'styleOverrides': [{'overrideId': nid(), 'elementId': 'text0', 'elementProperty': 'color', 'override': opt(16777215)},
+                                   {'overrideId': nid(), 'elementId': 'box0', 'elementProperty': 'color', 'override': opt(bg)}]}
+
+    for col, (label, definition, fb, bg) in enumerate([('Teams Mikro', 'toggleMute', 'isMuted', 0xB42318),
+                                                       ('Teams Bild', 'toggleVideo', 'isVideoOn', 0x3B6D11),
+                                                       ('Teams Hand', 'toggleHand', 'isHandRaised', 0x0071BC),
+                                                       ('Teams verlassen', 'leaveMeeting', 'isInMeeting', 0xB42318)], start=4):
+        c = button(label, [teams_act(definition), touch()])
+        c['feedbacks'] = [teams_fb(fb, bg)]
+        put(1, 0, col, c)
+
     # ---------- Seite 3: Kamera (alte Belegung ab Spalte 0 ersetzen) ----------
     d['pages']['3']['controls'] = {}
     d['pages']['3']['name'] = 'R5 Kamera'

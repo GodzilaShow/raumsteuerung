@@ -174,3 +174,18 @@ Danach den Test aus Abschnitt 6 wiederholen.
 Trigger "Raum 5: Auto-Aus nach 2 h (Sicherheitsnetz)": schaltet den Raum (Button 1/0/2) aus,
 wenn 2 h 10 min niemand etwas bedient hat. Normalerweise fragt vorher das Tablet
 ("Wird der Raum noch genutzt?"); "Weiter nutzen" meldet sich über Button 1/3/8 bei Companion.
+
+9. Teams vom Tablet aus bedienen (Mikro, Bild, Hand, Verlassen)
+----------------------------------------------------------------
+Auf der Steuerung erscheint oben eine Teams-Leiste, sobald der Raum-PC in einem Meeting ist:
+"Mikro an/aus", "Bild an/aus", "Hand", "Verlassen" (Verlassen erst nach zweitem Tippen).
+Companion-Buttons 1/0/4 bis 1/0/7, Verbindung "teams" (Modul Microsoft Teams, API 2.0.0).
+Die Verbindung ist im Paket AUSGESCHALTET. Einrichten am Raum-PC (mit Landkreis-Konto):
+  a) Teams -> Einstellungen -> Datenschutz -> ganz unten "API verwalten" -> API aktivieren.
+     Fehlt der Punkt: persönliches Konto (dort gibt es die API nicht) oder von der IT gesperrt.
+  b) Companion -> Connections -> "teams" einschalten (Modul wird ggf. aus dem Internet geladen).
+  c) Teams-Meeting starten, in Companion Button 1/0/4 drücken -> Teams fragt nach dem
+     neuen Gerät -> "Zulassen". Der Schlüssel wird gespeichert, das ist nur einmal nötig.
+  d) Test: Tablet-Leiste erscheint, "Mikro aus" schaltet Teams stumm (Teams zeigt das Symbol).
+Nicht möglich über diese Schnittstelle: Organisator übergeben, Moderatoren ernennen,
+Teilnehmer aus dem Wartebereich zulassen oder andere stummschalten (nur in Teams selbst).

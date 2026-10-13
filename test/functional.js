@@ -104,6 +104,22 @@ const clear = () => fetch(API + '/_test/clear');
   await set('r5_room=1'); await p.waitForTimeout(3500);
   check(await p.isVisible('#s-main'), 'r5_room 0 -> 1 -> Steuerung');
 
+  console.log('Teams');
+  check(!(await p.isVisible('#teamsBar')), 'ohne Teams-Verbindung keine Teams-Leiste');
+  await set('teams:isInMeeting=true&teams:isMuted=false&teams:isVideoOn=true&teams:isHandRaised=false'); await p.waitForTimeout(3500);
+  check(await p.isVisible('#teamsBar'), 'im Meeting erscheint die Teams-Leiste');
+  await clear(); await p.click('#tMic'); await p.waitForTimeout(300);
+  check((await state()).log.includes('1/0/4 press'), 'Mikro tippen -> 1/0/4');
+  check((await p.textContent('#tMic')).includes('Mikro aus') && await p.$eval('#tMic', e => e.classList.contains('off')), 'Knopf zeigt sofort „Mikro aus“ (rot)');
+  await set('teams:isMuted=true'); await p.waitForTimeout(4000);
+  check((await p.textContent('#tMic')).includes('Mikro aus'), 'Zustand aus Teams bestätigt „Mikro aus“');
+  await clear(); await p.click('#tLeave'); await p.waitForTimeout(300);
+  check(!(await state()).log.includes('1/0/7 press') && (await p.textContent('#tLeave')).includes('Wirklich'), 'Verlassen: erstes Tippen fragt nur nach');
+  await p.click('#tLeave'); await p.waitForTimeout(300);
+  check((await state()).log.includes('1/0/7 press'), 'zweites Tippen -> 1/0/7 (Meeting verlassen)');
+  await set('teams:isInMeeting=false'); await p.waitForTimeout(4500);
+  check(!(await p.isVisible('#teamsBar')), 'nach dem Meeting verschwindet die Leiste');
+
   console.log('Ausschalten');
   await clear(); await p.click('[data-act=askOff]'); await p.waitForTimeout(400);
   check(await p.isVisible('#dlgOff'), 'Abfrage erscheint');

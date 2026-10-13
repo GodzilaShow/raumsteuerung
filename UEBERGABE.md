@@ -56,6 +56,11 @@ Am 12.10. geändert (alles gepusht):
 - Mikrofon-Automatik: bei zwei aktiven Mikros gewinnt ein deutlich lauteres (`vorsprungStufen`, Standard 8); Glättung zeitbasiert (150 ms).
 - Schrift Source Sans 3 eingebettet (statt Asap), Seite 155 -> 110 KB.
 - Kamera-Seite: Umschalter Redner/Publikum war abgeschnitten (Panel zu hoch) -> behoben.
+- Teams-Leiste auf dem Tablet (Mikro/Bild/Hand/Verlassen, nur im Meeting sichtbar), Companion 1/0/4–7,
+  Verbindung „teams“ (microsoft-teams 1.3.0, API 2.0.0) im Paket AUS – Einrichtung ANLEITUNG Abschnitt 9.
+  Auf dem Laptop nicht testbar: persönliches Teams-Konto hat „API verwalten“ nicht.
+- OBS-Pausenbild mit Emsland-Logo (`Raumsteuerung/emsland-logo.png`); OBS-Test mit Bildschirm + Laptop-Kamera
+  in den Rahmen (Platzhalter nur ausgeblendet, Sicherung `C:\Raum5_Sicherung\obs_scenes_2026-10-13_0955`).
 - Tests: Ports per `API_PORT`/`PAGE_PORT` änderbar (wenn echter Companion/Webserver laufen), Chromium-Pfad mit Fallback.
   Ergebnis 12.10. auf dem Laptop: Config 64/64, Tablet-Seite 39/39, Mikro-Automatik 21/21.
   Aufruf: `API_PORT=8100 PAGE_PORT=8180 bash test/alle-tests.sh` (Playwright global installiert).
