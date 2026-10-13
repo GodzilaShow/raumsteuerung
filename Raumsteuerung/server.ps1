@@ -9,7 +9,7 @@ while ($true) { try { $listener.Start(); break } catch { Start-Sleep -Seconds 5 
 while ($true) {
   $client = $listener.AcceptTcpClient()
   try {
-    $client.ReceiveTimeout = 3000
+    $client.ReceiveTimeout = 1000   # leere Vorab-Verbindungen (Browser-Preconnect) blockieren sonst den Server
     $stream = $client.GetStream()
     $reader = New-Object System.IO.StreamReader($stream)
     $line = $reader.ReadLine()

@@ -19,7 +19,7 @@ function Zeile([string]$stufe, [string]$was, [string]$text, [string]$tipp = '') 
 }
 function Get-Http([string]$url) {
   try {
-    $req = [System.Net.HttpWebRequest]::Create($url); $req.Timeout = 2500; $req.ReadWriteTimeout = 2500
+    $req = [System.Net.HttpWebRequest]::Create($url); $req.Timeout = 6000; $req.ReadWriteTimeout = 6000
     $res = $req.GetResponse()
     try { $sr = New-Object System.IO.StreamReader($res.GetResponseStream()); return @{ Code = [int]$res.StatusCode; Text = $sr.ReadToEnd() } } finally { $res.Close() }
   } catch [System.Net.WebException] {
