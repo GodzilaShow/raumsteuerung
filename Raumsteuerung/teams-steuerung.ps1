@@ -118,8 +118,33 @@ function Invoke-Teams([string]$cmd) {
   if ($vorne -ne [IntPtr]::Zero -and $vorne -ne $h -and [Fenster]::IsWindowVisible($vorne) -and -not [Fenster]::IsIconic($vorne) -and
       [Fenster]::GetForegroundWindow() -ne $vorne) { [void][Fenster]::SetForegroundWindow($vorne) }
   Write-Log ("Befehl {0}: '{1}' gedrueckt" -f $cmd, $name)
-  if ($cmd -eq 'leave') { $script:win = $null }
+  if ($cmd -eq 'leave') {
+    $script:win = $null
+    # Abschlussfenster erscheint nach 1-3 s
+    for ($i = 0; $i -lt 8; $i++) { Start-Sleep -Milliseconds 700; Close-AfterMeeting }
+  }
   return $true
+}
+
+# ---------- Nach dem Meeting: Fenster "Bleiben Sie nach Ihrer Besprechung in Verbindung" schliessen ----------
+# Teams zeigt es nach jedem Verlassen; auf dem Raum-PC stuende es sonst auf den Displays.
+# Erkennung ueber den Button "Erneut dem Anruf beitreten" (engl. "Rejoin"), dann "Verwerfen" bzw. Fenster schliessen.
+function Close-AfterMeeting {
+  $ids = @(Get-Process ms-teams -ErrorAction SilentlyContinue).Id
+  if (-not $ids.Count) { return }
+  $cBtn = New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+  foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+    try {
+      if ($ids -notcontains $w.Current.ProcessId) { continue }
+      $btns = @($w.FindAll($Scope::Descendants, $cBtn))
+      if (-not ($btns | Where-Object { $_.Current.Name -match '(?i)erneut.*beitreten|rejoin' })) { continue }
+      if ($btns | Where-Object { $_.Current.AutomationId -eq 'hangup-button' }) { continue }   # noch im Meeting
+      $weg = $btns | Where-Object { $_.Current.Name -match '(?i)^(verwerfen|dismiss)$' } | Select-Object -First 1
+      if ($weg) { $weg.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
+      else { $w.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close() }
+      Write-Log 'Nach dem Meeting: Abschlussfenster geschlossen'
+    } catch { }
+  }
 }
 
 # ---------- Meeting des Raums beitreten ----------
@@ -187,7 +212,7 @@ if ($Befehl) { [void](Invoke-Teams $Befehl); Start-Sleep -Milliseconds 800; $s =
 
 # ---------- Hauptschleife ----------
 Write-Log ('Start Teams-Steuerung, Companion ' + $Companion + ', Benutzer ' + $env:USERNAME)
-$last = @{}; $lastPush = [DateTime]::MinValue; $nextState = [DateTime]::MinValue; $companionOk = $true
+$last = @{}; $lastPush = [DateTime]::MinValue; $nextState = [DateTime]::MinValue; $companionOk = $true; $script:lastClose = [DateTime]::MinValue
 while ($true) {
   try {
     # Befehl vom Tablet / Stream Deck
@@ -212,6 +237,8 @@ while ($true) {
         if ($alle -or $last[$k] -ne $neu[$k]) { if (Set-Var $k ([string]$neu[$k])) { $last[$k] = $neu[$k] } }
       }
       if ($alle) { $lastPush = [DateTime]::Now }
+      # Meeting von anderen beendet oder in Teams selbst verlassen -> Abschlussfenster ebenfalls schliessen
+      if (([DateTime]::Now - $script:lastClose).TotalSeconds -ge 5) { $script:lastClose = [DateTime]::Now; Close-AfterMeeting }
       if ($s.In -ne $script:warIn) { Write-Log $(if ($s.In) { 'Teams-Meeting erkannt' } else { 'kein Teams-Meeting' }); $script:warIn = $s.In }
     }
   } catch {
