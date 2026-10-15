@@ -20,8 +20,11 @@ const clear = () => fetch(API + '/_test/clear');
   await p.evaluate(() => localStorage.clear()); await p.reload(); await p.waitForTimeout(500);
 
   console.log('Start');
-  await clear(); await p.click('[data-act=start]'); await p.waitForTimeout(300);
-  check((await state()).log.includes('1/0/1 press'), 'Raum starten drückt 1/0/1');
+  await clear(); await p.click('[data-act=start]'); await p.waitForTimeout(600);
+  let st0 = await state();
+  check(st0.log.includes('1/0/1 press'), 'Raum starten drückt 1/0/1');
+  check(st0.log.includes('1/0/7 press') && st0.vars.r5_tcmd === 'join', 'Raum starten tritt auch dem Teams-Meeting bei (1/0/7, r5_tcmd = join)');
+  check((await p.textContent('#tJoin')).includes('startet'), 'Kopf zeigt „Teams-Meeting startet …“');
   check(await p.isVisible('#s-main'), 'Steuerung wird angezeigt');
   check(!(await p.isVisible('#conn')), 'kein Fehlerbanner');
 
@@ -106,7 +109,12 @@ const clear = () => fetch(API + '/_test/clear');
 
   console.log('Teams');
   check(!(await p.isVisible('#teamsBar')), 'ohne Teams-Meeting keine Teams-Leiste');
+  await set('r5_t_status=fehler: Teams reagiert nicht'); await p.waitForTimeout(3500);
+  check((await p.textContent('#tJoin')).includes('fehlgeschlagen'), 'Beitritt fehlgeschlagen -> Hinweis am Knopf');
+  await clear(); await set('r5_t_status='); await p.click('#tJoin'); await p.waitForTimeout(300);
+  check((await state()).log.includes('1/0/7 press'), '„Teams-Meeting starten“ -> 1/0/7');
   await set('r5_t_in=1&r5_t_mute=0&r5_t_video=1'); await p.waitForTimeout(3500);
+  check(!(await p.isVisible('#tJoin')), 'im Meeting verschwindet „Teams-Meeting starten“');
   check(await p.isVisible('#teamsBar'), 'teams-steuerung meldet Meeting -> Teams-Leiste erscheint');
   await clear(); await p.click('#tMic'); await p.waitForTimeout(300);
   let ts = await state();
@@ -129,6 +137,11 @@ const clear = () => fetch(API + '/_test/clear');
   check(await p.isVisible('#dlgOff'), 'Abfrage erscheint');
   await p.click('#dlgOff [data-act=off]'); await p.waitForTimeout(300);
   check((await state()).log.includes('1/0/2 press') && await p.isVisible('#s-start'), 'Ja, ausschalten -> 1/0/2 und Startbildschirm');
+  check((await state()).vars.r5_tcmd === 'leave', 'Raum aus verlässt auch das Teams-Meeting (r5_tcmd = leave)');
+  await clear(); await p.click('[data-act=startLocal]'); await p.waitForTimeout(600);
+  let stl = await state();
+  check(stl.log.includes('1/0/1 press') && !stl.log.includes('1/0/7 press'), '„Nur im Raum, ohne Teams“ -> 1/0/1 ohne Teams-Beitritt');
+  await p.click('[data-act=askOff]'); await p.waitForTimeout(300); await p.click('#dlgOff [data-act=off]'); await p.waitForTimeout(300);
 
   console.log('Auto-Aus');
   await p.click('[data-act=start]');

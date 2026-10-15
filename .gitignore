@@ -1,3 +1,4 @@
 # Protokolle der Skripte (entstehen beim Betrieb, gehören nicht ins Repo)
 *.log
 *.log.alt
+teams-link.txt

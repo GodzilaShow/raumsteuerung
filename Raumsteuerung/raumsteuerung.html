@@ -41,6 +41,10 @@ h2{margin:0;font-size:21px;font-weight:600}
 .btn.danger{background:var(--red);border-color:var(--red);color:#fff}
 /* Teams-Leiste im Kopf (nur sichtbar, wenn Teams im Meeting ist) */
 .teams{display:flex;align-items:center;gap:8px}
+.linkbtn{align-self:flex-start;margin-top:14px;padding:8px 4px;border:0;background:none;font-size:18px;color:var(--muted);text-decoration:underline;text-underline-offset:4px}
+#tJoin[hidden]{display:none}
+#tJoin.busy{color:var(--muted);border-color:var(--line2)}
+#tJoin.err{color:var(--red);border-color:var(--red)}
 header.tm .wordmark,header.tm .vr{display:none}   /* im Meeting: Platz fuer die Teams-Leiste */
 header.tm{gap:16px}
 header.tm .title b,header.tm .btn{white-space:nowrap}
@@ -211,16 +215,16 @@ header.tm .title b,header.tm .btn{white-space:nowrap}
 <div class="grow2" style="display:flex;flex-direction:column;gap:12px">
 <div style="font-size:22px;color:var(--muted)">Willkommen im</div>
 <div style="font-size:68px;font-weight:700;color:#0B3A5B;letter-spacing:-1px;line-height:1.05">Sitzungszimmer 5</div>
-<div style="font-size:21px;color:var(--muted);margin-bottom:32px">Displays, Kameras und Ton werden zusammen eingeschaltet.</div>
+<div style="font-size:21px;color:var(--muted);margin-bottom:32px">Displays, Kameras, Ton und das Teams-Meeting starten zusammen.</div>
 <button class="btn primary startbtn" data-act="start" style="align-self:flex-start;height:100px;padding:0 48px;font-size:32px;gap:16px">
 <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg>Raum starten</button>
+<button class="linkbtn" data-act="startLocal">Nur im Raum, ohne Teams</button>
 </div>
 <div class="panel howto" style="padding:26px 28px;gap:18px;box-shadow:0 6px 24px rgba(14,42,63,.08)">
-<h2 style="font-size:22px">So starten Sie ein Teams-Meeting</h2>
+<h2 style="font-size:22px">So geht’s</h2>
 <ol class="steps">
-<li class="now"><span>Links auf <b>Raum starten</b> tippen.</span></li>
-<li><span>Am Raum-PC <b>Teams</b> öffnen und dem Meeting beitreten.</span></li>
-<li><span>In Teams als Kamera <b>OBS Virtual Camera</b>, als Mikrofon und Lautsprecher <b>RM-CR</b> wählen.</span></li>
+<li class="now"><span>Links auf <b>Raum starten</b> tippen – das Teams-Meeting des Raums startet von selbst.</span></li>
+<li><span>Online-Teilnehmer kommen über den <b>Teams-Link des Raums</b> dazu.</span></li>
 <li><span>Auf dem Tablet die <b>Ansicht</b> wählen – fertig.</span></li>
 </ol>
 </div>
@@ -236,7 +240,7 @@ header.tm .title b,header.tm .btn{white-space:nowrap}
 <div class="vr"></div>
 <div class="title"><b>Sitzungszimmer 5</b><span>KH II</span></div>
 <div class="grow"></div>
-<div class="teams" id="teamsBar" hidden><span class="tlbl">Teams</span><button class="tbtn" data-act="tMic" id="tMic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span>Mikro an</span></button><button class="tbtn" data-act="tCam" id="tCam"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg><span>Bild an</span></button><button class="tbtn" data-act="tLeave" id="tLeave"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/></svg><span>Verlassen</span></button></div>
+<button class="tbtn" data-act="tJoin" id="tJoin" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg><span>Teams-Meeting starten</span></button><div class="teams" id="teamsBar" hidden><span class="tlbl">Teams</span><button class="tbtn" data-act="tMic" id="tMic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span>Mikro an</span></button><button class="tbtn" data-act="tCam" id="tCam"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg><span>Bild an</span></button><button class="tbtn" data-act="tLeave" id="tLeave"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/></svg><span>Verlassen</span></button></div>
 <button class="btn danger" data-act="askOff"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg>Raum ausschalten</button>
 </header>
 <div class="stripe"></div>
@@ -412,7 +416,7 @@ var CONFIG = {
   volSteps: [-32768, -4000, -3200, -2600, -2100, -1700, -1300, -1000, -700, -350, 0],
   obsConnection: 'obs',                        // Name der OBS-Verbindung in Companion
   // Teams-Zustand von teams-steuerung.ps1 (Raum-PC, UI Automation): Meeting offen, Mikro stumm, Bild an (je 1/0)
-  teamsVariables: { inMeeting: 'r5_t_in', muted: 'r5_t_mute', video: 'r5_t_video' },
+  teamsVariables: { inMeeting: 'r5_t_in', muted: 'r5_t_mute', video: 'r5_t_video', status: 'r5_t_status' },
   // Szenennamen in OBS -> Karte auf dem Tablet
   obsScenes: { 'Alles im Blick': 'alles', 'Folien Groß': 'folien', 'Folien groß': 'folien', 'Diskussion': 'diskussion', 'Nur Redner': 'redner', 'Pausenbild': 'pause' },
   buttons: {
@@ -431,7 +435,8 @@ var CONFIG = {
     p_up: '3/3/1', p_down: '3/3/2', p_left: '3/3/3', p_right: '3/3/4', p_zoomin: '3/3/5', p_zoomout: '3/3/6',
     r_home: '3/2/7', p_home: '3/3/7',         // Kamera in Grundstellung (Mitte, Zoom zurück)
     p_auto_on: '3/1/6', p_auto_off: '3/1/7',  // Publikum-Kamera folgt dem Tischmikrofon an/aus
-    teams_mic: '1/0/4', teams_cam: '1/0/5', teams_leave: '1/0/6'   // Teams im Meeting: setzen r5_tcmd (mute/video/leave)
+    teams_mic: '1/0/4', teams_cam: '1/0/5', teams_leave: '1/0/6',   // Teams im Meeting: setzen r5_tcmd (mute/video/leave)
+    teams_join: '1/0/7'   // Meeting des Raums beitreten (r5_tcmd = join, Link in C:\Raumsteuerung\teams-link.txt)
   }
 };
 
@@ -459,7 +464,7 @@ function save() { try { localStorage.setItem('raum5', JSON.stringify(S)); } catc
 /* ---- Companion ---- */
 var connTimer, MSG_NOCONN = 'Keine Verbindung zum Raum-PC. Bitte IT-Service ' + CONFIG.serviceNumber + ' anrufen.';
 var touched = { scene: 0, vol: 0, auto: 0, room: 0, teams: 0 };
-var T = { inMeeting: false, muted: false, video: true };   // Teams-Zustand (nicht gespeichert)
+var T = { inMeeting: false, muted: false, video: true, status: '', joinAt: 0 };   // joinAt: wann Beitritt angestoßen   // Teams-Zustand (nicht gespeichert)
 function sendFailed() {
   var c = $('#conn'); c.textContent = MSG_NOCONN; c.classList.add('show');
   clearTimeout(connTimer); connTimer = setTimeout(function () { if (!fails) c.classList.remove('show'); }, 4000);
@@ -584,6 +589,11 @@ for (var n = 0; n < 10; n++) {
 
 function renderTeams() {
   $('#teamsBar').hidden = !T.inMeeting;
+  // nicht im Meeting: Knopf zum Starten; während des Beitritts (bis 60 s) „Teams startet …“, bei Fehler Hinweis
+  var j = $('#tJoin'), busy = !T.inMeeting && T.joinAt && Date.now() - T.joinAt < 60000 && !/^fehler/i.test(T.status);
+  var err = !T.inMeeting && /^fehler/i.test(T.status);
+  j.hidden = T.inMeeting; j.classList.toggle('busy', !!busy); j.classList.toggle('err', err);
+  j.lastChild.textContent = busy ? 'Teams-Meeting startet …' : err ? 'Teams-Start fehlgeschlagen – erneut' : 'Teams-Meeting starten';
   $('#teamsBar').parentNode.classList.toggle('tm', T.inMeeting);
   var m = $('#tMic'), c = $('#tCam');
   m.classList.toggle('off', T.muted); m.lastChild.textContent = T.muted ? 'Mikro aus' : 'Mikro an';
@@ -592,7 +602,10 @@ function renderTeams() {
 
 /* ---- Actions ---- */
 var ACTIONS = {
-  start: function () { call('raum_an'); touched.room = Date.now(); stopIdle(); go('main'); },
+  start: function () { call('raum_an').then(function () { return call('teams_join'); }); T.joinAt = Date.now(); T.status = '';
+    touched.room = Date.now(); stopIdle(); go('main'); },
+  startLocal: function () { call('raum_an'); touched.room = Date.now(); stopIdle(); go('main'); },
+  tJoin: function () { if (T.joinAt && Date.now() - T.joinAt < 60000) return; call('teams_join'); T.joinAt = Date.now(); T.status = ''; },
   askOff: function () { $('#dlgOff').classList.add('show'); },
   cancelOff: function () { $('#dlgOff').classList.remove('show'); },
   off: function () { roomOff(); },
@@ -737,7 +750,8 @@ function poll() {
     getText(V + CONFIG.roomVariable + '/value'),
     getText(V + CONFIG.teamsVariables.inMeeting + '/value'),
     getText(V + CONFIG.teamsVariables.muted + '/value'),
-    getText(V + CONFIG.teamsVariables.video + '/value')
+    getText(V + CONFIG.teamsVariables.video + '/value'),
+    getText(V + CONFIG.teamsVariables.status + '/value')
   ]).then(function (r) {
     polling = false;
     var scene = r[0], vol = r[1], live = r[2], room = r[5], changed = false, grace = 4000, now = Date.now();
@@ -772,7 +786,9 @@ function poll() {
     }
     // Teams: Leiste nur im Meeting (teams-steuerung.ps1 meldet r5_t_in = 1); ohne Skript bleibt sie aus
     var tin = r[6] !== null && isOn(r[6]);
-    if (tin !== T.inMeeting) { T.inMeeting = tin; changed = true; }
+    if (tin !== T.inMeeting) { T.inMeeting = tin; if (tin) T.joinAt = 0; changed = true; }
+    var tst = r[9] === null ? '' : String(r[9]).trim();
+    if (tst !== T.status) { T.status = tst; if (/^fehler/i.test(tst)) T.joinAt = 0; changed = true; }
     if (tin && now - touched.teams > grace) {
       var tm = isOn(r[7]), tv = isOn(r[8]);
       if (tm !== T.muted || tv !== T.video) { T.muted = tm; T.video = tv; changed = true; }

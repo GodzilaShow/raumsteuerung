@@ -106,6 +106,7 @@ def main(src, dst):
     var('r5_t_in', 'Teams-Meeting offen (1/0, von teams-steuerung.ps1)', '0', False)
     var('r5_t_mute', 'Teams-Mikro stumm (1/0)', '0', False)
     var('r5_t_video', 'Teams-Bild an (1/0)', '0', False)
+    var('r5_t_status', 'Teams-Beitritt: start / fehler: ... / leer', '', False)
 
     # ---------- Seite 1: Tablet ----------
     extend(1, 0, 1, setvar('r5_room', '1'), setvar('r5_disp', '1'), setvar('r5_blank', '0'), touch())
@@ -135,8 +136,11 @@ def main(src, dst):
 
     # ---------- Teams: Befehle an teams-steuerung.ps1 (UI Automation, keine Teams-API nötig) ----------
     # Das Skript liest r5_tcmd, drückt den Button im Teams-Meetingfenster und leert r5_tcmd wieder.
-    for col, (label, cmd) in enumerate([('Teams Mikro', 'mute'), ('Teams Bild', 'video'), ('Teams verlassen', 'leave')], start=4):
+    for col, (label, cmd) in enumerate([('Teams Mikro', 'mute'), ('Teams Bild', 'video'), ('Teams verlassen', 'leave'),
+                                        ('Teams beitreten', 'join')], start=4):
         put(1, 0, col, button(label, [setvar('r5_tcmd', cmd), touch()]))
+    # Raum aus verlässt auch das Teams-Meeting (auch beim Auto-Aus-Trigger, der 1/0/2 drückt)
+    extend(1, 0, 2, setvar('r5_tcmd', 'leave'))
 
     # ---------- Seite 3: Kamera (alte Belegung ab Spalte 0 ersetzen) ----------
     d['pages']['3']['controls'] = {}

@@ -4,7 +4,10 @@
 # (dieselbe Schnittstelle, die Bildschirmleser nutzen). Die Buttons haben feste Kennungen
 # (microphone-button, video-button, hangup-button), unabhaengig von der Sprache.
 #   - Zustand -> Companion-Variablen r5_t_in (im Meeting), r5_t_mute (stumm), r5_t_video (Bild an)
-#   - Befehl  <- Companion-Variable r5_tcmd (mute | video | leave), wird nach dem Ausfuehren geleert
+#   - Befehl  <- Companion-Variable r5_tcmd (mute | video | leave | join), wird nach dem Ausfuehren geleert
+#   - join: oeffnet den festen Meeting-Link des Raums (teams-link.txt), Kamera + Mikro an, "Jetzt teilnehmen",
+#           danach Meetingfenster minimieren (Displays zeigen nicht Teams). Fortschritt in r5_t_status
+#           ("start" waehrend des Beitritts, "fehler: ..." wenn es nicht klappt, sonst leer).
 # Muss in der Sitzung des angemeldeten Benutzers laufen (nicht als SYSTEM) - Aufgabe "bei Anmeldung".
 #
 # Aufruf:
@@ -13,7 +16,7 @@
 #   .\teams-steuerung.ps1 -Befehl mute   einmal Mikro umschalten (Test, ohne Companion)
 param(
   [switch]$Status,
-  [ValidateSet('', 'mute', 'video', 'leave')][string]$Befehl = '',
+  [ValidateSet('', 'mute', 'video', 'leave', 'join')][string]$Befehl = '',
   [string]$Companion = '',
   [string]$Log = (Join-Path $PSScriptRoot 'teams-steuerung.log')
 )
@@ -119,8 +122,67 @@ function Invoke-Teams([string]$cmd) {
   return $true
 }
 
+# ---------- Meeting des Raums beitreten ----------
+$cJoin = Cond 'prejoin-join-button'
+function Find-Prejoin {
+  $ids = @(Get-Process ms-teams -ErrorAction SilentlyContinue).Id
+  foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+    try { if ($ids -contains $w.Current.ProcessId -and $w.FindFirst($Scope::Descendants, $cJoin)) { return $w } } catch { }
+  }
+  return $null
+}
+function Set-Switch($w, [string]$muster) {
+  # Kamera-/Mikro-Schalter im Beitrittsfenster einschalten (Kennungen wechseln, daher per Name + TogglePattern)
+  $cBtn = New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+  foreach ($b in $w.FindAll($Scope::Descendants, $cBtn)) {
+    if ($b.Current.Name -notmatch $muster) { continue }
+    try { $tp = $b.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern) } catch { continue }
+    if ($tp.Current.ToggleState -eq [System.Windows.Automation.ToggleState]::Off) { $tp.Toggle(); Write-Log "Beitritt: '$($b.Current.Name)' eingeschaltet" }
+    return
+  }
+}
+function Join-Teams {
+  if (Find-Meeting) { Write-Log 'Beitritt: Raum ist schon im Meeting'; [void](Set-Var 'r5_t_status' ''); return $true }
+  $f = Join-Path $PSScriptRoot 'teams-link.txt'
+  $link = if (Test-Path $f) { (Get-Content $f -Encoding UTF8 | Where-Object { $_.Trim() } | Select-Object -First 1) } else { $null }
+  if (-not $link) { Write-Log 'Beitritt: teams-link.txt fehlt oder ist leer'; [void](Set-Var 'r5_t_status' 'fehler: kein Meeting-Link'); return $false }
+  # https-Link -> msteams:-Link, damit die Teams-App direkt den Beitrittsbildschirm oeffnet (kein Browser)
+  $uri = $link.Trim() -replace '^https?://teams\.(microsoft|live)\.com', 'msteams:'
+  [void](Set-Var 'r5_t_status' 'start')
+  Write-Log 'Beitritt: oeffne Meeting-Link'
+  Start-Process $uri
+  # Beitrittsbildschirm abwarten. War schon einer offen, baut Teams ihn neu auf -> bei "Element nicht verfuegbar"
+  # kurz warten und neu suchen (bis 45 s).
+  $ende = [DateTime]::Now.AddSeconds(45); $gedrueckt = $false
+  Start-Sleep -Seconds 3
+  while (-not $gedrueckt -and [DateTime]::Now -lt $ende) {
+    if (Find-Meeting) { break }
+    $pre = Find-Prejoin
+    if ($pre) {
+      try {
+        Set-Switch $pre '(?i)^kamera|camera'
+        Set-Switch $pre '(?i)^mikrofon|^mute|microphone'
+        $pre.FindFirst($Scope::Descendants, $cJoin).GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+        $gedrueckt = $true
+        Write-Log 'Beitritt: "Jetzt teilnehmen" gedrueckt'
+      } catch { Write-Log ('Beitritt: Beitrittsbildschirm noch nicht bereit (' + $_.Exception.Message + ')') }
+    }
+    if (-not $gedrueckt) { Start-Sleep -Milliseconds 1000 }
+  }
+  $ende = [DateTime]::Now.AddSeconds(40); $w = $null
+  while (-not $w -and [DateTime]::Now -lt $ende) { Start-Sleep -Milliseconds 700; $w = Find-Meeting }
+  if (-not $w) { Write-Log 'Beitritt fehlgeschlagen (kein Meetingfenster)'; [void](Set-Var 'r5_t_status' 'fehler: Teams reagiert nicht'); return $false }
+  Start-Sleep -Seconds 2
+  [void][Fenster]::ShowWindow([IntPtr]$w.Current.NativeWindowHandle, 6)   # minimieren: Displays zeigen weiter die Praesentation
+  $script:win = $null
+  Write-Log 'Beitritt: im Meeting'
+  [void](Set-Var 'r5_t_status' '')
+  return $true
+}
+
 # ---------- Testaufrufe ----------
 if ($Status) { $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}' -f $s.In, $s.Mute, $s.Video; exit 0 }
+if ($Befehl -eq 'join') { [void](Join-Teams); $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}' -f $s.In, $s.Mute, $s.Video; exit 0 }
 if ($Befehl) { [void](Invoke-Teams $Befehl); Start-Sleep -Milliseconds 800; $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}' -f $s.In, $s.Mute, $s.Video; exit 0 }
 
 # ---------- Hauptschleife ----------
@@ -135,7 +197,8 @@ while ($true) {
       if (-not $companionOk) { Write-Log 'Companion wieder erreichbar'; $companionOk = $true; $last = @{} }
       if ($cmd) {
         [void](Set-Var 'r5_tcmd' '')          # zuerst leeren: ein Tippen = ein Druck
-        if ($IDS.ContainsKey($cmd)) { [void](Invoke-Teams $cmd); $nextState = [DateTime]::MinValue }
+        if ($cmd -eq 'join') { [void](Join-Teams); $nextState = [DateTime]::MinValue }
+        elseif ($IDS.ContainsKey($cmd)) { [void](Invoke-Teams $cmd); $nextState = [DateTime]::MinValue }
         else { Write-Log "Unbekannter Befehl '$cmd'" }
       }
     }
