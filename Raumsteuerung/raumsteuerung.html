@@ -93,6 +93,12 @@ header.tm .title b,header.tm .btn{white-space:nowrap}
 @keyframes pulse{50%{opacity:.35}}
 /* volume */
 .volnum{display:flex;align-items:baseline;gap:6px;color:var(--blue)}
+.volhead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.btn.spk{min-height:44px;padding:4px 14px;font-size:16px}
+.btn.spk .x{display:none}
+.btn.spk.muted{background:var(--red);border-color:var(--red);color:#fff}
+.btn.spk.muted .x{display:inline}.btn.spk.muted .w1,.btn.spk.muted .w2{display:none}
+.panel.mutedvol .volnum{color:var(--muted)}.panel.mutedvol .bars button.v{background:#AEB9C4}
 .volnum b{font-size:72px;line-height:1}.volnum small{font-size:28px;font-weight:600}
 .volnum em{margin-left:16px;font-style:normal;font-size:28px;font-weight:600;color:#5A9BD5}
 .bars{display:flex;align-items:flex-end;gap:6px;height:120px}
@@ -274,7 +280,7 @@ header.tm .title b,header.tm .btn{white-space:nowrap}
 </div>
 </div>
 <div class="panel">
-<h2>Lautstärke im Raum</h2>
+<div class="volhead"><h2>Lautstärke im Raum</h2><button class="btn spk" data-act="spk" id="spkBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="w1" d="M16.5 9.5a3.5 3.5 0 0 1 0 5"/><path class="w2" d="M19 7a7 7 0 0 1 0 10"/><path class="x" d="M17 9l5 6M22 9l-5 6"/></svg><span>Ton aus</span></button></div>
 <div style="flex-grow:1;display:flex;flex-direction:column;gap:20px">
 <div class="volnum"><b id="volNum">60</b><small>%</small><em id="volPrev" hidden></em></div>
 <div class="bars" id="bars"></div>
@@ -414,7 +420,8 @@ var CONFIG = {
   castCode: '',                                // Code für „Kabellos“ (leer = Hinweis ohne Code)
   serviceNumber: '2020',                       // IT-Service, erscheint in Fehlermeldungen
   autoFullscreen: true,                        // Tablet: beim ersten Antippen Vollbild (am PC mit Maus nicht)
-  volVariable: 'r5_vol_db',                    // Companion Custom Variable für den Pegel (0,01 dB)
+  volVariable: 'r5_vol_db',
+  spkVariable: 'r5_spk_mute',                 // 1 = Lautsprecher stumm (RM-CR NeOut On = 0), Pegel bleibt                    // Companion Custom Variable für den Pegel (0,01 dB)
   // Pegel je Stufe 0..10 in 0,01 dB (RM-CR NeOut Kanal 0+1 = Lautsprecher). 10 = 0 dB, nie lauter.
   volSteps: [-32768, -4000, -3200, -2600, -2100, -1700, -1300, -1000, -700, -350, 0],
   obsConnection: 'obs',                        // Name der OBS-Verbindung in Companion
@@ -428,6 +435,7 @@ var CONFIG = {
     scene_alles: '1/1/1', scene_folien: '1/1/2', scene_diskussion: '1/1/3', scene_redner: '1/1/4', scene_pause: '1/1/5',
     src_pc: '1/2/1', src_laptop: '1/2/2', src_cast: '1/2/3',
     blank_on: '1/2/4', blank_off: '1/2/5', disp_on: '1/2/6', disp_off: '1/2/7',
+    spk_off: '1/1/6', spk_on: '1/1/7',   // Ton aus / Ton an (Lautsprecher stumm, Pegel bleibt)
     vol_apply: '1/3/1',   // setzt RM:NeOut_Fader Level aus $(custom:r5_vol_db)
     track_on: '1/3/3', track_off: '1/3/4',
     fix_kamera: '1/3/5', fix_ton: '1/3/6', fix_displays: '1/3/7',
@@ -466,7 +474,7 @@ function save() { try { localStorage.setItem('raum5', JSON.stringify(S)); } catc
 
 /* ---- Companion ---- */
 var connTimer, MSG_NOCONN = 'Keine Verbindung zum Raum-PC. Bitte IT-Service ' + CONFIG.serviceNumber + ' anrufen.';
-var touched = { scene: 0, vol: 0, auto: 0, room: 0, teams: 0 };
+var touched = { scene: 0, vol: 0, auto: 0, room: 0, teams: 0, spk: 0 };
 var T = { inMeeting: false, muted: false, video: true, status: '', joinAt: 0 };   // joinAt: wann Beitritt angestoßen   // Teams-Zustand (nicht gespeichert)
 function sendFailed() {
   var c = $('#conn'); c.textContent = MSG_NOCONN; c.classList.add('show');
@@ -486,6 +494,7 @@ var volChain = Promise.resolve();
 function setVol(n) {
   n = Math.max(0, Math.min(10, n)); if (n === S.vol) return;
   S.vol = n; touched.vol = Date.now(); save();
+  if (S.spkMute) { S.spkMute = false; touched.spk = Date.now(); call('spk_on'); }   // lauter/leiser = Ton wieder an
   volChain = volChain.then(function () {
     if (S.vol !== n) return;               // inzwischen schon weitergetippt -> nur den letzten Wert senden
     return post('/api/custom-variable/' + CONFIG.volVariable + '/value?value=' + CONFIG.volSteps[n])
@@ -552,6 +561,8 @@ function render() {
   $('#dispBtn').className = 'btn' + (!S.disp ? ' primary' : '');
   $('#dispBtn').textContent = S.disp ? 'Displays ausschalten' : 'Displays einschalten';
   $('#blankBtn').disabled = !S.disp;
+  var sb = $('#spkBtn'); sb.classList.toggle('muted', !!S.spkMute); sb.lastChild.textContent = S.spkMute ? 'Ton ist aus' : 'Ton aus';
+  sb.closest('.panel').classList.toggle('mutedvol', !!S.spkMute);
   $('[data-act=volDown]').disabled = S.vol <= 0;
   $('[data-act=volUp]').disabled = S.vol >= 10;
   setLive(liveState);
@@ -614,6 +625,7 @@ var ACTIONS = {
   cancelOff: function () { $('#dlgOff').classList.remove('show'); },
   off: function () { roomOff(); },
   keepOn: function () { stopIdle(); call('alive'); lastAlive = Date.now(); },
+  spk: function () { S.spkMute = !S.spkMute; touched.spk = Date.now(); call(S.spkMute ? 'spk_off' : 'spk_on'); },
   volDown: function () { setVol(S.vol - 1); },
   volUp: function () { setVol(S.vol + 1); },
   blank: function () { S.blank = !S.blank; call(S.blank ? 'blank_on' : 'blank_off'); },
@@ -766,7 +778,8 @@ function poll() {
     getText(V + CONFIG.teamsVariables.inMeeting + '/value'),
     getText(V + CONFIG.teamsVariables.muted + '/value'),
     getText(V + CONFIG.teamsVariables.video + '/value'),
-    getText(V + CONFIG.teamsVariables.status + '/value')
+    getText(V + CONFIG.teamsVariables.status + '/value'),
+    getText(V + CONFIG.spkVariable + '/value')
   ]).then(function (r) {
     polling = false;
     var scene = r[0], vol = r[1], live = r[2], room = r[5], changed = false, grace = 4000, now = Date.now();
@@ -787,6 +800,7 @@ function poll() {
     }
     // einzelne verlorene Antworten (Raum-PC kurz ausgelastet) ändern nichts: letzten bekannten Wert behalten
     if (live !== null) liveState = isOn(live);
+    if (r[10] !== null && now - touched.spk > grace) { var sm = isOn(r[10]); if (sm !== !!S.spkMute) { S.spkMute = sm; changed = true; } }
     if (r[3] !== null && now - touched.auto > grace) { var au = isOn(r[3]); if (au !== S.pAuto) { S.pAuto = au; changed = true; } }
     if (r[4] !== null) { var mi = parseInt(r[4], 10) || 0; if (mi !== S.pMic) { S.pMic = mi; changed = true; } }
     // Raum wurde woanders (Stream Deck, Auto-Aus in Companion) ein- oder ausgeschaltet -> Tablet folgt.

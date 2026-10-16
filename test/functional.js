@@ -49,6 +49,20 @@ const clear = () => fetch(API + '/_test/clear');
   await clear(); await p.click('#bars button:nth-child(3)'); await p.waitForTimeout(500);
   st = await state(); check(st.vars.r5_vol_db === '-2600', 'Balken 30 % setzt -2600 (ist ' + st.vars.r5_vol_db + ', ' + st.log.join(',') + ')');
 
+  console.log('Ton aus / an');
+  await clear(); await p.click('#spkBtn'); await p.waitForTimeout(400);
+  let sp = await state();
+  check(sp.log.includes('1/1/6 press') && sp.vars.r5_spk_mute === '1', 'Ton aus -> 1/1/6, r5_spk_mute = 1');
+  check((await p.textContent('#spkBtn')).includes('Ton ist aus') && await p.$eval('#spkBtn', e => e.classList.contains('muted')), 'Knopf rot „Ton ist aus“');
+  if (sp.log.some(x => x.startsWith('rmcr:'))) check(sp.log.includes('rmcr: set RM:NeOut_Fader/Ch/On 0 0 0'), 'RM-CR bekommt „set RM:NeOut_Fader/Ch/On 0 0 0“');
+  await clear(); await p.click('[data-act=volDown]'); await p.waitForTimeout(600);
+  sp = await state();
+  check(sp.log.includes('1/1/7 press') && sp.vars.r5_spk_mute === '0' && !(await p.$eval('#spkBtn', e => e.classList.contains('muted'))), 'Leiser bei stummem Ton schaltet den Ton wieder an (1/1/7)');
+  await set('r5_spk_mute=1'); await p.waitForTimeout(7000);
+  check(await p.$eval('#spkBtn', e => e.classList.contains('muted')), 'Ton von außen stumm (Stream Deck) -> Tablet zeigt „Ton ist aus“');
+  await clear(); await p.click('#spkBtn'); await p.waitForTimeout(400);
+  check((await state()).log.includes('1/1/7 press'), 'Ton an -> 1/1/7');
+
   console.log('Quelle / Displays');
   check(!(await p.textContent('#srcHint')).includes('[CODE]'), 'kein Platzhalter [CODE] im Hinweis');
   await p.click('[data-src=cast]');

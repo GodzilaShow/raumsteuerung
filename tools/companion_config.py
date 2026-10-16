@@ -107,6 +107,7 @@ def main(src, dst):
     var('r5_t_mute', 'Teams-Mikro stumm (1/0)', '0', False)
     var('r5_t_video', 'Teams-Bild an (1/0)', '0', False)
     var('r5_t_status', 'Teams-Beitritt: start / fehler: ... / leer', '', False)
+    var('r5_spk_mute', 'Lautsprecher stumm (1) / an (0)', '0', True)
 
     # ---------- Seite 1: Tablet ----------
     extend(1, 0, 1, setvar('r5_room', '1'), setvar('r5_disp', '1'), setvar('r5_blank', '0'), touch())
@@ -115,6 +116,14 @@ def main(src, dst):
         extend(1, 1, col, setvar('r5_scene', scene), touch())
     for col, (src, label) in enumerate([('pc', 'Quelle Raum-PC'), ('laptop', 'Quelle Laptop'), ('cast', 'Quelle Kabellos')], start=1):
         put(1, 2, col, button(label, [setvar('r5_src', src), touch()]))       # später: TESmart-Matrix umschalten
+    # Ton aus/an: Lautsprecher-Ausgang des RM-CR stumm schalten (Pegel bleibt) – für Video, Werbung, Rückkopplung
+    def rcp(cmd):
+        return act('send', rmcr, {'id_send': opt(cmd), 'id_end': opt('\n')})
+    put(1, 1, 6, button('Ton aus', [rcp('set RM:NeOut_Fader/Ch/On 0 0 0'), setvar('r5_spk_mute', '1'), touch()]))
+    put(1, 1, 7, button('Ton an', [rcp('set RM:NeOut_Fader/Ch/On 0 0 1'), setvar('r5_spk_mute', '0'), touch()]))
+    extend(1, 0, 1, rcp('set RM:NeOut_Fader/Ch/On 0 0 1'), setvar('r5_spk_mute', '0'))   # Raum an: Ton immer an
+    extend(1, 3, 6, setvar('r5_spk_mute', '0'))                                           # Ton zurücksetzen schaltet On=1
+
     # Präsentation ausblenden: in OBS die Szene „Präsentation pausiert“ (Logo + Text) über den Präsentations-Rahmen legen.
     # Teams sieht dann die Pause-Fläche statt des Bildschirms, die Kameras bleiben. (Später zusätzlich: Matrix/Displays.)
     def blank(visible):
