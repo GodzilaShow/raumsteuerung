@@ -199,13 +199,13 @@ Meeting des Raums automatisch starten ("Raum starten" am Tablet tritt automatisc
   f) In den Besprechungsoptionen: "Wer kann den Wartebereich umgehen" = "Alle" (sonst warten
      Online-Teilnehmer, bis jemand im Raum sie zulässt).
   g) Ablauf: Companion 1/0/7 setzt r5_tcmd = join -> teams-steuerung.ps1 öffnet den Link in Teams,
-     schaltet Kamera + Mikro ein, drückt "Jetzt teilnehmen", minimiert das Fenster (ca. 15 s).
+     schaltet Kamera + Mikro ein, drückt "Jetzt teilnehmen" (ca. 15 s). Das Meetingfenster bleibt offen.
      Fortschritt/Fehler in r5_t_status, das Tablet zeigt "Teams-Meeting startet …" bzw. einen Hinweis.
      "Nur im Raum, ohne Teams" auf dem Startbildschirm schaltet den Raum ohne Meeting ein.
      "Raum ausschalten" (1/0/2) verlässt auch das Meeting.
-  h) Das Meetingfenster wird nicht minimiert, sondern rechts neben alle Bildschirme "geparkt": auf den Displays
-     ist nichts von Teams zu sehen (auch keine Kompaktleiste), die Tasten wirken trotzdem sofort.
-     Zurückholen (z. B. um Teilnehmer zu sehen):  C:\Raumsteuerung\teams-steuerung.ps1 -Befehl zeigen
+  h) Teams läuft auf einem eigenen Monitor am Sprecherplatz (zusammen mit OBS), dort sieht man Teilnehmer
+     und Chat und kann auch direkt klicken. Die Displays zeigen nur die Präsentation. Ist das Meetingfenster
+     minimiert, holt das Skript es vor dem Drücken wieder hervor (minimiert reagiert Teams erst nach Sekunden).
   i) Das Tablet schickt Zielzustände (mic_on/mic_off/video_on/video_off), das Skript drückt nur, wenn Teams
      anders steht. Die Stream-Deck-Tasten 1/0/4 und 1/0/5 schalten weiterhin um.
 Grenzen: Teams kennt keinen auslesbaren Zustand für "Hand heben" - deshalb keine Hand-Taste.
