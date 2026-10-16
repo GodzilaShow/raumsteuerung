@@ -86,6 +86,7 @@ header.tm .title b,header.tm .btn{white-space:nowrap}
 .live b:before{content:"";width:14px;height:14px;border-radius:7px;background:#D92D20;animation:pulse 1.6s ease-in-out infinite}
 .live small{font-size:14px;line-height:1.35;color:inherit;opacity:.85}
 .live.off{background:var(--bg);border-color:var(--line);color:var(--muted)}.live.off b:before{background:#9AA8B5;animation:none}
+.live.warn{background:#FFF7E6;border-color:#F5C26B;color:#8A5300}.live.warn b:before{background:#E59A1A;animation:none}
 @keyframes pulse{50%{opacity:.35}}
 /* volume */
 .volnum{display:flex;align-items:baseline;gap:6px;color:var(--blue)}
@@ -729,12 +730,21 @@ function getText(url) {
     .catch(function () { clearTimeout(t); return null; });
 }
 var fails = 0, liveState, polling = false, roomPrev = null;
+// Live-Kachel: „live“ nur, wenn der Raum wirklich im Teams-Meeting ist (teams-steuerung.ps1) UND die
+// Virtual Camera läuft (on) UND das Bild in Teams an ist – sonst sagt die Kachel, was fehlt.
 function setLive(on) {
-  var el = $('#live');
-  el.classList.toggle('off', on !== true);
-  if (on === undefined) { $('#liveTxt').textContent = 'Status …'; $('#liveSub').textContent = 'Wird geprüft'; return; }
-  $('#liveTxt').textContent = on === true ? (S.scene === 'pause' ? 'Pausenbild live' : 'Live in Teams') : on === false ? 'Nicht live' : 'Status unbekannt';
-  $('#liveSub').textContent = on === true ? 'Die Online-Teilnehmer sehen diese Ansicht.' : on === false ? 'Teams bekommt gerade kein Bild vom Raum.' : 'Keine Verbindung zum Raum-PC.';
+  var el = $('#live'), txt, sub, kind;
+  var joining = !T.inMeeting && T.joinAt && Date.now() - T.joinAt < 60000 && !/^fehler/i.test(T.status);
+  if (on === undefined) { txt = 'Status …'; sub = 'Wird geprüft'; kind = 'off'; }
+  else if (on === null) { txt = 'Status unbekannt'; sub = 'Keine Verbindung zum Raum-PC.'; kind = 'off'; }
+  else if (joining) { txt = 'Teams startet …'; sub = 'Gleich sehen die Online-Teilnehmer den Raum.'; kind = 'off'; }
+  else if (!T.inMeeting && /^fehler/i.test(T.status)) { txt = 'Teams-Start fehlgeschlagen'; sub = 'Oben „Teams-Meeting starten“ tippen.'; kind = 'warn'; }
+  else if (!T.inMeeting) { txt = 'Nur im Raum'; sub = 'Kein Teams-Meeting – online sieht niemand den Raum.'; kind = 'off'; }
+  else if (on !== true) { txt = 'Teams sieht kein Bild'; sub = 'Hilfe → „Kamera neu starten“ tippen.'; kind = 'warn'; }
+  else if (!T.video) { txt = 'In Teams, Bild aus'; sub = 'Oben „Bild an“ tippen, damit man den Raum sieht.'; kind = 'warn'; }
+  else { txt = S.scene === 'pause' ? 'Pausenbild live' : 'Live in Teams'; sub = 'Die Online-Teilnehmer sehen diese Ansicht.' + (T.muted ? ' Mikro ist aus.' : ''); kind = 'live'; }
+  el.classList.toggle('off', kind === 'off'); el.classList.toggle('warn', kind === 'warn');
+  $('#liveTxt').textContent = txt; $('#liveSub').textContent = sub;
 }
 function showConn(msg) { var c = $('#conn'); if (msg) { c.textContent = msg; c.classList.add('show'); } else c.classList.remove('show'); }
 function isOn(v) { return /^(1|true|on)$/i.test(String(v).trim()); }
