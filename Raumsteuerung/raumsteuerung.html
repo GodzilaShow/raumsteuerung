@@ -43,8 +43,10 @@ h2{margin:0;font-size:21px;font-weight:600}
 .teams{display:flex;align-items:center;gap:8px}
 .linkbtn{align-self:flex-start;margin-top:14px;padding:8px 4px;border:0;background:none;font-size:18px;color:var(--muted);text-decoration:underline;text-underline-offset:4px}
 #tJoin[hidden]{display:none}
-#tJoin.busy{color:var(--muted);border-color:var(--line2)}
-#tJoin.err{color:var(--red);border-color:var(--red)}
+/* Teams-Farbe, damit der Knopf sofort als „Teams“ erkannt wird */
+#tJoin{background:#5B5FC7;border-color:#5B5FC7;color:#fff;padding:0 16px 0 10px}
+#tJoin.busy{background:#C5C6EC;border-color:#C5C6EC;color:#2B2C6B}
+#tJoin.err{background:#fff;color:var(--red);border-color:var(--red)}
 header.tm .wordmark,header.tm .vr{display:none}   /* im Meeting: Platz fuer die Teams-Leiste */
 header.tm{gap:16px}
 header.tm .title b,header.tm .btn{white-space:nowrap}
@@ -241,7 +243,7 @@ header.tm .title b,header.tm .btn{white-space:nowrap}
 <div class="vr"></div>
 <div class="title"><b>Sitzungszimmer 5</b><span>KH II</span></div>
 <div class="grow"></div>
-<button class="tbtn" data-act="tJoin" id="tJoin" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg><span>Teams-Meeting starten</span></button><div class="teams" id="teamsBar" hidden><span class="tlbl">Teams</span><button class="tbtn" data-act="tMic" id="tMic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span>Mikro an</span></button><button class="tbtn" data-act="tCam" id="tCam"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg><span>Bild an</span></button><button class="tbtn" data-act="tLeave" id="tLeave"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/></svg><span>Verlassen</span></button></div>
+<button class="tbtn" data-act="tJoin" id="tJoin" hidden><svg width="30" height="26" viewBox="0 0 30 26" aria-hidden="true"><circle cx="24" cy="7" r="3.2" fill="#fff" fill-opacity=".75"/><path d="M19 12h9a1.5 1.5 0 0 1 1.5 1.5v5.5a5 5 0 0 1-8 4" fill="#fff" fill-opacity=".75"/><rect x="1" y="3" width="20" height="20" rx="4" fill="#fff"/><path d="M6 8.5h10M11 8.5v10" stroke="#5B5FC7" stroke-width="2.8" stroke-linecap="round"/></svg><span>Teams-Meeting starten</span></button><div class="teams" id="teamsBar" hidden><span class="tlbl">Teams</span><button class="tbtn" data-act="tMic" id="tMic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span>Mikro an</span></button><button class="tbtn" data-act="tCam" id="tCam"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg><span>Bild an</span></button><button class="tbtn" data-act="tLeave" id="tLeave"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/></svg><span>Verlassen</span></button></div>
 <button class="btn danger" data-act="askOff"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg>Raum ausschalten</button>
 </header>
 <div class="stripe"></div>
