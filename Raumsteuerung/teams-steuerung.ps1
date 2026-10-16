@@ -9,6 +9,7 @@
 #   - join: oeffnet den festen Meeting-Link des Raums (teams-link.txt), Kamera + Mikro an, "Jetzt teilnehmen",
 #           das Meetingfenster bleibt offen (eigener Monitor am Sprecherplatz). Fortschritt in r5_t_status
 #           ("start" waehrend des Beitritts, "fehler: ..." wenn es nicht klappt, sonst leer).
+# Ausserdem OBS-Waechter: startet OBS beim Anmelden und nach einem Absturz (alle 30 s geprueft).
 # Muss in der Sitzung des angemeldeten Benutzers laufen (nicht als SYSTEM) - Aufgabe "bei Anmeldung".
 #
 # Aufruf:
@@ -137,6 +138,19 @@ function Invoke-Teams([string]$cmd) {
   return $true
 }
 
+# ---------- OBS-Waechter: OBS muss immer laufen (sonst hat Teams kein Bild) ----------
+# Startet OBS beim Anmelden und nach einem Absturz neu: im Infobereich, ohne "Abgesicherter Modus?"-Frage.
+# Ist der Raum gerade an (r5_room = 1), gleich mit Virtual Camera.
+$OBS = 'C:\Program Files\obs-studio\bin\64bit\obs64.exe'
+function Ensure-Obs {
+  if (Get-Process obs64 -ErrorAction SilentlyContinue) { return }
+  if (-not (Test-Path $OBS)) { if (-not $script:obsFehlt) { Write-Log "OBS nicht gefunden: $OBS"; $script:obsFehlt = $true }; return }
+  $arg = '--minimize-to-tray --disable-shutdown-check'
+  if ((Get-Var 'r5_room') -eq '1') { $arg += ' --startvirtualcam' }
+  Start-Process -FilePath $OBS -ArgumentList $arg -WorkingDirectory (Split-Path $OBS)   # OBS braucht sein Programmverzeichnis
+  Write-Log "OBS gestartet ($arg)"
+}
+
 # ---------- Nach dem Meeting: Fenster "Bleiben Sie nach Ihrer Besprechung in Verbindung" schliessen ----------
 # Teams zeigt es nach jedem Verlassen; auf dem Raum-PC stuende es sonst auf den Displays.
 # Erkennung ueber den Button "Erneut dem Anruf beitreten" (engl. "Rejoin"), dann "Verwerfen" bzw. Fenster schliessen.
@@ -222,7 +236,7 @@ if ($Befehl) { [void](Invoke-Teams $Befehl); Start-Sleep -Milliseconds 800; $s =
 
 # ---------- Hauptschleife ----------
 Write-Log ('Start Teams-Steuerung, Companion ' + $Companion + ', Benutzer ' + $env:USERNAME)
-$last = @{}; $lastPush = [DateTime]::MinValue; $nextState = [DateTime]::MinValue; $companionOk = $true; $script:lastClose = [DateTime]::MinValue
+$last = @{}; $lastPush = [DateTime]::MinValue; $nextState = [DateTime]::MinValue; $companionOk = $true; $script:lastClose = [DateTime]::MinValue; $script:lastObs = [DateTime]::MinValue
 while ($true) {
   try {
     # Befehl vom Tablet / Stream Deck
@@ -259,6 +273,7 @@ while ($true) {
       }
       if ($alle) { $lastPush = [DateTime]::Now }
       # Meeting von anderen beendet oder in Teams selbst verlassen -> Abschlussfenster ebenfalls schliessen
+      if (([DateTime]::Now - $script:lastObs).TotalSeconds -ge 30) { $script:lastObs = [DateTime]::Now; Ensure-Obs }
       if (([DateTime]::Now - $script:lastClose).TotalSeconds -ge 5) { $script:lastClose = [DateTime]::Now; Close-AfterMeeting }
       if ($s.In -ne $script:warIn) { Write-Log $(if ($s.In) { 'Teams-Meeting erkannt' } else { 'kein Teams-Meeting' }); $script:warIn = $s.In }
     }

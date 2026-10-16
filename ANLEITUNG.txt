@@ -211,3 +211,23 @@ Grenzen: Teams kennt keinen auslesbaren Zustand für "Hand heben" - deshalb kein
 Organisator übergeben, Wartebereich, andere stummschalten: nur in Teams selbst.
 Nach großen Teams-Updates kann eine Button-Kennung wechseln (microphone-button, video-button,
 hangup-button) - dann in teams-steuerung.ps1 ($IDS) anpassen.
+
+10. Raum-PC Grundeinrichtung (einmalig) - damit Nutzer nichts starten müssen
+-------------------------------------------------------------------------------
+Ziel: Nach dem Einschalten des PCs läuft alles von selbst, am Tablet nur "Raum starten".
+Startet automatisch:
+  - Webserver, Mikrofon-Automatik   Aufgaben beim Systemstart (installieren.ps1)
+  - Teams-Steuerung + OBS-Wächter   Aufgabe bei Anmeldung (installieren.ps1); startet OBS im Infobereich
+                                    (--minimize-to-tray --disable-shutdown-check) und nach einem Absturz neu,
+                                    bei eingeschaltetem Raum gleich mit Virtual Camera
+  - Companion                       Companion-Fenster: "Run at login" anhaken
+  - Teams                           Teams -> Einstellungen -> Allgemein -> "Teams automatisch starten"
+  - Virtual Camera                  schaltet "Raum starten" (Companion 1/0/1) ein, "Raum ausschalten" aus
+Windows einmal einstellen:
+  [ ] Automatische Anmeldung des Raumkontos (sonst startet nach dem Einschalten nichts von "bei Anmeldung")
+  [ ] Energieoptionen: Bildschirm aus / Energiesparmodus = "Nie"; Bildschirmschoner aus; Sperre bei Inaktivität aus
+  [ ] Benachrichtigungen von Windows und Teams aus (Fokus / "Nicht stören"), sonst erscheinen sie auf den Displays
+  [ ] Windows Update: Nutzungszeit z. B. 7-20 Uhr, Neustarts nur außerhalb
+  [ ] Teams: Geräte = OBS Virtual Camera / Yamaha RM-CR; "Mein Video spiegeln" aus
+Wartung: OBS bewusst schließen (z. B. zum Bearbeiten) -> der Wächter startet es nach spätestens 30 s neu.
+Dafür vorher Aufgabe "Raumsteuerung Teams-Steuerung" in der Aufgabenplanung beenden.
