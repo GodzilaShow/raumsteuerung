@@ -785,8 +785,8 @@ function poll() {
       if (!isNaN(db)) CONFIG.volSteps.forEach(function (v, i) { var x = Math.abs(v - db); if (x < d) { d = x; best = i; } });
       if (best !== S.vol) { S.vol = best; changed = true; }
     }
-    liveState = live === null ? null : isOn(live);
-    setLive(liveState);
+    // einzelne verlorene Antworten (Raum-PC kurz ausgelastet) ändern nichts: letzten bekannten Wert behalten
+    if (live !== null) liveState = isOn(live);
     if (r[3] !== null && now - touched.auto > grace) { var au = isOn(r[3]); if (au !== S.pAuto) { S.pAuto = au; changed = true; } }
     if (r[4] !== null) { var mi = parseInt(r[4], 10) || 0; if (mi !== S.pMic) { S.pMic = mi; changed = true; } }
     // Raum wurde woanders (Stream Deck, Auto-Aus in Companion) ein- oder ausgeschaltet -> Tablet folgt.
@@ -800,14 +800,15 @@ function poll() {
       roomPrev = ro;
     }
     // Teams: Leiste nur im Meeting (teams-steuerung.ps1 meldet r5_t_in = 1); ohne Skript bleibt sie aus
-    var tin = r[6] !== null && isOn(r[6]);
+    var tin = r[6] === null ? T.inMeeting : isOn(r[6]);
     if (tin !== T.inMeeting) { T.inMeeting = tin; if (tin) T.joinAt = 0; changed = true; }
-    var tst = r[9] === null ? '' : String(r[9]).trim();
+    var tst = r[9] === null ? T.status : String(r[9]).trim();
     if (tst !== T.status) { T.status = tst; if (/^fehler/i.test(tst)) T.joinAt = 0; changed = true; }
-    if (tin && now - touched.teams > 6000) {   // Teams schaltet mit Verzögerung um -> länger dem eigenen Tippen glauben
+    if (tin && now - touched.teams > 6000 && r[7] !== null && r[8] !== null) {   // Teams schaltet verzögert um -> länger dem eigenen Tippen glauben
       var tm = isOn(r[7]), tv = isOn(r[8]);
       if (tm !== T.muted || tv !== T.video) { T.muted = tm; T.video = tv; changed = true; }
     }
+    setLive(liveState);   // erst jetzt: Live-Kachel braucht den Teams-Zustand dieser Abfrage
     if (changed) { save(); render(); }
   });
 }
