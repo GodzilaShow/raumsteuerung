@@ -23,7 +23,7 @@ Schreiben: „Wir machen hier weiter. Lies UEBERGABE.md und setz bei ‚Nächste
 - Verbindungen: `obs` (OBS Studio, 127.0.0.1:4455, Passwort gesetzt), `rmcr` (Generic TCP 192.168.137.185:49280, Save Response → $(rmcr:tcp_response)).
 - Custom Variables: r5_cmd (RCP-Befehl für Button 1/0/3 „send“), r5_vol_db, r5_live, r5_room, r5_last_use, r5_vol.
 - Buttons Seite 1: 1/0/1 Raum an, 1/0/2 Raum aus, 1/0/3 RCP-Befehl aus r5_cmd senden, 1/1/1–5 Szenen, 1/3/1 Lautstärke anwenden, 1/3/6 Ton reset (On=1, Level −10 dB, r5_vol_db=−1000).
-- Trigger: „Raum 5: Auto-Aus nach 5 h“ (Tablet fragt nach 5 h, Sicherheitsnetz 5 h 10 min), „Raum 5: Live-Status an/aus“ (alle 2–3 s, Bedingung obs Output Active Virtual Camera → r5_live 1/0).
+- Trigger: „Raum 5: Auto-Aus nachts“ (Tablet fragt ab 20 Uhr stündlich, nicht im Teams-Meeting; Sicherheitsnetz 23–5 Uhr ohne Meeting und 2 h ohne Bedienung; tagsüber nie), „Raum 5: Live-Status an/aus“ (alle 2–3 s, Bedingung obs Output Active Virtual Camera → r5_live 1/0).
 - Seit 12.10. ist `Raum5_Companion.companionconfig` importiert (alle Tablet-Buttons, 3/1/6–7, r5_pauto, r5_pmic),
   am 13.10. neu importiert mit Teams-Buttons 1/0/4–6 (r5_tcmd, r5_t_*) und Präsentation aus/an 1/2/4–5
   (OBS „Set Source Visibility“ der Szene „Präsentation pausiert“ in „Alles im Blick“ und „Folien Groß“).

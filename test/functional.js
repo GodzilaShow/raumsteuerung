@@ -164,16 +164,30 @@ const clear = () => fetch(API + '/_test/clear');
   check((await state()).log.includes('1/0/2 press') && await p.isVisible('#s-start'), 'Ja, ausschalten -> 1/0/2 und Startbildschirm');
   check((await state()).vars.r5_tcmd === 'leave', 'Raum aus verlässt auch das Teams-Meeting (r5_tcmd = leave)');
 
-  console.log('Auto-Aus');
-  await p.click('[data-act=start]');
-  await p.evaluate(() => { CONFIG.idleMinutes = 0.001; CONFIG.idleCountdown = 2; lastUse = 0; });
+  console.log('Auto-Aus (nur abends)');
+  await set('r5_t_in=0'); await p.click('[data-act=start]'); await p.waitForTimeout(3500);
+  // tagsüber: nie fragen, auch wenn lange niemand getippt hat
+  await p.evaluate(() => { CONFIG.eveningHour = 24; CONFIG.morningHour = 0; CONFIG.idleCountdown = 2; lastUse = 0; nextAsk = 0; });
   await p.waitForTimeout(16000);
-  check(await p.isVisible('#dlgIdle') || await p.isVisible('#s-start'), 'Nach Inaktivität erscheint die Abfrage');
+  check(!(await p.isVisible('#dlgIdle')), 'tagsüber keine Abfrage, auch ohne Bedienung');
+  // abends im Teams-Meeting: nicht fragen
+  await set('r5_t_in=1'); await p.waitForTimeout(3500);
+  await p.evaluate(() => { CONFIG.eveningHour = 0; lastUse = 0; nextAsk = 0; });
+  await p.waitForTimeout(16000);
+  check(!(await p.isVisible('#dlgIdle')), 'abends im Teams-Meeting keine Abfrage');
+  // abends ohne Meeting, ohne Bedienung: Abfrage, nach Countdown Raum aus
+  await set('r5_t_in=0'); await p.waitForTimeout(3500); await p.evaluate(() => { lastUse = 0; nextAsk = 0; });
+  await p.waitForTimeout(16000);
+  check(await p.isVisible('#dlgIdle') || await p.isVisible('#s-start'), 'abends ohne Meeting und Bedienung erscheint die Abfrage');
   await p.waitForTimeout(3000);
   check(await p.isVisible('#s-start'), 'Countdown abgelaufen -> Raum aus, Startbildschirm');
-  await clear(); await p.click('[data-act=start]'); await p.evaluate(() => { CONFIG.idleMinutes = 0.001; CONFIG.idleCountdown = 30; lastUse = 0; });
+  // „Weiter nutzen“: Companion erfährt die Nutzung, nächste Frage erst nach einer Stunde
+  await clear(); await p.click('[data-act=start]');
+  await p.evaluate(() => { CONFIG.eveningHour = 0; CONFIG.idleCountdown = 30; lastUse = 0; nextAsk = 0; });
   await p.waitForTimeout(16000); await p.click('#dlgIdle [data-act=keepOn]'); await p.waitForTimeout(300);
   check((await state()).log.includes('1/3/8 press') && !(await p.isVisible('#dlgIdle')), '„Weiter nutzen“ meldet Companion die Nutzung (1/3/8)');
+  await p.evaluate(() => { lastUse = 0; }); await p.waitForTimeout(16000);
+  check(!(await p.isVisible('#dlgIdle')), 'nach „Weiter nutzen“ eine Stunde Ruhe');
 
   check(errs.length === 0, 'keine JavaScript-Fehler ' + (errs.length ? JSON.stringify(errs) : ''));
   await b.close();

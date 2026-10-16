@@ -172,9 +172,13 @@ Jeweils die Geräte-Aktion in den Button dazulegen (Tablet muss nicht geändert 
   Publikum-Kamera            3/1/1-5 Presets, 3/3/1-6 Bewegung, 3/3/7 Grundstellung
 Danach den Test aus Abschnitt 6 wiederholen.
 
-Trigger "Raum 5: Auto-Aus nach 5 h (Sicherheitsnetz)": schaltet den Raum (Button 1/0/2) aus,
-wenn 5 h 10 min niemand etwas bedient hat. Normalerweise fragt vorher das Tablet (nach 5 h)
-("Wird der Raum noch genutzt?"); "Weiter nutzen" meldet sich über Button 1/3/8 bei Companion.
+Automatisch aus - nur abends, tagsüber nie (Schulungen, lange Sitzungen ohne Bedienung bleiben an):
+  - Tablet: ab 20 Uhr (bis 6 Uhr) fragt es "Wird der Raum noch genutzt?" mit 5 Minuten Countdown -
+    nicht im Teams-Meeting und nicht, wenn in der letzten Stunde jemand getippt hat. "Weiter nutzen"
+    -> nächste Frage nach 1 Stunde (meldet sich über Button 1/3/8 bei Companion). Einstellbar in
+    raumsteuerung.html: eveningHour, morningHour, askEveryMinutes.
+  - Companion-Trigger "Raum 5: Auto-Aus nachts (Sicherheitsnetz)", falls das Tablet ausfällt: zwischen
+    23 und 5 Uhr Raum aus (1/0/2), aber nur ohne Teams-Meeting und wenn 2 h niemand am Tablet war.
 
 9. Teams vom Tablet aus bedienen (Mikro, Bild, Verlassen)
 -----------------------------------------------------------

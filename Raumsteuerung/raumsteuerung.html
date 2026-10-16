@@ -394,7 +394,7 @@ header.tm .title b,header.tm .btn{white-space:nowrap}
 
 <div class="overlay" id="dlgIdle"><div class="dialog">
 <b>Wird der Raum noch genutzt?</b>
-<p>Seit 5 Stunden wurde nichts bedient. Der Raum schaltet sich in <b id="idleLeft" style="font-size:inherit;color:var(--red)">5:00</b> automatisch aus.</p>
+<p>Es ist Abend und der Raum ist noch eingeschaltet. Er schaltet sich in <b id="idleLeft" style="font-size:inherit;color:var(--red)">5:00</b> automatisch aus.</p>
 <div class="row"><button class="btn" data-act="off">Jetzt ausschalten</button><button class="btn primary" data-act="keepOn">Weiter nutzen</button></div>
 </div></div>
 
@@ -410,7 +410,9 @@ var CONFIG = {
   // Adresse von Companion. Auf dem Tablet einmalig aufrufen mit  raumsteuerung.html?companion=http://192.168.x.x:8000
   // (wird danach im Tablet gespeichert). Ohne Angabe: dieser Standardwert.
   companion: 'http://127.0.0.1:8000',
-  idleMinutes: 300,                            // Automatisch aus nach 5 Stunden ohne Bedienung
+  // Automatisch aus nur abends: ab eveningHour fragt das Tablet (ausser im Teams-Meeting oder wenn in der letzten
+  // Stunde jemand getippt hat); „Weiter nutzen“ = nächste Frage nach askEveryMinutes. Tagsüber nie.
+  eveningHour: 20, morningHour: 6, askEveryMinutes: 60,
   idleCountdown: 300,                          // 5 Minuten Warnung (Sekunden)
   pollSeconds: 3,                              // Zustand von Companion/OBS abfragen
   liveVariable: 'r5_live',                     // Companion Custom Variable: 1 = Virtual Cam läuft
@@ -619,12 +621,12 @@ function renderTeams() {
 
 /* ---- Actions ---- */
 var ACTIONS = {
-  start: function () { call('raum_an'); touched.room = Date.now(); stopIdle(); go('main'); },   // Teams nur über „Teams-Meeting starten“
+  start: function () { call('raum_an'); touched.room = Date.now(); stopIdle(); nextAsk = Date.now() + CONFIG.askEveryMinutes * 60000; go('main'); },   // Teams nur über „Teams-Meeting starten“
   tJoin: function () { if (T.joinAt && Date.now() - T.joinAt < 60000) return; call('teams_join'); T.joinAt = Date.now(); T.status = ''; },
   askOff: function () { $('#dlgOff').classList.add('show'); },
   cancelOff: function () { $('#dlgOff').classList.remove('show'); },
   off: function () { roomOff(); },
-  keepOn: function () { stopIdle(); call('alive'); lastAlive = Date.now(); },
+  keepOn: function () { stopIdle(); call('alive'); lastAlive = Date.now(); nextAsk = Date.now() + CONFIG.askEveryMinutes * 60000; },
   spk: function () { S.spkMute = !S.spkMute; touched.spk = Date.now(); call(S.spkMute ? 'spk_off' : 'spk_on'); },
   volDown: function () { setVol(S.vol - 1); },
   volUp: function () { setVol(S.vol + 1); },
@@ -725,16 +727,18 @@ document.addEventListener('pointerdown', function () {
   if (S.screen !== 'start' && lastUse - lastAlive > 600000) { lastAlive = lastUse; call('alive'); }
 }, true);
 function stopIdle() { clearInterval(idleTick); idleTick = null; $('#dlgIdle').classList.remove('show'); lastUse = Date.now(); }
+var nextAsk = 0;   // frühestens dann wieder fragen (nach Raum an / „Weiter nutzen“)
+function isEvening(d) { var h = d.getHours(); return h >= CONFIG.eveningHour || h < CONFIG.morningHour; }
 setInterval(function () {
   if (S.screen === 'start' || idleTick) return;
-  if (Date.now() - lastUse > CONFIG.idleMinutes * 60000) {
-    idleLeft = CONFIG.idleCountdown; showLeft(); $('#dlgIdle').classList.add('show');
-    var end = Date.now() + idleLeft * 1000;   // nach Uhrzeit, damit gedrosselte Timer nicht nachgehen
-    idleTick = setInterval(function () {
-      idleLeft = Math.max(0, Math.round((end - Date.now()) / 1000)); showLeft();
-      if (idleLeft <= 0) roomOff();
-    }, 1000);
-  }
+  var now = Date.now(), quiet = CONFIG.askEveryMinutes * 60000;
+  if (!isEvening(new Date(now)) || T.inMeeting || now < nextAsk || now - lastUse < quiet) return;
+  idleLeft = CONFIG.idleCountdown; showLeft(); $('#dlgIdle').classList.add('show');
+  var end = now + idleLeft * 1000;   // nach Uhrzeit, damit gedrosselte Timer nicht nachgehen
+  idleTick = setInterval(function () {
+    idleLeft = Math.max(0, Math.round((end - Date.now()) / 1000)); showLeft();
+    if (idleLeft <= 0) roomOff();
+  }, 1000);
 }, 15000);
 
 /* ---- Zustand von Companion / OBS / RM-CR übernehmen ----

@@ -174,13 +174,16 @@ def main(src, dst):
     for t in d['triggers'].values():
         name = t['options']['name']
         if name.startswith('Raum 5: Auto-Aus'):
-            # Sicherheitsnetz, falls das Tablet ausfällt: 5 h 10 min ohne Bedienung -> echter Raum-aus-Button.
-            # Das Tablet fragt selbst nach 5 h und meldet „Weiter nutzen“ über 1/3/8.
-            t['options']['name'] = 'Raum 5: Auto-Aus nach 5 h (Sicherheitsnetz)'
+            # Sicherheitsnetz für die Nacht, falls das Tablet ausfällt: zwischen 23 und 5 Uhr Raum aus (echter
+            # Raum-aus-Button), aber nur ohne Teams-Meeting und wenn 2 h niemand am Tablet war. Das Tablet fragt
+            # selbst ab 20 Uhr stündlich; „Weiter nutzen“ meldet sich über 1/3/8 (setzt r5_last_use).
+            t['options']['name'] = 'Raum 5: Auto-Aus nachts (Sicherheitsnetz)'
             t['actions'] = [press('1/0/2')]
             for c in t['condition']:
                 if c['definitionId'] == 'check_expression':
-                    c['options']['expression'] = opt('$(custom:r5_room) == 1 && ($(internal:time_unix) - $(custom:r5_last_use)) > 18600', True)
+                    c['options']['expression'] = opt('$(custom:r5_room) == 1 && $(custom:r5_t_in) != 1'
+                                                     ' && ($(internal:time_h) >= 23 || $(internal:time_h) < 5)'
+                                                     ' && ($(internal:time_unix) - $(custom:r5_last_use)) > 7200', True)
 
     with gzip.open(dst, 'wt', encoding='utf-8', compresslevel=9) as f:
         json.dump(d, f, ensure_ascii=False, indent='\t')
