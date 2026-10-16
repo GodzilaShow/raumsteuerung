@@ -588,6 +588,9 @@ for (var n = 0; n < 10; n++) {
   })(n);
 }
 
+function teamsCmd(c) {
+  post('/api/custom-variable/r5_tcmd/value?value=' + c).then(function () { call('alive'); }, sendFailed);   // alive = Bedienung merken
+}
 function renderTeams() {
   $('#teamsBar').hidden = !T.inMeeting;
   // nicht im Meeting: Knopf zum Starten; während des Beitritts (bis 60 s) „Teams startet …“, bei Fehler Hinweis
@@ -630,8 +633,10 @@ var ACTIONS = {
     clearTimeout(b._t); b._t = setTimeout(function () { b.classList.remove('done'); b.innerHTML = b._old; b._old = null; }, 2500);
   },
   track: function () { S.track = !S.track; call(S.track ? 'track_on' : 'track_off'); },
-  tMic: function () { T.muted = !T.muted; touched.teams = Date.now(); call('teams_mic'); },
-  tCam: function () { T.video = !T.video; touched.teams = Date.now(); call('teams_cam'); },
+  // Zielzustand an teams-steuerung.ps1 schicken (nicht „umschalten“): ein verlorenes oder doppeltes Tippen
+  // kann Teams so nicht in den falschen Zustand bringen
+  tMic: function () { T.muted = !T.muted; touched.teams = Date.now(); teamsCmd(T.muted ? 'mic_off' : 'mic_on'); },
+  tCam: function () { T.video = !T.video; touched.teams = Date.now(); teamsCmd(T.video ? 'video_on' : 'video_off'); },
   tLeave: function () {
     var b = $('#tLeave');
     if (!b.classList.contains('arm')) {   // erstes Tippen: nachfragen, zweites Tippen innerhalb 4 s: verlassen
@@ -799,7 +804,7 @@ function poll() {
     if (tin !== T.inMeeting) { T.inMeeting = tin; if (tin) T.joinAt = 0; changed = true; }
     var tst = r[9] === null ? '' : String(r[9]).trim();
     if (tst !== T.status) { T.status = tst; if (/^fehler/i.test(tst)) T.joinAt = 0; changed = true; }
-    if (tin && now - touched.teams > grace) {
+    if (tin && now - touched.teams > 6000) {   // Teams schaltet mit Verzögerung um -> länger dem eigenen Tippen glauben
       var tm = isOn(r[7]), tv = isOn(r[8]);
       if (tm !== T.muted || tv !== T.video) { T.muted = tm; T.video = tv; changed = true; }
     }

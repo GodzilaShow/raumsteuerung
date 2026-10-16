@@ -4,9 +4,10 @@
 # (dieselbe Schnittstelle, die Bildschirmleser nutzen). Die Buttons haben feste Kennungen
 # (microphone-button, video-button, hangup-button), unabhaengig von der Sprache.
 #   - Zustand -> Companion-Variablen r5_t_in (im Meeting), r5_t_mute (stumm), r5_t_video (Bild an)
-#   - Befehl  <- Companion-Variable r5_tcmd (mute | video | leave | join), wird nach dem Ausfuehren geleert
+#   - Befehl  <- Companion-Variable r5_tcmd (mute | video | leave | join, vom Tablet: mic_on/mic_off/video_on/
+#               video_off = Zielzustand), wird nach dem Ausfuehren geleert
 #   - join: oeffnet den festen Meeting-Link des Raums (teams-link.txt), Kamera + Mikro an, "Jetzt teilnehmen",
-#           danach Meetingfenster minimieren (Displays zeigen nicht Teams). Fortschritt in r5_t_status
+#           danach Meetingfenster ausserhalb der Bildschirme parken (Displays zeigen nicht Teams). Fortschritt in r5_t_status
 #           ("start" waehrend des Beitritts, "fehler: ..." wenn es nicht klappt, sonst leer).
 # Muss in der Sitzung des angemeldeten Benutzers laufen (nicht als SYSTEM) - Aufgabe "bei Anmeldung".
 #
@@ -14,9 +15,10 @@
 #   .\teams-steuerung.ps1            dauerhaft (startet per Aufgabenplanung)
 #   .\teams-steuerung.ps1 -Status    einmal Zustand anzeigen (Test)
 #   .\teams-steuerung.ps1 -Befehl mute   einmal Mikro umschalten (Test, ohne Companion)
+#   .\teams-steuerung.ps1 -Befehl zeigen geparktes (ausserhalb des Bildschirms liegendes) Meetingfenster zurueckholen
 param(
   [switch]$Status,
-  [ValidateSet('', 'mute', 'video', 'leave', 'join')][string]$Befehl = '',
+  [ValidateSet('', 'mute', 'video', 'leave', 'join', 'zeigen')][string]$Befehl = '',
   [string]$Companion = '',
   [string]$Log = (Join-Path $PSScriptRoot 'teams-steuerung.log')
 )
@@ -32,8 +34,24 @@ public static class Fenster {
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint f);
 }
 '@
+Add-Type -AssemblyName System.Windows.Forms
+# Meetingfenster "parken": nicht minimieren (minimierte Teams-Fenster reagieren erst Sekunden spaeter und Teams
+# blendet dann eine Kompaktleiste ein), sondern ohne Aktivieren rechts neben alle Bildschirme schieben.
+# Auf den Displays ist so nichts von Teams zu sehen, die Knoepfe wirken trotzdem sofort.
+function Park-Window([IntPtr]$h) {
+  if ([Fenster]::IsIconic($h)) { [void][Fenster]::ShowWindow($h, 4) }   # 4 = SW_SHOWNOACTIVATE
+  $rechts = ([System.Windows.Forms.Screen]::AllScreens | ForEach-Object { $_.Bounds.Right } | Measure-Object -Maximum).Maximum
+  [void][Fenster]::SetWindowPos($h, [IntPtr]::Zero, $rechts + 200, 100, 1280, 720, 0x0014)   # SWP_NOZORDER|SWP_NOACTIVATE
+}
+function Show-Window([IntPtr]$h) {
+  $p = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
+  [void][Fenster]::ShowWindow($h, 9)   # SW_RESTORE
+  [void][Fenster]::SetWindowPos($h, [IntPtr]::Zero, $p.X + 40, $p.Y + 40, [Math]::Min(1280, $p.Width - 80), [Math]::Min(720, $p.Height - 80), 0x0004)
+  [void][Fenster]::SetForegroundWindow($h)
+}
 
 if (-not $Companion) {
   $Companion = 'http://127.0.0.1:8000'
@@ -110,9 +128,17 @@ function Invoke-Teams([string]$cmd) {
   # auf den Displays -> danach den vorherigen Zustand wiederherstellen.
   $h = [IntPtr]$w.Current.NativeWindowHandle
   $vorne = [Fenster]::GetForegroundWindow(); $warMin = [Fenster]::IsIconic($h)
+  # Ein minimiertes Teams-Fenster (WebView) verarbeitet Klicks erst Sekunden spaeter -> parken (ausserhalb der
+  # Bildschirme, nicht minimiert), dann druecken. Danach bleibt es geparkt.
+  if ($warMin) { Park-Window $h; $warMin = $false; Start-Sleep -Milliseconds 500; $b = $w.FindFirst($Scope::Descendants, (Cond $IDS[$cmd])) }
   $name = $b.Current.Name
   $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
-  Start-Sleep -Milliseconds 400
+  # warten, bis Teams umgeschaltet hat (Beschriftung wechselt), damit der gemeldete Zustand stimmt
+  if ($cmd -ne 'leave') {
+    $ende = [DateTime]::Now.AddSeconds(3)
+    do { Start-Sleep -Milliseconds 150; $neu = try { $w.FindFirst($Scope::Descendants, (Cond $IDS[$cmd])).Current.Name } catch { $name } } while ($neu -eq $name -and [DateTime]::Now -lt $ende)
+    if ($neu -eq $name) { Write-Log "Befehl ${cmd}: Teams hat nach 3 s noch nicht umgeschaltet" }
+  } else { Start-Sleep -Milliseconds 400 }
   if ($warMin -and -not [Fenster]::IsIconic($h)) { [void][Fenster]::ShowWindow($h, 6) }      # 6 = SW_MINIMIZE
   # nur ein sichtbares, nicht minimiertes Fenster zurueckholen (sonst taucht z. B. das versteckte Companion-Fenster auf)
   if ($vorne -ne [IntPtr]::Zero -and $vorne -ne $h -and [Fenster]::IsWindowVisible($vorne) -and -not [Fenster]::IsIconic($vorne) -and
@@ -198,7 +224,7 @@ function Join-Teams {
   while (-not $w -and [DateTime]::Now -lt $ende) { Start-Sleep -Milliseconds 700; $w = Find-Meeting }
   if (-not $w) { Write-Log 'Beitritt fehlgeschlagen (kein Meetingfenster)'; [void](Set-Var 'r5_t_status' 'fehler: Teams reagiert nicht'); return $false }
   Start-Sleep -Seconds 2
-  [void][Fenster]::ShowWindow([IntPtr]$w.Current.NativeWindowHandle, 6)   # minimieren: Displays zeigen weiter die Praesentation
+  Park-Window ([IntPtr]$w.Current.NativeWindowHandle)   # aus dem Bild schieben: Displays zeigen weiter die Praesentation
   $script:win = $null
   Write-Log 'Beitritt: im Meeting'
   [void](Set-Var 'r5_t_status' '')
@@ -207,6 +233,9 @@ function Join-Teams {
 
 # ---------- Testaufrufe ----------
 if ($Status) { $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}' -f $s.In, $s.Mute, $s.Video; exit 0 }
+if ($Befehl -eq 'zeigen') {   # geparktes Meetingfenster zurueck auf den Hauptbildschirm holen (fuer IT/Tests)
+  $w = Find-Meeting; if ($w) { Show-Window ([IntPtr]$w.Current.NativeWindowHandle); 'Meetingfenster geholt' } else { 'kein Meeting offen' }; exit 0
+}
 if ($Befehl -eq 'join') { [void](Join-Teams); $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}' -f $s.In, $s.Mute, $s.Video; exit 0 }
 if ($Befehl) { [void](Invoke-Teams $Befehl); Start-Sleep -Milliseconds 800; $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}' -f $s.In, $s.Mute, $s.Video; exit 0 }
 
@@ -223,6 +252,17 @@ while ($true) {
       if ($cmd) {
         [void](Set-Var 'r5_tcmd' '')          # zuerst leeren: ein Tippen = ein Druck
         if ($cmd -eq 'join') { [void](Join-Teams); $nextState = [DateTime]::MinValue }
+        elseif ($cmd -match '^(mic|video)_(on|off)$') {
+          # Zielzustand statt Umschalten (vom Tablet): nur druecken, wenn Teams anders steht -> verlorene oder
+          # doppelte Befehle koennen den Zustand nicht verdrehen
+          $was = $Matches[1]; $soll = $Matches[2] -eq 'on'
+          $s = Get-TeamsState
+          $ist = if ($was -eq 'mic') { -not $s.Mute } else { $s.Video }
+          if (-not $s.In) { Write-Log "Befehl ${cmd}: kein Teams-Meeting offen" }
+          elseif ($ist -ne $soll) { [void](Invoke-Teams $(if ($was -eq 'mic') { 'mute' } else { 'video' })) }
+          else { Write-Log "Befehl ${cmd}: Teams steht schon so" }
+          $nextState = [DateTime]::MinValue
+        }
         elseif ($IDS.ContainsKey($cmd)) { [void](Invoke-Teams $cmd); $nextState = [DateTime]::MinValue }
         else { Write-Log "Unbekannter Befehl '$cmd'" }
       }
