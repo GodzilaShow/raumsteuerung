@@ -33,7 +33,7 @@ Schreiben: „Wir machen hier weiter. Lies UEBERGABE.md und setz bei ‚Nächste
 ## OBS
 - Szenen mit Platzhaltern (Hintergrund #0B3A5B, Präsentation/Redner/Publikum als Farbflächen), gesperrt.
 - Pausenbild: Text + Emsland-Logo (`C:/Raumsteuerung/emsland-logo.png`, kommt mit `installieren.ps1`).
-- Szenen-Hintergrund: dunkelblau mit Logo, „Sitzungszimmer 5“ und grüner Emsland-Linie (`C:/Raumsteuerung/szenen-hintergrund.png`, Vorlage `tools/szenen-hintergrund.html`), in allen Szenen über der Farbfläche „Hintergrund“.
+- Szenen-Hintergrund: dunkelblau mit Logo „Landkreis Emsland“ und grüner Emsland-Linie (`C:/Raumsteuerung/szenen-hintergrund.png`, Vorlage `tools/szenen-hintergrund.html`), in allen Szenen über der Farbfläche „Hintergrund“.
 - Szene „Präsentation pausiert“ (Ink-Fläche, Logo, Text) liegt ausgeblendet über dem Präsentations-Rahmen.
 - Backup im Repo: `Raum5_OBS_Szenen_Backup.json` (Stand 13.10., Sammlung „Raum5“, ohne Test-Quellen und ohne
   Audiogeräte des Laptops). OBS immer über Datei → Beenden schließen.
