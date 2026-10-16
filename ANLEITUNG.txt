@@ -172,8 +172,8 @@ Jeweils die Geräte-Aktion in den Button dazulegen (Tablet muss nicht geändert 
   Publikum-Kamera            3/1/1-5 Presets, 3/3/1-6 Bewegung, 3/3/7 Grundstellung
 Danach den Test aus Abschnitt 6 wiederholen.
 
-Trigger "Raum 5: Auto-Aus nach 2 h (Sicherheitsnetz)": schaltet den Raum (Button 1/0/2) aus,
-wenn 2 h 10 min niemand etwas bedient hat. Normalerweise fragt vorher das Tablet
+Trigger "Raum 5: Auto-Aus nach 5 h (Sicherheitsnetz)": schaltet den Raum (Button 1/0/2) aus,
+wenn 5 h 10 min niemand etwas bedient hat. Normalerweise fragt vorher das Tablet (nach 5 h)
 ("Wird der Raum noch genutzt?"); "Weiter nutzen" meldet sich über Button 1/3/8 bei Companion.
 
 9. Teams vom Tablet aus bedienen (Mikro, Bild, Verlassen)

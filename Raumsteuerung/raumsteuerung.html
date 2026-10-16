@@ -394,7 +394,7 @@ header.tm .title b,header.tm .btn{white-space:nowrap}
 
 <div class="overlay" id="dlgIdle"><div class="dialog">
 <b>Wird der Raum noch genutzt?</b>
-<p>Seit 2 Stunden wurde nichts bedient. Der Raum schaltet sich in <b id="idleLeft" style="font-size:inherit;color:var(--red)">5:00</b> automatisch aus.</p>
+<p>Seit 5 Stunden wurde nichts bedient. Der Raum schaltet sich in <b id="idleLeft" style="font-size:inherit;color:var(--red)">5:00</b> automatisch aus.</p>
 <div class="row"><button class="btn" data-act="off">Jetzt ausschalten</button><button class="btn primary" data-act="keepOn">Weiter nutzen</button></div>
 </div></div>
 
@@ -410,7 +410,7 @@ var CONFIG = {
   // Adresse von Companion. Auf dem Tablet einmalig aufrufen mit  raumsteuerung.html?companion=http://192.168.x.x:8000
   // (wird danach im Tablet gespeichert). Ohne Angabe: dieser Standardwert.
   companion: 'http://127.0.0.1:8000',
-  idleMinutes: 120,                            // Automatisch aus nach 2 Stunden ohne Bedienung
+  idleMinutes: 300,                            // Automatisch aus nach 5 Stunden ohne Bedienung
   idleCountdown: 300,                          // 5 Minuten Warnung (Sekunden)
   pollSeconds: 3,                              // Zustand von Companion/OBS abfragen
   liveVariable: 'r5_live',                     // Companion Custom Variable: 1 = Virtual Cam läuft
