@@ -131,6 +131,10 @@ def main(src, dst):
                                               'visible': opt(visible)}) for sc in ('Alles im Blick', 'Folien Groß')]
     put(1, 2, 4, button('Präsentation aus', [setvar('r5_blank', '1'), *blank('true'), touch()]))
     put(1, 2, 5, button('Präsentation an', [setvar('r5_blank', '0'), *blank('false'), touch()]))
+    # Raum aus setzt r5_blank = 0 -> auch in OBS die Pause-Fläche wegnehmen, sonst sähe Teams sie beim nächsten Start
+    off = d['pages']['1']['controls']['0']['2']['steps']['0']['action_sets']['down']
+    if not any(a['definitionId'] == 'toggle_scene_item' for a in off):
+        off.extend(blank('false'))
     put(1, 2, 6, button('Displays an', [setvar('r5_disp', '1'), touch()]))  # später: ViewSonic per LAN
     put(1, 2, 7, button('Displays aus', [setvar('r5_disp', '0'), touch()]))
     extend(1, 3, 1, touch())
