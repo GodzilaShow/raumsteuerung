@@ -23,9 +23,10 @@ const clear = () => fetch(API + '/_test/clear');
   await clear(); await p.click('[data-act=start]'); await p.waitForTimeout(600);
   let st0 = await state();
   check(st0.log.includes('1/0/1 press'), 'Raum starten drückt 1/0/1');
-  check(st0.log.includes('1/0/7 press') && st0.vars.r5_tcmd === 'join', 'Raum starten tritt auch dem Teams-Meeting bei (1/0/7, r5_tcmd = join)');
-  check((await p.textContent('#tJoin')).includes('startet'), 'Kopf zeigt „Teams-Meeting startet …“');
-  check((await p.textContent('#liveTxt')) === 'Teams startet …', 'Live-Kachel: „Teams startet …“, nicht schon „Live“');
+  check(!st0.log.includes('1/0/7 press'), 'Raum starten startet kein Teams-Meeting (nur über den Teams-Knopf)');
+  await p.waitForTimeout(3500);
+  check((await p.textContent('#tJoin')).includes('Teams-Meeting starten'), 'Kopf zeigt den Knopf „Teams-Meeting starten“');
+  check((await p.textContent('#liveTxt')) === 'Nur im Raum', 'Live-Kachel: „Nur im Raum“ (nicht „Live“)');
   check(await p.isVisible('#s-main'), 'Steuerung wird angezeigt');
   check(!(await p.isVisible('#conn')), 'kein Fehlerbanner');
 
@@ -148,10 +149,6 @@ const clear = () => fetch(API + '/_test/clear');
   await p.click('#dlgOff [data-act=off]'); await p.waitForTimeout(300);
   check((await state()).log.includes('1/0/2 press') && await p.isVisible('#s-start'), 'Ja, ausschalten -> 1/0/2 und Startbildschirm');
   check((await state()).vars.r5_tcmd === 'leave', 'Raum aus verlässt auch das Teams-Meeting (r5_tcmd = leave)');
-  await clear(); await p.click('[data-act=startLocal]'); await p.waitForTimeout(600);
-  let stl = await state();
-  check(stl.log.includes('1/0/1 press') && !stl.log.includes('1/0/7 press'), '„Nur im Raum, ohne Teams“ -> 1/0/1 ohne Teams-Beitritt');
-  await p.click('[data-act=askOff]'); await p.waitForTimeout(300); await p.click('#dlgOff [data-act=off]'); await p.waitForTimeout(300);
 
   console.log('Auto-Aus');
   await p.click('[data-act=start]');

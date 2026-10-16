@@ -83,7 +83,7 @@ Am 13.10. außerdem:
 - 15.10.: Nach Kabel-/Neustarts hatten RM-TT und Dante-Lautsprecher (Yamaha **VXL1-16P**) nur 169.254.x.x
   (kein DHCP von ICS) -> kein Ton. In Dante Controller feste Adressen gesetzt: RM-TT 8D042B = 192.168.137.17,
   VXL1-16P 565FF0 = 192.168.137.171 (/24), RM-CR Dante = .253, RM-CR Steuerung = .185. Nur ein RM-TT aktiv (Port 11).
-- Teams: „Raum starten“ tritt automatisch dem Raum-Meeting bei (teams-link.txt), Abschlussfenster nach dem
+- Teams: Knopf „Teams-Meeting starten“ (Teams-Symbol) tritt dem Raum-Meeting bei (teams-link.txt), „Raum starten“ nur Raum, Abschlussfenster nach dem
   Meeting wird automatisch geschlossen.
 - Offen auf dem Test-PC (Aufräumen): Teams-Flag `enable_third_party_devices_service` in app_settings.json
   zurücksetzen (Sicherung in `C:\Raum5_Sicherung\`), Testlink „Raum5 Test“ in Teams löschen.

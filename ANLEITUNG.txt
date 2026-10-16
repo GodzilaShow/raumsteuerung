@@ -95,7 +95,7 @@ iPad (Safari):
 6. Test nach der Einrichtung
 ----------------------------
 Zuerst C:\Raumsteuerung\pruefen.cmd doppelklicken: alles grün = Technik läuft, sonst steht dort, was zu tun ist.
-[ ] Raum starten -> Virtual Cam läuft, oben steht "Live in Teams"
+[ ] Raum starten -> Virtual Cam läuft, Kachel "Nur im Raum"; "Teams-Meeting starten" -> nach ca. 15 s "Live in Teams"
 [ ] Alle 5 Ansichten tippen -> OBS wechselt die Szene
 [ ] Lautstärke + / - -> Lautsprecher werden leiser / lauter
 [ ] Hilfe -> "Ton zurücksetzen" -> Ton an, mittlere Lautstärke
@@ -192,7 +192,7 @@ Einrichtung:
   c) Test: Teams-Meeting starten -> Tablet zeigt die Leiste. "Mikro" tippen -> Teams schaltet stumm.
      Ohne Tablet: C:\Raumsteuerung\teams-steuerung.ps1 -Status   bzw.  -Befehl mute
   d) Protokoll: C:\Raumsteuerung\teams-steuerung.log
-Meeting des Raums automatisch starten ("Raum starten" am Tablet tritt automatisch bei):
+Meeting des Raums per Knopf starten ("Teams-Meeting starten" oben am Tablet; "Raum starten" schaltet nur den Raum ein):
   e) Einmal ein festes Meeting des Raumkontos anlegen (Serie ohne Enddatum oder dauerhafter
      Besprechungslink) und den Link in C:\Raumsteuerung\teams-link.txt speichern (eine Zeile).
      Die Datei liegt nur auf dem Raum-PC, nicht im Repository. installieren.ps1 überschreibt sie nicht.
@@ -201,7 +201,6 @@ Meeting des Raums automatisch starten ("Raum starten" am Tablet tritt automatisc
   g) Ablauf: Companion 1/0/7 setzt r5_tcmd = join -> teams-steuerung.ps1 öffnet den Link in Teams,
      schaltet Kamera + Mikro ein, drückt "Jetzt teilnehmen" (ca. 15 s). Das Meetingfenster bleibt offen.
      Fortschritt/Fehler in r5_t_status, das Tablet zeigt "Teams-Meeting startet …" bzw. einen Hinweis.
-     "Nur im Raum, ohne Teams" auf dem Startbildschirm schaltet den Raum ohne Meeting ein.
      "Raum ausschalten" (1/0/2) verlässt auch das Meeting.
   h) Teams läuft auf einem eigenen Monitor am Sprecherplatz (zusammen mit OBS), dort sieht man Teilnehmer
      und Chat und kann auch direkt klicken. Die Displays zeigen nur die Präsentation. Ist das Meetingfenster
