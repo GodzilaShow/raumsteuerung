@@ -26,6 +26,10 @@ param(
   [string]$Log = (Join-Path $PSScriptRoot 'teams-steuerung.log')
 )
 $ErrorActionPreference = 'Stop'
+# Echte Pixel auf allen Bildschirmen (Laptop 125 %, Monitore 100 %): sonst passen Bildschirm-, Fenster- und
+# Maus-Koordinaten nicht zusammen und die Maus-Sperre fuer den Teilen-Bildschirm sitzt an der falschen Stelle
+Add-Type -Namespace Dpi -Name Api -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetProcessDpiAwarenessContext(IntPtr v);'
+[void][Dpi.Api]::SetProcessDpiAwarenessContext([IntPtr](-4))   # PER_MONITOR_AWARE_V2
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 $AE = [System.Windows.Automation.AutomationElement]
 $Scope = [System.Windows.Automation.TreeScope]
@@ -266,7 +270,11 @@ function Protect-ShareScreen {
     if ($x.Bounds -eq $s.Bounds) { continue }
     $frei = if ($frei.IsEmpty) { $x.Bounds } else { [System.Drawing.Rectangle]::Union($frei, $x.Bounds) }
   }
-  if ($frei.IsEmpty -or $frei.IntersectsWith($s.Bounds)) { $frei = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds }
+  if ($frei.IsEmpty -or $frei.IntersectsWith($s.Bounds)) {
+    # Teilen-Bildschirm liegt zwischen zwei echten Monitoren -> Maus nur auf dem Hauptbildschirm moeglich
+    if (-not $script:warnLage) { Write-Log 'Teilen-Bildschirm liegt zwischen den Monitoren - in den Anzeigeeinstellungen ganz nach rechts schieben (sonst kommt die Maus nicht auf die anderen Monitore)'; $script:warnLage = $true }
+    $frei = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+  } else { $script:warnLage = $false }
   [Schutz]::Maus($frei.X, $frei.Y, $frei.Width, $frei.Height)
   if (([DateTime]::Now - $script:lastSchutz).TotalMilliseconds -lt 1000) { return }
   $script:lastSchutz = [DateTime]::Now
@@ -341,9 +349,10 @@ function Start-Share {
   }
   $h = [IntPtr]$w.Current.NativeWindowHandle; $vorne = [Fenster]::GetForegroundWindow()
   if ([Fenster]::IsIconic($h)) { [void][Fenster]::ShowWindow($h, 4); Start-Sleep -Milliseconds 500 }
-  # Bildschirme im Menue heissen alle gleich ("Generic PnP Monitor") -> der Reihe nach probieren (hinten zuerst,
-  # dort steht meist der zweite Bildschirm) und an der Lage der Teams-Leiste pruefen, ob es der richtige ist
-  for ($versuch = 0; $versuch -lt 4; $versuch++) {
+  # Bildschirme im Menue heissen alle gleich ("Generic PnP Monitor"). Teams listet sie in der Windows-Reihenfolge ->
+  # zuerst den Eintrag mit derselben Nummer, dann die uebrigen; an der Lage der Teams-Leiste pruefen, ob es stimmt
+  $probiert = @()
+  for ($versuch = 0; $versuch -lt 5; $versuch++) {
     $t = Find-ShareTray
     if (-not $t) {
       try { $w.FindFirst($Scope::Descendants, (Cond 'share-button')).GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() } catch { }
@@ -363,8 +372,10 @@ function Start-Share {
       }
     } catch { Write-Log ('Teilen: Optionen nicht gesetzt (' + $_.Exception.Message + ')') }
     $items = @($t.List.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition))
-    $nr = $items.Count - 1 - $versuch
-    if ($nr -lt 0) { Write-Log 'Teilen: Teilen-Bildschirm nicht in der Teams-Liste'; return $false }
+    $reihe = @($s.Index) + @(($items.Count - 1)..0 | Where-Object { $_ -ne $s.Index })
+    $nr = $reihe | Where-Object { $_ -lt $items.Count -and $probiert -notcontains $_ } | Select-Object -First 1
+    if ($null -eq $nr) { Write-Log 'Teilen: Teilen-Bildschirm nicht in der Teams-Liste'; return $false }
+    $probiert += $nr
     $items[$nr].GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
     $bar = $null; for ($i = 0; $i -lt 20 -and -not ($bar = Find-ShareBar); $i++) { Start-Sleep -Milliseconds 300 }
     if ($bar -and (In-Bounds $bar.Current.BoundingRectangle $s.Bounds)) {

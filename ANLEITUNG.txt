@@ -235,6 +235,8 @@ Teams-Bild: Präsentation geteilt + Personen über die Kamera (Standard seit 20.
   p) Schutz: Solange teams-steuerung.ps1 läuft, kann die Maus nicht auf den Teilen-Bildschirm, dorthin
      geschobene Fenster kommen innerhalb 1 s auf den Hauptbildschirm zurück, der OBS-Projektor liegt oben.
      Wartung am Teilen-Bildschirm: Aufgabe "Raumsteuerung Teams-Steuerung" vorher beenden.
+     Anordnung: Der Teilen-Bildschirm muss in den Anzeigeeinstellungen GANZ AUSSEN liegen (z. B. ganz rechts),
+     nicht zwischen zwei echten Monitoren - sonst sperrt die Maus-Sperre den Weg zum anderen Monitor.
 Grenzen: Teams kennt keinen auslesbaren Zustand für "Hand heben" - deshalb keine Hand-Taste.
 Organisator übergeben, Wartebereich, andere stummschalten: nur in Teams selbst.
 Nach großen Teams-Updates kann eine Button-Kennung wechseln (microphone-button, video-button,
