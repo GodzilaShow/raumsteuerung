@@ -143,7 +143,9 @@ def main(src, dst):
     put(1, 3, 3, button('Tracking an', [setvar('r5_track', '1'), touch()]))
     put(1, 3, 4, button('Tracking aus', [setvar('r5_track', '0'), touch()]))
     vc = {'output': opt('virtualcam_output')}
+    # Kamera neu starten: Kamera-Quelle in OBS neu öffnen (USB-Kamera hängt z. B. nach Ruhezustand) + Virtuelle Kamera neu
     put(1, 3, 5, button('Kamera neu starten', [sequence(
+        obs_act('resetCaptureDevice', {'source': opt('Videoaufnahmegerät')}),
         obs_act('stop_output', copy.deepcopy(vc)), wait(2000), obs_act('start_output', copy.deepcopy(vc))), touch()]))
     extend(1, 3, 6, touch())
     put(1, 3, 7, button('Displays neu starten', [setvar('r5_disp', '1'), touch()]))

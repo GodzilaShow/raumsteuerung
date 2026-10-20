@@ -270,14 +270,19 @@ function Protect-ShareScreen {
   [Schutz]::Maus($frei.X, $frei.Y, $frei.Width, $frei.Height)
   if (([DateTime]::Now - $script:lastSchutz).TotalMilliseconds -lt 1000) { return }
   $script:lastSchutz = [DateTime]::Now
-  Close-OtherProjectors $s.Bounds
-  $p = Find-Projector $s.Bounds
-  $h = if ($p) { [IntPtr]$p.Current.NativeWindowHandle } else { [IntPtr]::Zero }
+  # Projektor-Suche per UI Automation ist teuer -> nur alle 5 s, dazwischen das gemerkte Fenster
+  if (([DateTime]::Now - $script:lastProj).TotalSeconds -ge 5) {
+    $script:lastProj = [DateTime]::Now
+    Close-OtherProjectors $s.Bounds
+    $p = Find-Projector $s.Bounds
+    $script:projHwnd = if ($p) { [IntPtr]$p.Current.NativeWindowHandle } else { [IntPtr]::Zero }
+  }
+  $h = $script:projHwnd
   # Teams-Rahmen/-Leiste beim Teilen; OBS-Projektoren nie verschieben (Vollbild auf dem Hauptbildschirm wuerde ihn verdecken)
   $erlaubt = [uint32[]]@(Get-Process ms-teams, obs64 -ErrorAction SilentlyContinue | ForEach-Object { [uint32]$_.Id })
   foreach ($k in [Schutz]::Fenster($s.Bounds.X, $s.Bounds.Y, $s.Bounds.Width, $s.Bounds.Height, $frei.X, $frei.Y, $frei.Width, $frei.Height, $h, $erlaubt)) { Write-Log "Teilen-Bildschirm: Fenster ($k) zurueck auf den Hauptbildschirm" }
 }
-$script:lastSchutz = [DateTime]::MinValue
+$script:lastSchutz = [DateTime]::MinValue; $script:lastProj = [DateTime]::MinValue; $script:projHwnd = [IntPtr]::Zero
 function Ensure-Projector {
   # OBS-Programm als Vollbild-Projektor auf dem Teilen-Bildschirm (Companion-Button 1/3/9, Monitor-Nr. in r5_proj_mon;
   # OBS zaehlt die Bildschirme in derselben Reihenfolge wie Windows)
