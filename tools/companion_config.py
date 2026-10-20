@@ -108,6 +108,7 @@ def main(src, dst):
     var('r5_t_video', 'Teams-Bild an (1/0)', '0', False)
     var('r5_t_status', 'Teams-Beitritt: start / fehler: ... / leer', '', False)
     var('r5_spk_mute', 'Lautsprecher stumm (1) / an (0)', '0', True)
+    var('r5_proj_mon', 'OBS-Monitornummer des Teilen-Bildschirms (von teams-steuerung.ps1)', '1', False)
 
     # ---------- Seite 1: Tablet ----------
     extend(1, 0, 1, setvar('r5_room', '1'), setvar('r5_disp', '1'), setvar('r5_blank', '0'), touch())
@@ -146,6 +147,11 @@ def main(src, dst):
     extend(1, 3, 6, touch())
     put(1, 3, 7, button('Displays neu starten', [setvar('r5_disp', '1'), touch()]))
     put(1, 3, 8, button('Noch in Benutzung', [touch()]))                   # Tablet: „Weiter nutzen“ / Bedienung
+    # Teams-Bild per Bildschirm teilen: OBS-Programm als Vollbild-Projektor auf den (virtuellen) Teilen-Bildschirm.
+    # teams-steuerung.ps1 setzt r5_proj_mon und drückt diesen Button, wenn der Projektor fehlt.
+    put(1, 3, 9, button('OBS Projektor', [obs_act('custom_command', {
+        'command': opt('OpenVideoMixProjector'),
+        'arg': opt('{"videoMixType": "OBS_WEBSOCKET_VIDEO_MIX_TYPE_PROGRAM", "monitorIndex": $(custom:r5_proj_mon)}')})]))
 
     # ---------- Teams: Befehle an teams-steuerung.ps1 (UI Automation, keine Teams-API nötig) ----------
     # Das Skript liest r5_tcmd, drückt den Button im Teams-Meetingfenster und leert r5_tcmd wieder.

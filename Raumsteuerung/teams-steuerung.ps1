@@ -1,4 +1,4 @@
-# Raumsteuerung Sitzungszimmer 5 - Teams-Meeting vom Tablet bedienen (Mikro, Bild, Verlassen)
+﻿# Raumsteuerung Sitzungszimmer 5 - Teams-Meeting vom Tablet bedienen (Mikro, Bild, Verlassen)
 #
 # Ohne Teams-API: liest und drueckt die Buttons im Teams-Meetingfenster per Windows UI Automation
 # (dieselbe Schnittstelle, die Bildschirmleser nutzen). Die Buttons haben feste Kennungen
@@ -9,6 +9,9 @@
 #   - join: oeffnet den festen Meeting-Link des Raums (teams-link.txt), Kamera + Mikro an, "Jetzt teilnehmen",
 #           das Meetingfenster bleibt offen (eigener Monitor am Sprecherplatz). Fortschritt in r5_t_status
 #           ("start" waehrend des Beitritts, "fehler: ..." wenn es nicht klappt, sonst leer).
+# Modus "teilen" (Standard, siehe unten): Teams bekommt das OBS-Bild nicht ueber die Virtuelle Kamera, sondern
+#   als geteilter Bildschirm (OBS-Vollbild-Projektor auf einem virtuellen Bildschirm). join teilt danach automatisch,
+#   video_on/video_off = Teilen an/aus, leave beendet vorher das Teilen.
 # Ausserdem OBS-Waechter: startet OBS beim Anmelden und nach einem Absturz (alle 30 s geprueft).
 # Muss in der Sitzung des angemeldeten Benutzers laufen (nicht als SYSTEM) - Aufgabe "bei Anmeldung".
 #
@@ -18,7 +21,7 @@
 #   .\teams-steuerung.ps1 -Befehl mute   einmal Mikro umschalten (Test, ohne Companion)
 param(
   [switch]$Status,
-  [ValidateSet('', 'mute', 'video', 'leave', 'join')][string]$Befehl = '',
+  [ValidateSet('', 'mute', 'video', 'leave', 'join', 'share_on', 'share_off')][string]$Befehl = '',
   [string]$Companion = '',
   [string]$Log = (Join-Path $PSScriptRoot 'teams-steuerung.log')
 )
@@ -35,13 +38,34 @@ public static class Fenster {
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
   [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint f);
+  [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)] public struct DISPLAY_DEVICE {
+    public int cb; [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string DeviceName;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=128)] public string DeviceString; public int StateFlags;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=128)] public string DeviceID; [MarshalAs(UnmanagedType.ByValTStr, SizeConst=128)] public string DeviceKey; }
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern bool EnumDisplayDevices(string dev, int i, ref DISPLAY_DEVICE dd, int flags);
+  // Monitorname + Hardware-ID zu \\.\DISPLAYn (z. B. "Generic Monitor (VDD by MTT)  MONITOR\MTT1337\...")
+  public static string Monitor(string dev) {
+    var dd = new DISPLAY_DEVICE(); dd.cb = Marshal.SizeOf(dd);
+    return EnumDisplayDevices(dev, 0, ref dd, 0) ? dd.DeviceString + "  " + dd.DeviceID : "";
+  }
 }
 '@
+Add-Type -AssemblyName System.Windows.Forms
 
-if (-not $Companion) {
-  $Companion = 'http://127.0.0.1:8000'
-  try { $Companion = (Get-Content -Raw -Encoding UTF8 (Join-Path $PSScriptRoot 'mikro-automatik.json') | ConvertFrom-Json).companion } catch { }
-}
+$cfg = $null
+try { $cfg = Get-Content -Raw -Encoding UTF8 (Join-Path $PSScriptRoot 'mikro-automatik.json') | ConvertFrom-Json } catch { }
+if (-not $Companion) { $Companion = if ($cfg -and $cfg.companion) { $cfg.companion } else { 'http://127.0.0.1:8000' } }
+# Wie Teams das Bild bekommt (mikro-automatik.json, optional):
+#   teamsBild "teilen" (Standard): OBS zeigt das fertige Bild als Vollbild-Projektor auf einem eigenen (virtuellen)
+#             Bildschirm, Teams teilt diesen Bildschirm -> scharf und gross bei den Teilnehmern. Teams-Kamera bleibt aus.
+#             "Bild an/aus" auf dem Tablet = Teilen an/aus.
+#   teamsBild "kamera": wie bisher ueber die Virtuelle Kamera von OBS.
+#   teilenTon true/false: "Sound einschliessen" (Ton von Videos in der Praesentation) - Standard an.
+#   teilenBildschirm: Teil des Monitornamens des Teilen-Bildschirms, Standard "MTT" (Virtual Display Driver);
+#             nicht gefunden -> der letzte Bildschirm, der nicht der Hauptbildschirm ist.
+$Teilen = -not ($cfg -and $cfg.teamsBild -eq 'kamera')
+$TeilenTon = -not ($cfg -and $cfg.teilenTon -eq $false)
+$TeilenName = if ($cfg -and $cfg.teilenBildschirm) { $cfg.teilenBildschirm } else { 'MTT' }
 $IDS = @{ mute = 'microphone-button'; video = 'video-button'; leave = 'hangup-button' }
 # Beschriftung des Buttons, wenn der Zustand AUS ist (Mikro stumm / Kamera aus): "Mikrofon wieder aktivieren",
 # "Kamera aktivieren"; englisch "Unmute", "Turn camera on". An = "... stummschalten" / "Kamera ausschalten".
@@ -95,16 +119,162 @@ function Find-Meeting {
 }
 function Get-TeamsState {
   $w = Find-Meeting
-  if (-not $w) { return @{ In = $false; Mute = $false; Video = $false } }
+  # Waehrend das Teilen-Menue ("Inhalt freigeben") offen ist, verdeckt es die Meeting-Leiste -> kein hangup-button.
+  # Dann ist der Raum trotzdem im Meeting; Zustand als unbekannt melden (Hauptschleife behaelt den letzten).
+  if (-not $w) { return @{ In = $false; Mute = $false; Video = $false; Share = $false; Menue = [bool]((Find-ShareTray) -or (Find-LeaveDialog $null)) } }
   $mic = $w.FindFirst($Scope::Descendants, (Cond $IDS.mute))
   $cam = $w.FindFirst($Scope::Descendants, (Cond $IDS.video))
+  $shr = $w.FindFirst($Scope::Descendants, (Cond 'share-button'))
+  $share = [bool]($shr -and $shr.Current.Name -match $TEILT)
   return @{
     In    = $true
     Mute  = [bool]($mic -and $mic.Current.Name -match $AUS)
-    Video = [bool]($cam -and $cam.Current.Name -notmatch $AUS)
+    # Modus "teilen": "Bild an" heisst, Teams teilt den OBS-Bildschirm
+    Video = if ($Teilen) { $share } else { [bool]($cam -and $cam.Current.Name -notmatch $AUS) }
+    Share = $share
+    Menue = $false
   }
 }
+
+function Find-LeaveDialog($w) {
+  # Rueckfrage "Bleiben" / "Verlassen" (verdeckt die Meeting-Leiste, wie das Teilen-Menue)
+  $ids = @(Get-Process ms-teams -ErrorAction SilentlyContinue).Id
+  $c = New-Object System.Windows.Automation.OrCondition((New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, 'Bleiben')),
+                                                       (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, 'Stay')))
+  foreach ($x in $(if ($w) { @($w) } else { $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition) })) {
+    try { if ($ids -contains $x.Current.ProcessId -and $x.FindFirst($Scope::Descendants, $c)) { return $x } } catch { }
+  }
+  return $null
+}
+function Confirm-Leave($w) {
+  for ($i = 0; $i -lt 6; $i++) {
+    $d = Find-LeaveDialog $w
+    if ($d) {
+      $cB = New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+      $ok = @($d.FindAll($Scope::Descendants, $cB)) | Where-Object { $_.Current.Name -match '(?i)^(verlassen|leave)$' -and $_.Current.AutomationId -ne 'hangup-button' } | Select-Object -First 1
+      if ($ok) { $ok.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Write-Log 'Verlassen: Rueckfrage bestaetigt'; return }
+    }
+    Start-Sleep -Milliseconds 300
+  }
+}
+
+# ---------- Bildschirm teilen (Modus "teilen") ----------
+# share-button heisst "Teilen", waehrend des Teilens "Teilen beenden" (engl. "Share" / "Stop sharing")
+$TEILT = '(?i)beenden|stop'
+function Find-ShareTray {
+  $ids = @(Get-Process ms-teams -ErrorAction SilentlyContinue).Id
+  $c = New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, 'Bildschirm auswählen')
+  $c2 = New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, 'Select screen')
+  foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+    try {
+      if ($ids -notcontains $w.Current.ProcessId) { continue }
+      $l = $w.FindFirst($Scope::Descendants, (New-Object System.Windows.Automation.OrCondition($c, $c2)))
+      if ($l) { return @{ Win = $w; List = $l } }
+    } catch { }
+  }
+  return $null
+}
+function Get-ShareScreen {
+  # Bildschirm fuer das Teilen: Monitorname enthaelt $TeilenName (Virtual Display Driver: "VDD by MTT"),
+  # sonst der letzte Bildschirm, der nicht der Hauptbildschirm ist
+  $alle = [System.Windows.Forms.Screen]::AllScreens
+  for ($i = 0; $i -lt $alle.Count; $i++) {
+    if ([Fenster]::Monitor($alle[$i].DeviceName) -like "*$TeilenName*") { return @{ Index = $i; Bounds = $alle[$i].Bounds } }
+  }
+  for ($i = $alle.Count - 1; $i -ge 0; $i--) { if (-not $alle[$i].Primary) { return @{ Index = $i; Bounds = $alle[$i].Bounds } } }
+  return $null
+}
+function In-Bounds($rect, $b) {
+  $x = $rect.X + $rect.Width / 2; $y = $rect.Y + $rect.Height / 2
+  return ($x -ge $b.X -and $x -lt $b.X + $b.Width -and $y -ge $b.Y -and $y -lt $b.Y + $b.Height)
+}
+function Find-Projector($b) {
+  $obs = @(Get-Process obs64 -ErrorAction SilentlyContinue).Id
+  foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+    try { if ($obs -contains $w.Current.ProcessId -and $w.Current.Name -match '(?i)^(projektor|projector)' -and (In-Bounds $w.Current.BoundingRectangle $b)) { return $w } } catch { }
+  }
+  return $null
+}
+function Ensure-Projector {
+  # OBS-Programm als Vollbild-Projektor auf dem Teilen-Bildschirm (Companion-Button 1/3/9, Monitor-Nr. in r5_proj_mon;
+  # OBS zaehlt die Bildschirme in derselben Reihenfolge wie Windows)
+  $s = Get-ShareScreen
+  if (-not $s) { Write-Log 'Teilen: kein zweiter Bildschirm (Virtual Display Driver / HDMI-Dummy) gefunden'; return $null }
+  if (Find-Projector $s.Bounds) { return $s }
+  [void](Set-Var 'r5_proj_mon' ([string]$s.Index))
+  try { [void](Invoke-Companion 'POST' '/api/location/1/3/9/press') } catch { }
+  for ($i = 0; $i -lt 10 -and -not (Find-Projector $s.Bounds); $i++) { Start-Sleep -Milliseconds 500 }
+  if (Find-Projector $s.Bounds) { Write-Log "Teilen: OBS-Projektor auf Bildschirm $($s.Index) geoeffnet"; return $s }
+  Write-Log 'Teilen: OBS-Projektor laesst sich nicht oeffnen (laeuft OBS? Companion-Button 1/3/9?)'; return $null
+}
+function Find-ShareBar {
+  # Teams zeigt beim Teilen die "Freigabesteuerungsleiste" oben auf dem geteilten Bildschirm
+  $ids = @(Get-Process ms-teams -ErrorAction SilentlyContinue).Id
+  foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+    try { if ($ids -contains $w.Current.ProcessId -and $w.Current.Name -match '(?i)^(freigabesteuerungsleiste|sharing control bar)') { return $w } } catch { }
+  }
+  return $null
+}
+function Stop-Share {
+  $w = Find-Meeting; if (-not $w) { return $false }
+  $b = $w.FindFirst($Scope::Descendants, (Cond 'share-button'))
+  if (-not $b -or $b.Current.Name -notmatch $TEILT) { return $true }
+  $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+  for ($i = 0; $i -lt 10; $i++) { Start-Sleep -Milliseconds 300; $b = $w.FindFirst($Scope::Descendants, (Cond 'share-button')); if ($b -and $b.Current.Name -notmatch $TEILT) { break } }
+  Write-Log 'Teilen beendet'; return $true
+}
+function Start-Share {
+  $w = Find-Meeting
+  if (-not $w) { Write-Log 'Teilen: kein Teams-Meeting offen'; return $false }
+  $s = Ensure-Projector; if (-not $s) { return $false }
+  $b = $w.FindFirst($Scope::Descendants, (Cond 'share-button'))
+  if (-not $b) { Write-Log 'Teilen: Button share-button nicht gefunden'; return $false }
+  if ($b.Current.Name -match $TEILT) {
+    $bar = Find-ShareBar
+    if (-not $bar -or (In-Bounds $bar.Current.BoundingRectangle $s.Bounds)) { return $true }   # teilt schon den richtigen
+    Write-Log 'Teilen: falscher Bildschirm geteilt -> neu'; [void](Stop-Share); Start-Sleep -Milliseconds 800
+  }
+  $h = [IntPtr]$w.Current.NativeWindowHandle; $vorne = [Fenster]::GetForegroundWindow()
+  if ([Fenster]::IsIconic($h)) { [void][Fenster]::ShowWindow($h, 4); Start-Sleep -Milliseconds 500 }
+  # Bildschirme im Menue heissen alle gleich ("Generic PnP Monitor") -> der Reihe nach probieren (hinten zuerst,
+  # dort steht meist der zweite Bildschirm) und an der Lage der Teams-Leiste pruefen, ob es der richtige ist
+  for ($versuch = 0; $versuch -lt 4; $versuch++) {
+    $t = Find-ShareTray
+    if (-not $t) {
+      try { $w.FindFirst($Scope::Descendants, (Cond 'share-button')).GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() } catch { }
+      for ($i = 0; $i -lt 16 -and -not ($t = Find-ShareTray); $i++) { Start-Sleep -Milliseconds 250 }
+      if (-not $t) { Write-Log 'Teilen: Teilen-Menue geht nicht auf'; return $false }
+    }
+    Start-Sleep -Milliseconds 400
+    # nur der Inhalt (kein Sprecher-Ausschnitt darueber), Ton nach Einstellung
+    try {
+      $ro = $t.Win.FindFirst($Scope::Descendants, (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, 'Nur Inhalt')))
+      if ($ro) { $sp = $ro.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern); if (-not $sp.Current.IsSelected) { $sp.Select() } }
+      $cB = New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+      $ton = @($t.Win.FindAll($Scope::Descendants, $cB)) | Where-Object { $_.Current.Name -match '(?i)sound|ton einschl|include.*(sound|audio)' } | Select-Object -First 1
+      if ($ton) {
+        $tp = $ton.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+        if (($tp.Current.ToggleState -eq [System.Windows.Automation.ToggleState]::On) -ne $TeilenTon) { $tp.Toggle() }
+      }
+    } catch { Write-Log ('Teilen: Optionen nicht gesetzt (' + $_.Exception.Message + ')') }
+    $items = @($t.List.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition))
+    $nr = $items.Count - 1 - $versuch
+    if ($nr -lt 0) { Write-Log 'Teilen: Teilen-Bildschirm nicht in der Teams-Liste'; return $false }
+    $items[$nr].GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+    $bar = $null; for ($i = 0; $i -lt 20 -and -not ($bar = Find-ShareBar); $i++) { Start-Sleep -Milliseconds 300 }
+    if ($bar -and (In-Bounds $bar.Current.BoundingRectangle $s.Bounds)) {
+      Write-Log "Teilen: Bildschirm $($s.Index) wird geteilt (Eintrag $($nr + 1) von $($items.Count), Ton $(if ($TeilenTon) { 'an' } else { 'aus' }))"
+      if ($vorne -ne [IntPtr]::Zero -and [Fenster]::IsWindowVisible($vorne) -and -not [Fenster]::IsIconic($vorne)) { [void][Fenster]::SetForegroundWindow($vorne) }
+      return $true
+    }
+    Write-Log "Teilen: Eintrag $($nr + 1) ist nicht der Teilen-Bildschirm -> naechster"
+    [void](Stop-Share); Start-Sleep -Milliseconds 800
+  }
+  return $false
+}
 function Invoke-Teams([string]$cmd) {
+  # Beim Teilen fragt Teams vor dem Verlassen nach ("Sie geben gerade frei ...") -> erst das Teilen beenden
+  if ($cmd -eq 'leave' -and (Get-TeamsState).Share) { [void](Stop-Share); Start-Sleep -Milliseconds 500 }
   $w = Find-Meeting
   if (-not $w) { Write-Log "Befehl ${cmd}: kein Teams-Meeting offen"; return $false }
   $b = $w.FindFirst($Scope::Descendants, (Cond $IDS[$cmd]))
@@ -118,7 +288,12 @@ function Invoke-Teams([string]$cmd) {
   # (Teams laeuft auf dem eigenen Monitor am Sprecherplatz).
   if ($warMin) { [void][Fenster]::ShowWindow($h, 4); $warMin = $false; Start-Sleep -Milliseconds 500; $b = $w.FindFirst($Scope::Descendants, (Cond $IDS[$cmd])) }
   $name = $b.Current.Name
-  $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+  try { $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
+  catch {
+    # "Verlassen" ist manchmal ein Menue-Knopf mit Rueckfrage -> aufklappen und dort "Verlassen" bestaetigen
+    $b.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand(); Start-Sleep -Milliseconds 800
+  }
+  if ($cmd -eq 'leave') { Confirm-Leave $w }
   # warten, bis Teams umgeschaltet hat (Beschriftung wechselt), damit der gemeldete Zustand stimmt
   if ($cmd -ne 'leave') {
     $ende = [DateTime]::Now.AddSeconds(3)
@@ -181,13 +356,13 @@ function Find-Prejoin {
   }
   return $null
 }
-function Set-Switch($w, [string]$muster) {
-  # Kamera-/Mikro-Schalter im Beitrittsfenster einschalten (Kennungen wechseln, daher per Name + TogglePattern)
+function Set-Switch($w, [string]$muster, [bool]$an = $true) {
+  # Kamera-/Mikro-Schalter im Beitrittsfenster ein-/ausschalten (Kennungen wechseln, daher per Name + TogglePattern)
   $cBtn = New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
   foreach ($b in $w.FindAll($Scope::Descendants, $cBtn)) {
     if ($b.Current.Name -notmatch $muster) { continue }
     try { $tp = $b.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern) } catch { continue }
-    if ($tp.Current.ToggleState -eq [System.Windows.Automation.ToggleState]::Off) { $tp.Toggle(); Write-Log "Beitritt: '$($b.Current.Name)' eingeschaltet" }
+    if (($tp.Current.ToggleState -eq [System.Windows.Automation.ToggleState]::On) -ne $an) { $tp.Toggle(); Write-Log ("Beitritt: '$($b.Current.Name)' " + $(if ($an) { 'eingeschaltet' } else { 'ausgeschaltet' })) }
     return
   }
 }
@@ -210,7 +385,7 @@ function Join-Teams {
     $pre = Find-Prejoin
     if ($pre) {
       try {
-        Set-Switch $pre '(?i)^kamera|camera'
+        Set-Switch $pre '(?i)^kamera|camera' (-not $Teilen)   # Modus teilen: Bild kommt ueber das Teilen, Kamera aus
         Set-Switch $pre '(?i)^mikrofon|^mute|microphone'
         $pre.FindFirst($Scope::Descendants, $cJoin).GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
         $gedrueckt = $true
@@ -225,12 +400,14 @@ function Join-Teams {
   Start-Sleep -Seconds 2
   $script:win = $null
   Write-Log 'Beitritt: im Meeting'
+  if ($Teilen -and -not (Start-Share)) { [void](Set-Var 'r5_t_status' 'fehler: Bild teilen'); return $true }
   [void](Set-Var 'r5_t_status' '')
   return $true
 }
 
 # ---------- Testaufrufe ----------
-if ($Status) { $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}' -f $s.In, $s.Mute, $s.Video; exit 0 }
+if ($Status) { $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}  Teilt: {3}  Menue offen: {4}  Modus: {5}' -f $s.In, $s.Mute, $s.Video, $s.Share, $s.Menue, $(if ($Teilen) { 'teilen' } else { 'kamera' }); exit 0 }
+if ($Befehl -in 'share_on', 'share_off') { [void]$(if ($Befehl -eq 'share_on') { Start-Share } else { Stop-Share }); $s = Get-TeamsState; 'Im Meeting: {0}  Teilt: {1}' -f $s.In, $s.Share; exit 0 }
 if ($Befehl -eq 'join') { [void](Join-Teams); $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}' -f $s.In, $s.Mute, $s.Video; exit 0 }
 if ($Befehl) { [void](Invoke-Teams $Befehl); Start-Sleep -Milliseconds 800; $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}' -f $s.In, $s.Mute, $s.Video; exit 0 }
 
@@ -254,10 +431,16 @@ while ($true) {
           $s = Get-TeamsState
           $ist = if ($was -eq 'mic') { -not $s.Mute } else { $s.Video }
           if (-not $s.In) { Write-Log "Befehl ${cmd}: kein Teams-Meeting offen" }
+          elseif ($was -eq 'video' -and $Teilen) {
+            if ($soll) { if (Start-Share) { [void](Set-Var 'r5_t_status' '') } else { [void](Set-Var 'r5_t_status' 'fehler: Bild teilen') } }
+            else { [void](Stop-Share) }
+          }
           elseif ($ist -ne $soll) { [void](Invoke-Teams $(if ($was -eq 'mic') { 'mute' } else { 'video' })) }
           else { Write-Log "Befehl ${cmd}: Teams steht schon so" }
           $nextState = [DateTime]::MinValue
         }
+        elseif ($cmd -eq 'video' -and $Teilen) { $s = Get-TeamsState; if ($s.Share) { [void](Stop-Share) } else { [void](Start-Share) }; $nextState = [DateTime]::MinValue }
+        elseif ($cmd -in 'share_on', 'share_off') { if ($cmd -eq 'share_on') { [void](Start-Share) } else { [void](Stop-Share) }; $nextState = [DateTime]::MinValue }
         elseif ($IDS.ContainsKey($cmd)) { [void](Invoke-Teams $cmd); $nextState = [DateTime]::MinValue }
         else { Write-Log "Unbekannter Befehl '$cmd'" }
       }
@@ -266,6 +449,7 @@ while ($true) {
     if ([DateTime]::Now -ge $nextState) {
       $nextState = [DateTime]::Now.AddMilliseconds(1000)
       $s = Get-TeamsState
+      if ($s.Menue) { Start-Sleep -Milliseconds 250; continue }   # Teilen-Menue offen: Zustand gerade nicht lesbar
       $neu = @{ r5_t_in = [int]$s.In; r5_t_mute = [int]$s.Mute; r5_t_video = [int]$s.Video }
       $alle = ([DateTime]::Now - $lastPush).TotalSeconds -ge 30
       foreach ($k in $neu.Keys) {
@@ -273,7 +457,11 @@ while ($true) {
       }
       if ($alle) { $lastPush = [DateTime]::Now }
       # Meeting von anderen beendet oder in Teams selbst verlassen -> Abschlussfenster ebenfalls schliessen
-      if (([DateTime]::Now - $script:lastObs).TotalSeconds -ge 30) { $script:lastObs = [DateTime]::Now; Ensure-Obs }
+      if (([DateTime]::Now - $script:lastObs).TotalSeconds -ge 30) {
+        $script:lastObs = [DateTime]::Now; Ensure-Obs
+        # Modus teilen: nach OBS-Neustart fehlt der Projektor -> Teams wuerde einen leeren Bildschirm teilen
+        if ($Teilen -and $s.Share -and (Get-Process obs64 -ErrorAction SilentlyContinue)) { [void](Ensure-Projector) }
+      }
       if (([DateTime]::Now - $script:lastClose).TotalSeconds -ge 5) { $script:lastClose = [DateTime]::Now; Close-AfterMeeting }
       if ($s.In -ne $script:warIn) { Write-Log $(if ($s.In) { 'Teams-Meeting erkannt' } else { 'kein Teams-Meeting' }); $script:warIn = $s.In }
     }
