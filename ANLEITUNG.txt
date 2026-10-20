@@ -211,16 +211,21 @@ Meeting des Raums per Knopf starten ("Teams-Meeting starten" oben am Tablet; "Ra
      minimiert, holt das Skript es vor dem Drücken wieder hervor (minimiert reagiert Teams erst nach Sekunden).
   i) Das Tablet schickt Zielzustände (mic_on/mic_off/video_on/video_off), das Skript drückt nur, wenn Teams
      anders steht. Die Stream-Deck-Tasten 1/0/4 und 1/0/5 schalten weiterhin um.
-Bild an Teams per Bildschirm teilen (Standard seit 20.10.2026, scharf statt Kamera-Qualität):
-  j) OBS zeigt das fertige Bild (Szenen, Hintergrund, Präsentation, Kameras) als Vollbild-Projektor auf einem
-     eigenen, unsichtbaren Bildschirm. Teams TEILT diesen Bildschirm ("Inhalt freigeben", "Nur Inhalt",
-     "Sound einschließen" an). Die Teams-Kamera bleibt aus. Text und Folien kommen scharf und groß an.
+Teams-Bild: Präsentation geteilt + Personen über die Kamera (Standard seit 20.10.2026):
+  j) Zwei Kanäle wie bei Teams Rooms:
+     - Inhalt: OBS-Szene "Inhalt" (nur die Präsentation auf dem Emsland-Hintergrund) als Vollbild-Projektor auf
+       einem eigenen, unsichtbaren Bildschirm. Teams TEILT diesen Bildschirm ("Nur Inhalt", "Sound einschließen").
+       Text und Folien kommen scharf und groß an (Teilen hat wenige Bilder/s - für Folien richtig).
+     - Personen: Teams-Kamera = OBS Virtuelle Kamera (Programm: Nur Redner / Diskussion / Pausenbild), flüssig.
+     Das Tablet blendet im Modus "teilen" die Ansichten "Alles im Blick"/"Folien groß" aus (r5_t_mode); stehen sie
+     beim Teilen noch auf dem Programm, schaltet das Skript auf "Nur Redner". "Präsentation ausblenden" gilt auch
+     für "Inhalt".
   k) Unsichtbarer Bildschirm: Laptop/Test = "Virtual Display Driver" (winget VirtualDrivers.Virtual-Display-Driver,
      danach "VDD Control.exe" als Administrator -> "Install Driver"; Windows: Anzeige "Erweitern", 1920x1080).
      Raum-PC: alternativ HDMI-Dummy-Stecker (dann in mikro-automatik.json "teilenBildschirm" auf einen Teil
      des Monitornamens setzen; ohne Treffer nimmt das Skript den letzten Nicht-Hauptbildschirm).
-  l) "Teams-Meeting starten" tritt bei und teilt danach automatisch (ca. 20 s). "Bild an/aus" am Tablet =
-     Teilen an/aus. "Verlassen"/"Raum ausschalten" beenden zuerst das Teilen (sonst fragt Teams nach).
+  l) "Teams-Meeting starten" tritt bei (Kamera an) und teilt danach automatisch (ca. 20 s). "Bild an/aus" am
+     Tablet = Teilen und Kamera zusammen an/aus. "Verlassen"/"Raum ausschalten" beenden zuerst das Teilen (sonst fragt Teams nach).
   m) Fehlt der OBS-Projektor (z. B. nach OBS-Neustart), öffnet das Skript ihn über Companion-Button 1/3/9
      (OBS Custom Command OpenVideoMixProjector, Monitor-Nr. in r5_proj_mon) - auch alle 30 s während des Teilens.
   n) Zurück zur Virtuellen Kamera: in C:\Raumsteuerung\mikro-automatik.json  "teamsBild": "kamera"  eintragen
