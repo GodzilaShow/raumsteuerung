@@ -567,9 +567,10 @@ function render() {
   $('#dispBtn').className = 'btn' + (!S.disp ? ' primary' : '');
   $('#dispBtn').textContent = S.disp ? 'Displays ausschalten' : 'Displays einschalten';
   $('#blankBtn').disabled = !S.disp;
-  // Präsentation wird scharf geteilt -> Kamera zeigt nur Personen (Gesamtansichten würden die Folien doppeln)
-  var tl = T.mode === 'teilen' && T.share && T.inMeeting; $('.scenes').classList.toggle('teilen', tl);
-  $('#scenesH').textContent = tl ? 'Kamera in Teams (Präsentation wird scharf geteilt)' : 'Was sehen die Online-Teilnehmer?';
+  // Modus teilen: Folien kommen scharf über „Präsentation zeigen“ -> Kamera-Ansichten nur mit Personen
+  // (Gesamtansichten würden die Folien unscharf doppeln)
+  var tl = T.mode === 'teilen'; $('.scenes').classList.toggle('teilen', tl);
+  $('#scenesH').textContent = tl ? 'Was zeigt die Kamera in Teams?' : 'Was sehen die Online-Teilnehmer?';
   var sb = $('#spkBtn'); sb.classList.toggle('muted', !!S.spkMute); sb.lastChild.textContent = S.spkMute ? 'Ton ist aus' : 'Ton aus';
   sb.closest('.panel').classList.toggle('mutedvol', !!S.spkMute);
   $('[data-act=volDown]').disabled = S.vol <= 0;

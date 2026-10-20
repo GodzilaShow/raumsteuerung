@@ -143,16 +143,15 @@ const clear = () => fetch(API + '/_test/clear');
   check(!(await p.isVisible('#tShare')), 'Modus kamera: kein Knopf „Präsentation zeigen“');
   await set('r5_t_mode=teilen&r5_t_share=0'); await p.waitForTimeout(3500);
   check(await p.isVisible('#tShare') && (await p.textContent('#tShare')).includes('Präsentation zeigen'), 'Modus teilen: Knopf „Präsentation zeigen“ in der Teams-Leiste');
-  check(await p.isVisible('[data-scene=alles]'), 'Modus teilen, nicht geteilt: alle Ansichten sichtbar (Start nur mit Kamera)');
+  check(!(await p.isVisible('[data-scene=alles]')) && !(await p.isVisible('[data-scene=folien]')) && await p.isVisible('[data-scene=diskussion]'),
+        'Modus teilen: nur Personen-Ansichten (ohne „Alles im Blick“/„Folien groß“)');
+  check((await p.textContent('#scenesH')) === 'Was zeigt die Kamera in Teams?', 'Modus teilen: Überschrift „Was zeigt die Kamera in Teams?“');
   await clear(); await p.click('#tShare'); await p.waitForTimeout(300);
   check((await state()).vars.r5_tcmd === 'share_on' && (await p.textContent('#tShare')).includes('beenden'), '„Präsentation zeigen“ -> r5_tcmd = share_on, Knopf „Präsentation beenden“');
-  await set('r5_t_share=1'); await p.waitForTimeout(3500);
-  check(!(await p.isVisible('[data-scene=alles]')) && !(await p.isVisible('[data-scene=folien]')) && await p.isVisible('[data-scene=redner]'),
-        'beim Teilen: „Alles im Blick“/„Folien groß“ ausgeblendet');
-  check((await p.textContent('#scenesH')).includes('Kamera in Teams'), 'beim Teilen: Überschrift „Kamera in Teams …“');
   await clear(); await p.click('#tShare'); await p.waitForTimeout(300);
   check((await state()).vars.r5_tcmd === 'share_off', '„Präsentation beenden“ -> r5_tcmd = share_off');
   await set('r5_t_share=0&r5_t_mode=kamera'); await p.waitForTimeout(3500);
+  check(await p.isVisible('[data-scene=alles]') && (await p.textContent('#scenesH')) === 'Was sehen die Online-Teilnehmer?', 'Modus kamera: wieder alle 5 Ansichten');
   await clear(); await p.click('#tMic'); await p.waitForTimeout(300);
   let ts = await state();
   check(ts.vars.r5_tcmd === 'mic_off', 'Mikro tippen -> Zielzustand r5_tcmd = mic_off (kein Umschalten)');
