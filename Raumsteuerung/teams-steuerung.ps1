@@ -1,17 +1,17 @@
-﻿# Raumsteuerung Sitzungszimmer 5 - Teams-Meeting vom Tablet bedienen (Mikro, Bild, Verlassen)
+﻿# Raumsteuerung Sitzungszimmer 5 - Teams-Meeting vom Tablet bedienen (Mikro, Kamera, Praesentation, Verlassen)
 #
 # Ohne Teams-API: liest und drueckt die Buttons im Teams-Meetingfenster per Windows UI Automation
 # (dieselbe Schnittstelle, die Bildschirmleser nutzen). Die Buttons haben feste Kennungen
 # (microphone-button, video-button, hangup-button), unabhaengig von der Sprache.
-#   - Zustand -> Companion-Variablen r5_t_in (im Meeting), r5_t_mute (stumm), r5_t_video (Bild an)
+#   - Zustand -> Companion-Variablen r5_t_in (im Meeting), r5_t_mute (stumm), r5_t_video (Kamera an)
 #   - Befehl  <- Companion-Variable r5_tcmd (mute | video | leave | join, vom Tablet: mic_on/mic_off/video_on/
 #               video_off = Zielzustand), wird nach dem Ausfuehren geleert
 #   - join: oeffnet den festen Meeting-Link des Raums (teams-link.txt), Kamera + Mikro an, "Jetzt teilnehmen",
 #           das Meetingfenster bleibt offen (eigener Monitor am Sprecherplatz). Fortschritt in r5_t_status
 #           ("start" waehrend des Beitritts, "fehler: ..." wenn es nicht klappt, sonst leer).
 # Modus "teilen" (Standard, siehe unten): Teams bekommt das OBS-Bild nicht ueber die Virtuelle Kamera, sondern
-#   als geteilter Bildschirm (OBS-Vollbild-Projektor auf einem virtuellen Bildschirm). join teilt danach automatisch,
-#   video_on/video_off = Teilen an/aus, leave beendet vorher das Teilen.
+#   als geteilter Bildschirm (OBS-Vollbild-Projektor auf einem virtuellen Bildschirm). Teilen per share_on/share_off
+#   ("Präsentation zeigen"), video_on/video_off = Teams-Kamera, leave beendet vorher das Teilen.
 # Ausserdem OBS-Waechter: startet OBS beim Anmelden und nach einem Absturz (alle 30 s geprueft).
 # Muss in der Sitzung des angemeldeten Benutzers laufen (nicht als SYSTEM) - Aufgabe "bei Anmeldung".
 #
@@ -116,7 +116,7 @@ if (-not $Companion) { $Companion = if ($cfg -and $cfg.companion) { $cfg.compani
 #             als Vollbild-Projektor auf einem eigenen (virtuellen) Bildschirm, Teams teilt ihn -> scharf und gross.
 #             Personen: Virtuelle Kamera (OBS-Programm, Szenen Nur Redner / Diskussion / Pausenbild) -> fluessig.
 #             Meeting-Start nur mit Kamera ("Nur Redner"); Teilen ueber "Präsentation zeigen" am Tablet (share_on/off,
-#             Zustand r5_t_share). "Bild an/aus" = Kamera.
+#             Zustand r5_t_share). "Kamera an/aus" = Teams-Kamera.
 #   teamsBild "kamera": wie bisher ueber die Virtuelle Kamera von OBS.
 #   teilenTon true/false: "Sound einschliessen" (Ton von Videos in der Praesentation) - Standard an.
 #   teilenBildschirm: Teil des Monitornamens des Teilen-Bildschirms, Standard "MTT" (Virtual Display Driver);
@@ -174,8 +174,11 @@ function Find-Meeting {
     try { if ($ids -contains $w.Current.ProcessId -and $w.FindFirst($Scope::Descendants, $cHang)) { $treffer += $w } } catch { }
   }
   if (-not $treffer.Count) { return $null }
-  $offen = @($treffer | Where-Object { -not [Fenster]::IsIconic([IntPtr]$_.Current.NativeWindowHandle) })
-  $script:win = if ($offen.Count) { $offen | Sort-Object { $_.Current.BoundingRectangle.Width } | Select-Object -First 1 } else { $treffer[0] }
+  # Fenster kann inzwischen zu sein (z. B. beim Verlassen) -> dann einfach das erste
+  try {
+    $offen = @($treffer | Where-Object { -not [Fenster]::IsIconic([IntPtr]$_.Current.NativeWindowHandle) })
+    $script:win = if ($offen.Count) { $offen | Sort-Object { $_.Current.BoundingRectangle.Width } | Select-Object -First 1 } else { $treffer[0] }
+  } catch { $script:win = $treffer[0] }
   return $script:win
 }
 function Get-TeamsState {
@@ -190,7 +193,7 @@ function Get-TeamsState {
   return @{
     In    = $true
     Mute  = [bool]($mic -and $mic.Current.Name -match $AUS)
-    # Modus "teilen": "Bild an" heisst, Teams teilt den OBS-Bildschirm
+    # Teams-Kamera an (auch im Modus "teilen"; ob geteilt wird, steht in Share)
     Video = [bool]($cam -and $cam.Current.Name -notmatch $AUS)
     Share = $share
     Menue = $false
@@ -332,8 +335,10 @@ function Ensure-Projector {
   if (Find-Projector $s.Bounds) { return $s }
   # Nie einen zweiten "Inhalt"-Projektor oeffnen (z. B. wenn er nach dem Umstellen der Bildschirme woanders liegt)
   $obs = @(Get-Process obs64 -ErrorAction SilentlyContinue).Id
-  $da = @($AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition) |
-          Where-Object { $obs -contains $_.Current.ProcessId -and $_.Current.Name -match '(?i)^(projektor|projector)' -and $_.Current.Name -match $PROJ })
+  $da = @()
+  foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+    try { if ($obs -contains $w.Current.ProcessId -and $w.Current.Name -match '(?i)^(projektor|projector)' -and $w.Current.Name -match $PROJ) { $da += $w } } catch { }
+  }
   if ($da.Count) {
     if (-not $script:warnProj) { Write-Log "Teilen: OBS-Projektor '$PROJ' liegt nicht auf dem Teilen-Bildschirm ($($da[0].Current.BoundingRectangle)) - kein zweiter wird geoeffnet"; $script:warnProj = $true }
     return $s

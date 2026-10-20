@@ -183,11 +183,11 @@ Automatisch aus - nur abends, tagsüber nie (Schulungen, lange Sitzungen ohne Be
 9. Teams vom Tablet aus bedienen (Mikro, Bild, Verlassen)
 -----------------------------------------------------------
 Auf der Steuerung erscheint oben eine Teams-Leiste, sobald auf dem Raum-PC ein Teams-Meeting offen ist:
-"Mikro an/aus", "Bild an/aus", "Verlassen" (Verlassen erst nach zweitem Tippen).
+"Mikro an/aus", "Kamera an/aus", "Verlassen" (Verlassen erst nach zweitem Tippen).
 So funktioniert es: teams-steuerung.ps1 liest und drückt die Buttons im Teams-Meetingfenster
 über Windows UI Automation (wie ein Bildschirmleser). Keine Teams-API, kein Teams-Admin nötig.
   - Companion-Buttons 1/0/4 (Mikro), 1/0/5 (Bild), 1/0/6 (Verlassen) setzen r5_tcmd = mute/video/leave.
-  - Das Skript meldet r5_t_in (Meeting offen), r5_t_mute (stumm), r5_t_video (Bild an) zurück.
+  - Das Skript meldet r5_t_in (Meeting offen), r5_t_mute (stumm), r5_t_video (Kamera an) zurück.
 Einrichtung:
   a) installieren.ps1 legt die Aufgabe "Raumsteuerung Teams-Steuerung" an. Sie startet bei jeder
      Windows-Anmeldung im Benutzerkonto (nicht als SYSTEM - sie braucht den Desktop).
@@ -226,7 +226,7 @@ Teams-Bild: Präsentation geteilt + Personen über die Kamera (Standard seit 20.
      des Monitornamens setzen; ohne Treffer nimmt das Skript den letzten Nicht-Hauptbildschirm).
   l) "Teams-Meeting starten" tritt nur mit Kamera bei (ca. 20 s), Kamera-Szene immer "Nur Redner".
      Die Präsentation teilt erst der Knopf "Präsentation zeigen" in der Teams-Leiste (r5_tcmd share_on/share_off,
-     Zustand r5_t_share, ca. 12 s); "Präsentation beenden" stoppt das Teilen. "Bild an/aus" = Teams-Kamera. "Verlassen"/"Raum ausschalten" beenden zuerst das Teilen (sonst fragt Teams nach).
+     Zustand r5_t_share, ca. 12 s); "Präsentation beenden" stoppt das Teilen. "Kamera an/aus" = Teams-Kamera. "Verlassen"/"Raum ausschalten" beenden zuerst das Teilen (sonst fragt Teams nach).
   m) Fehlt der OBS-Projektor (z. B. nach OBS-Neustart), öffnet das Skript ihn über Companion-Button 1/3/9
      (OBS Custom Command OpenVideoMixProjector, Monitor-Nr. in r5_proj_mon) - auch alle 30 s während des Teilens.
   n) Zurück zur Virtuellen Kamera: in C:\Raumsteuerung\mikro-automatik.json  "teamsBild": "kamera"  eintragen
