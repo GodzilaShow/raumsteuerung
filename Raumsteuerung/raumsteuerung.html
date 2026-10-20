@@ -75,6 +75,7 @@ header.tm .title b,header.tm .btn{white-space:nowrap}
 /* Teams-Modus „teilen“: Präsentation kommt scharf über das Teilen, die Kamera zeigt nur Personen */
 .scenes.teilen{grid-template-columns:repeat(2,minmax(0,1fr))}
 .scenes.teilen [data-scene=alles],.scenes.teilen [data-scene=folien]{display:none}
+.scenes.teilen [data-scene=redner]{order:-1}   /* „Nur Redner“ wird am häufigsten gebraucht -> links oben */
 .scene .lbl{display:block;padding:8px 10px;font-size:16px;font-weight:600}
 .scene.on{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue)}
 .scene.on .lbl{background:var(--blue);color:#fff}

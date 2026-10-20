@@ -146,6 +146,9 @@ const clear = () => fetch(API + '/_test/clear');
   check(!(await p.isVisible('[data-scene=alles]')) && !(await p.isVisible('[data-scene=folien]')) && await p.isVisible('[data-scene=diskussion]'),
         'Modus teilen: nur Personen-Ansichten (ohne „Alles im Blick“/„Folien groß“)');
   check((await p.textContent('#scenesH')) === 'Was zeigt die Kamera in Teams?', 'Modus teilen: Überschrift „Was zeigt die Kamera in Teams?“');
+  check(await p.$$eval('.scenes .scene', els => els.filter(e => e.offsetParent).map(e => e.dataset.scene).sort((x, y) => 0) && els.filter(e => e.offsetParent)
+        .sort((x, y) => x.getBoundingClientRect().top - y.getBoundingClientRect().top || x.getBoundingClientRect().left - y.getBoundingClientRect().left)[0].dataset.scene) === 'redner',
+        'Modus teilen: „Nur Redner“ steht links oben');
   await clear(); await p.click('#tShare'); await p.waitForTimeout(300);
   check((await state()).vars.r5_tcmd === 'share_on' && (await p.textContent('#tShare')).includes('beenden'), '„Präsentation zeigen“ -> r5_tcmd = share_on, Knopf „Präsentation beenden“');
   await clear(); await p.click('#tShare'); await p.waitForTimeout(300);
