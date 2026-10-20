@@ -227,6 +227,9 @@ Bild an Teams per Bildschirm teilen (Standard seit 20.10.2026, scharf statt Kame
      und die Aufgabe "Raumsteuerung Teams-Steuerung" neu starten. Ton aus beim Teilen: "teilenTon": false.
   o) Die Bildschirme heißen in der Teams-Liste alle gleich; das Skript probiert von hinten und prüft an der
      Lage der Teams-Leiste "Freigabesteuerungsleiste", ob der richtige Bildschirm geteilt wird.
+  p) Schutz: Solange teams-steuerung.ps1 läuft, kann die Maus nicht auf den Teilen-Bildschirm, dorthin
+     geschobene Fenster kommen innerhalb 1 s auf den Hauptbildschirm zurück, der OBS-Projektor liegt oben.
+     Wartung am Teilen-Bildschirm: Aufgabe "Raumsteuerung Teams-Steuerung" vorher beenden.
 Grenzen: Teams kennt keinen auslesbaren Zustand für "Hand heben" - deshalb keine Hand-Taste.
 Organisator übergeben, Wartebereich, andere stummschalten: nur in Teams selbst.
 Nach großen Teams-Updates kann eine Button-Kennung wechseln (microphone-button, video-button,
