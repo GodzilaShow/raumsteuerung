@@ -178,6 +178,11 @@ const clear = () => fetch(API + '/_test/clear');
   await p.click('#dlgOff [data-act=off]'); await p.waitForTimeout(300);
   check((await state()).log.includes('1/0/2 press') && await p.isVisible('#s-start'), 'Ja, ausschalten -> 1/0/2 und Startbildschirm');
   check((await state()).vars.r5_tcmd === 'leave', 'Raum aus verlässt auch das Teams-Meeting (r5_tcmd = leave)');
+  // Teams meldet noch „im Meeting“ (Verlassen dauert): sofort neu starten -> keine alte Teams-Leiste
+  await set('r5_t_in=1&r5_t_mute=0&r5_t_video=1'); await p.click('[data-act=start]'); await p.waitForTimeout(3500);
+  check(!(await p.isVisible('#teamsBar')) && await p.isVisible('#tJoin'), 'Raum aus -> sofort Raum starten: keine Leiste vom alten Meeting, „Teams-Meeting starten“ sichtbar');
+  await set('r5_t_in=0'); await p.waitForTimeout(3500);
+  await p.click('[data-act=askOff]'); await p.waitForTimeout(300); await p.click('#dlgOff [data-act=off]'); await p.waitForTimeout(300);
 
   console.log('Auto-Aus (nur abends)');
   await set('r5_t_in=0'); await p.click('[data-act=start]'); await p.waitForTimeout(3500);

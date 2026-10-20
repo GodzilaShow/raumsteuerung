@@ -632,7 +632,7 @@ function renderTeams() {
 /* ---- Actions ---- */
 var ACTIONS = {
   start: function () { call('raum_an'); touched.room = Date.now(); stopIdle(); nextAsk = Date.now() + CONFIG.askEveryMinutes * 60000; go('main'); },   // Teams nur über „Teams-Meeting starten“
-  tJoin: function () { if (T.joinAt && Date.now() - T.joinAt < 60000) return; call('teams_join'); T.joinAt = Date.now(); T.status = ''; },
+  tJoin: function () { if (T.joinAt && Date.now() - T.joinAt < 60000) return; call('teams_join'); T.joinAt = Date.now(); T.status = ''; T.offAt = 0; },
   askOff: function () { $('#dlgOff').classList.add('show'); },
   cancelOff: function () { $('#dlgOff').classList.remove('show'); },
   off: function () { roomOff(); },
@@ -700,8 +700,14 @@ document.addEventListener('pointerup', function (e) {
 });
 
 /* Raum aus (Knopf, Abfrage oder Zeitablauf) */
+// Raum aus verlässt auch das Teams-Meeting -> alten Meeting-Zustand sofort vergessen, sonst zeigt „Raum starten“
+// kurz noch Mikro/Bild/Präsentation vom letzten Meeting. Bis teams-steuerung „nicht im Meeting“ meldet
+// (Verlassen dauert bis ~30 s, höchstens 60 s), keine Meldung „im Meeting“ glauben.
+function forgetTeams() {
+  T.inMeeting = false; T.muted = false; T.video = true; T.share = false; T.status = ''; T.joinAt = 0; T.offAt = Date.now();
+}
 function roomOff() {
-  call('raum_aus'); touched.room = Date.now();
+  forgetTeams(); call('raum_aus'); touched.room = Date.now();
   $('#dlgOff').classList.remove('show'); stopIdle(); go('start');
 }
 /* Publikum-Kamera von Hand bewegen -> Automatik aus, sonst fährt sie gleich wieder weg */
@@ -825,16 +831,18 @@ function poll() {
     if (room !== null) {
       var ro = isOn(room);
       if (roomPrev !== null && ro !== roomPrev && now - touched.room > grace) {
-        if (!ro && S.screen !== 'start') { $('#dlgOff').classList.remove('show'); stopIdle(); S.screen = 'start'; changed = true; }
+        if (!ro && S.screen !== 'start') { $('#dlgOff').classList.remove('show'); stopIdle(); forgetTeams(); S.screen = 'start'; changed = true; }
         if (ro && S.screen === 'start') { lastUse = Date.now(); S.screen = 'main'; changed = true; }
       }
       roomPrev = ro;
     }
     // Teams: Leiste nur im Meeting (teams-steuerung.ps1 meldet r5_t_in = 1); ohne Skript bleibt sie aus
     var tin = r[6] === null ? T.inMeeting : isOn(r[6]);
+    if (r[6] !== null && !isOn(r[6])) T.offAt = 0;           // Verlassen bestätigt
+    if (tin && T.offAt && now - T.offAt < 60000) tin = false;  // Meeting wird nach „Raum aus“ gerade verlassen
     if (tin !== T.inMeeting) { T.inMeeting = tin; if (tin) T.joinAt = 0; changed = true; }
     if (r[11] !== null && String(r[11]).trim() !== T.mode) { T.mode = String(r[11]).trim(); changed = true; }
-    if (r[12] !== null && now - touched.share > 15000) { var sh = isOn(r[12]); if (sh !== T.share) { T.share = sh; changed = true; } }   // Teilen dauert bis ~15 s
+    if (r[12] !== null && now - touched.share > 15000 && !T.offAt) { var sh = isOn(r[12]); if (sh !== T.share) { T.share = sh; changed = true; } }   // Teilen dauert bis ~15 s
     var tst = r[9] === null ? T.status : String(r[9]).trim();
     if (tst !== T.status) { T.status = tst; if (/^fehler/i.test(tst)) T.joinAt = 0; changed = true; }
     if (tin && now - touched.teams > 6000 && r[7] !== null && r[8] !== null) {   // Teams schaltet verzögert um -> länger dem eigenen Tippen glauben
