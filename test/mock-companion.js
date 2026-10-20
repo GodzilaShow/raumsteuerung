@@ -49,15 +49,36 @@ async function pressLoc(loc, kind = 'press') {
   return true;
 }
 let down = false; // true = Companion "abgestürzt"
+// Störungen für den Chaos-Test (test/chaos.js), alle per /_test/set:
+//   hang=1      Verbindung annehmen, nie antworten (Companion hängt / WLAN weg ohne Verbindungsabbruch)
+//   slow=ms     jede API-Antwort so viel später
+//   flaky=0.3   Anteil der Anfragen, deren Verbindung abbricht
+//   lagdown=ms  Kamera-„down“ kommt so viel später an (Netz überholt: „up“ vor „down“)
+//   dropup=n    die nächsten n Kamera-„up“ gehen verloren
+const fault = { hang: false, slow: 0, flaky: 0, lagdown: 0, dropup: 0 };
 const SCENES = { '1/1/1': 'Alles im Blick', '1/1/2': 'Folien Groß', '1/1/3': 'Diskussion', '1/1/4': 'Nur Redner', '1/1/5': 'Pausenbild' };
 function cors(res) { res.setHeader('Access-Control-Allow-Origin', '*'); }
 http.createServer((req, res) => {
   cors(res);
   const u = new URL(req.url, 'http://x');
   if (u.pathname === '/_test/state') { res.end(JSON.stringify({ vars, log })); return; }
-  if (u.pathname === '/_test/set') { for (const [k, v] of u.searchParams) { if (k === 'down') down = v === '1'; else vars[k] = v; } res.end('ok'); return; }
+  if (u.pathname === '/_test/set') {
+    for (const [k, v] of u.searchParams) {
+      if (k === 'down') down = v === '1'; else if (k === 'hang') fault.hang = v === '1'; else if (k in fault) fault[k] = +v || 0; else vars[k] = v;
+    }
+    res.end('ok'); return;
+  }
   if (u.pathname === '/_test/clear') { log.length = 0; res.end('ok'); return; }
   if (down) { req.socket.destroy(); return; }
+  if (fault.hang) return;                                    // nie antworten
+  if (fault.flaky && Math.random() < fault.flaky) { req.socket.destroy(); return; }
+  const cm = /^\/api\/location\/(3\/[23]\/\d+)\/(down|up)$/.exec(u.pathname);
+  if (cm && cm[2] === 'up' && fault.dropup > 0) { fault.dropup--; req.socket.destroy(); return; }
+  const lag = fault.slow + (cm && cm[2] === 'down' ? fault.lagdown : 0);
+  if (lag) { setTimeout(() => api(req, res, u), lag); return; }
+  api(req, res, u);
+}).listen(API_PORT, '127.0.0.1');
+function api(req, res, u) {
   let m;
   if (req.method === 'POST' && (m = /^\/api\/location\/(\d+\/\d+\/\d+)\/(press|down|up)$/.exec(u.pathname))) {
     log.push(m[1] + ' ' + m[2]);
@@ -86,7 +107,7 @@ http.createServer((req, res) => {
     res.end(vars[k]); return;
   }
   res.statusCode = 404; res.end('Not found');
-}).listen(API_PORT, '127.0.0.1');
+}
 const types = { '.html': 'text/html; charset=utf-8', '.json': 'application/manifest+json', '.png': 'image/png' };
 http.createServer((req, res) => {
   let name = path.basename(decodeURIComponent(new URL(req.url, 'http://x').pathname)) || 'raumsteuerung.html';

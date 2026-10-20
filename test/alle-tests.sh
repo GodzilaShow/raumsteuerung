@@ -12,5 +12,6 @@ sleep 1
 rc=0
 echo "== Companion-Konfiguration";  python3 -I test/check-companion-config.py | tail -1 || rc=1
 echo "== Tablet-Seite";             node test/functional.js | tail -1 || rc=1
+echo "== Chaos (Störungen + Zufallsbedienung)"; node test/chaos.js | tail -1 || rc=1
 echo "== Mikrofon-Automatik";       PWSH="${PWSH:-pwsh}" node test/mikro-test.js | tail -1 || rc=1
 exit $rc

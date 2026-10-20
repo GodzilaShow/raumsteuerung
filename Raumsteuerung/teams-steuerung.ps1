@@ -584,8 +584,11 @@ while ($true) {
     if ($null -eq $cmd) { if ($companionOk) { Write-Log 'Companion nicht erreichbar'; $companionOk = $false } }
     else {
       if (-not $companionOk) { Write-Log 'Companion wieder erreichbar'; $companionOk = $true; $last = @{} }
+      # zuerst leeren: ein Tippen = ein Druck. Klappt das Leeren nicht, nicht ausfuehren - sonst kaeme derselbe
+      # Befehl alle 250 ms wieder (mute/video wuerden hin- und herschalten); naechste Runde neu versuchen
+      if ($cmd -and -not (Set-Var 'r5_tcmd' '')) { if (-not $script:warnLeer) { Write-Log "Befehl ${cmd}: r5_tcmd laesst sich nicht leeren - nicht ausgefuehrt"; $script:warnLeer = $true }; $cmd = '' }
+      elseif ($cmd) { $script:warnLeer = $false }
       if ($cmd) {
-        [void](Set-Var 'r5_tcmd' '')          # zuerst leeren: ein Tippen = ein Druck
         if ($cmd -eq 'join') { [void](Join-Teams); $nextState = [DateTime]::MinValue }
         elseif ($cmd -match '^(mic|video)_(on|off)$') {
           # Zielzustand statt Umschalten (vom Tablet): nur druecken, wenn Teams anders steht -> verlorene oder

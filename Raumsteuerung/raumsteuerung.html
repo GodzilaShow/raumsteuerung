@@ -487,13 +487,19 @@ function sendFailed() {
   var c = $('#conn'); c.textContent = MSG_NOCONN; c.classList.add('show');
   clearTimeout(connTimer); connTimer = setTimeout(function () { if (!fails) c.classList.remove('show'); }, 4000);
 }
+// Mit Zeitlimit: hängt Companion (oder das WLAN), belegen hängende Befehle sonst alle Verbindungen des Browsers
+// zum Raum-PC -> auch die Abfrage kommt nicht mehr durch und das Tablet bleibt bis zum Neuladen tot
 function post(path) {
-  return fetch(CONFIG.companion + path, { method: 'POST', mode: 'no-cors' });
+  var ac = window.AbortController ? new AbortController() : null;
+  var t = ac && setTimeout(function () { ac.abort(); }, 4000);
+  return fetch(CONFIG.companion + path, { method: 'POST', mode: 'no-cors', signal: ac && ac.signal })
+    .then(function (r) { clearTimeout(t); return r; }, function (e) { clearTimeout(t); throw e; });
 }
+// liefert true, wenn der Befehl bei Companion angekommen ist
 function call(name, kind) {
   var loc = CONFIG.buttons[name];
-  if (!loc) { console.warn('Kein Companion-Button für', name); return Promise.resolve(); }
-  return post('/api/location/' + loc + '/' + (kind || 'press')).catch(sendFailed);
+  if (!loc) { console.warn('Kein Companion-Button für', name); return Promise.resolve(false); }
+  return post('/api/location/' + loc + '/' + (kind || 'press')).then(function () { return true; }, function () { sendFailed(); return false; });
 }
 
 /* Lautstärke: Befehle nacheinander senden, damit schnelles Tippen nicht durcheinanderkommt */
@@ -631,8 +637,17 @@ function renderTeams() {
 
 /* ---- Actions ---- */
 var ACTIONS = {
-  start: function () { call('raum_an'); touched.room = Date.now(); stopIdle(); nextAsk = Date.now() + CONFIG.askEveryMinutes * 60000; go('main'); },   // Teams nur über „Teams-Meeting starten“
-  tJoin: function () { if (T.joinAt && Date.now() - T.joinAt < 60000) return; call('teams_join'); T.joinAt = Date.now(); T.status = ''; T.offAt = 0; },
+  // Teams nur über „Teams-Meeting starten“. Kam „Raum an“ nicht an, zurück zum Start (Hinweis „Keine Verbindung“
+  // steht schon) – sonst sähe es aus, als liefe der Raum
+  start: function () {
+    call('raum_an').then(function (ok) { if (!ok && S.screen !== 'start') go('start'); });
+    touched.room = Date.now(); stopIdle(); nextAsk = Date.now() + CONFIG.askEveryMinutes * 60000; go('main');
+  },
+  tJoin: function () {
+    if (T.joinAt && Date.now() - T.joinAt < 60000) return;
+    var at = T.joinAt = Date.now(); T.status = ''; T.offAt = 0;
+    call('teams_join').then(function (ok) { if (!ok && T.joinAt === at) { T.joinAt = 0; render(); } });   // nicht 60 s „startet …“ zeigen
+  },
   askOff: function () { $('#dlgOff').classList.add('show'); },
   cancelOff: function () { $('#dlgOff').classList.remove('show'); },
   off: function () { roomOff(); },
@@ -718,14 +733,24 @@ function manualCam() {
 /* hold-to-move (camera): Companion down on press, up on release */
 var holding = [];   // gerade gedrückte Bewegungen (zum sicheren Loslassen)
 function releaseAll() { holding.splice(0).forEach(function (h) { h(); }); }
+// „up“ erst nach der Antwort auf „down“ senden: sonst kann es „down“ im Netz überholen und die Kamera fährt
+// bis zum Anschlag. Geht „up“ verloren, wird es wiederholt (ein „up“ zu viel schadet nicht).
+// Nicht wiederholen, wenn inzwischen wieder gedrückt wird (frei() = false), sonst stoppt die neue Bewegung.
+function camUp(n, wait, frei, k) {
+  k = k || 0;
+  wait.then(function () { return call(n, 'up'); }).then(function (ok) {
+    if (!ok && k < 4) setTimeout(function () { if (frei()) camUp(n, Promise.resolve(), frei, k + 1); }, [300, 700, 1500, 3000][k]);
+  });
+}
 $$('[data-move]').forEach(function (b) {
-  var active = null;
-  function up() { if (active) { var n = active; active = null; call(n, 'up'); } }
+  var active = null, sent = Promise.resolve();
+  function frei() { return !active; }
+  function up() { if (active) { var n = active; active = null; camUp(n, sent, frei); } }
   b.addEventListener('pointerdown', function (e) {
     e.preventDefault(); if (active) return;
     manualCam();
     active = S.cam + '_' + b.dataset.move; holding.push(up);
-    call(active, 'down'); if (S.cam === 'r') S.rPreset = null; else S.pPreset = null; save(); render();
+    sent = call(active, 'down'); if (S.cam === 'r') S.rPreset = null; else S.pPreset = null; save(); render();
   });
   ['pointerup', 'pointerleave', 'pointercancel', 'lostpointercapture'].forEach(function (ev) { b.addEventListener(ev, up); });
 });
