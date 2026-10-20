@@ -50,6 +50,56 @@ public static class Fenster {
   }
 }
 '@
+# Schutz des Teilen-Bildschirms: Maus bleibt auf den echten Bildschirmen, versehentlich dorthin geschobene Fenster
+# kommen zurueck, der OBS-Projektor liegt immer oben -> die Teilnehmer sehen nur das OBS-Bild
+Add-Type @'
+using System; using System.Text; using System.Collections.Generic; using System.Runtime.InteropServices;
+public static class Schutz {
+  [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
+  delegate bool CB(IntPtr h, IntPtr l);
+  [DllImport("user32.dll")] static extern bool EnumWindows(CB cb, IntPtr l);
+  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
+  [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
+  [DllImport("user32.dll")] static extern bool IsZoomed(IntPtr h);
+  [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr h, out RECT r);
+  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint p);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint f);
+  [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h, int cmd);
+  [DllImport("user32.dll")] static extern bool ClipCursor(ref RECT r);
+  [DllImport("user32.dll")] static extern bool GetClipCursor(out RECT r);
+  [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int a, out int v, int s);
+  static readonly string[] Shell = { "Shell_SecondaryTrayWnd", "Shell_TrayWnd", "Progman", "WorkerW" };
+  // Maus auf "frei" begrenzen (Windows hebt die Begrenzung bei manchen Aktionen auf -> regelmaessig erneuern)
+  // Rechtecke als x, y, Breite, Hoehe (ohne System.Drawing, laeuft in Windows PowerShell und PowerShell 7)
+  public static void Maus(int x, int y, int w, int h) {
+    RECT c; GetClipCursor(out c);
+    if (c.L != x || c.T != y || c.R != x + w || c.B != y + h) { RECT r = new RECT { L = x, T = y, R = x + w, B = y + h }; ClipCursor(ref r); }
+  }
+  // Fenster mit Mittelpunkt auf dem Teilen-Bildschirm zurueck nach "frei" schieben; Projektor nach oben
+  public static List<string> Fenster(int tx, int ty, int tw, int th, int fx, int fy, int fw, int fh, IntPtr projektor, uint[] erlaubt) {
+    var weg = new List<string>();
+    EnumWindows((h, l) => {
+      if (h == projektor || !IsWindowVisible(h) || IsIconic(h)) return true;
+      int cloaked; if (DwmGetWindowAttribute(h, 14, out cloaked, 4) == 0 && cloaked != 0) return true;
+      uint pid; GetWindowThreadProcessId(h, out pid); if (Array.IndexOf(erlaubt, pid) >= 0) return true;
+      var cls = new StringBuilder(256); GetClassName(h, cls, 256); if (Array.IndexOf(Shell, cls.ToString()) >= 0) return true;
+      RECT r; GetWindowRect(h, out r);
+      int mx = (r.L + r.R) / 2, my = (r.T + r.B) / 2;
+      if (mx < tx || mx >= tx + tw || my < ty || my >= ty + th) return true;
+      bool max = IsZoomed(h); if (max) ShowWindow(h, 9);   // 9 = SW_RESTORE
+      GetWindowRect(h, out r);
+      int w = Math.Min(r.R - r.L, fw), hh = Math.Min(r.B - r.T, fh);
+      SetWindowPos(h, IntPtr.Zero, fx + (fw - w) / 2, fy + (fh - hh) / 2, w, hh, 0x0014);  // NOZORDER|NOACTIVATE
+      if (max) ShowWindow(h, 3);                           // 3 = SW_MAXIMIZE (jetzt auf dem echten Bildschirm)
+      weg.Add(cls.ToString());
+      return true;
+    }, IntPtr.Zero);
+    if (projektor != IntPtr.Zero) SetWindowPos(projektor, new IntPtr(-1), 0, 0, 0, 0, 0x0013);   // TOPMOST, NOMOVE|NOSIZE|NOACTIVATE
+    return weg;
+  }
+}
+'@
 Add-Type -AssemblyName System.Windows.Forms
 
 $cfg = $null
@@ -195,6 +245,24 @@ function Find-Projector($b) {
   }
   return $null
 }
+function Protect-ShareScreen {
+  # nur wenn es einen Teilen-Bildschirm gibt; "frei" = die uebrigen Bildschirme (bzw. der Hauptbildschirm)
+  $s = Get-ShareScreen; if (-not $s) { return }
+  $frei = [System.Drawing.Rectangle]::Empty
+  foreach ($x in [System.Windows.Forms.Screen]::AllScreens) {
+    if ($x.Bounds -eq $s.Bounds) { continue }
+    $frei = if ($frei.IsEmpty) { $x.Bounds } else { [System.Drawing.Rectangle]::Union($frei, $x.Bounds) }
+  }
+  if ($frei.IsEmpty -or $frei.IntersectsWith($s.Bounds)) { $frei = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds }
+  [Schutz]::Maus($frei.X, $frei.Y, $frei.Width, $frei.Height)
+  if (([DateTime]::Now - $script:lastSchutz).TotalMilliseconds -lt 1000) { return }
+  $script:lastSchutz = [DateTime]::Now
+  $p = Find-Projector $s.Bounds
+  $h = if ($p) { [IntPtr]$p.Current.NativeWindowHandle } else { [IntPtr]::Zero }
+  $erlaubt = [uint32[]]@(Get-Process ms-teams -ErrorAction SilentlyContinue | ForEach-Object { [uint32]$_.Id })   # Teams-Rahmen/-Leiste beim Teilen
+  foreach ($k in [Schutz]::Fenster($s.Bounds.X, $s.Bounds.Y, $s.Bounds.Width, $s.Bounds.Height, $frei.X, $frei.Y, $frei.Width, $frei.Height, $h, $erlaubt)) { Write-Log "Teilen-Bildschirm: Fenster ($k) zurueck auf den Hauptbildschirm" }
+}
+$script:lastSchutz = [DateTime]::MinValue
 function Ensure-Projector {
   # OBS-Programm als Vollbild-Projektor auf dem Teilen-Bildschirm (Companion-Button 1/3/9, Monitor-Nr. in r5_proj_mon;
   # OBS zaehlt die Bildschirme in derselben Reihenfolge wie Windows)
@@ -465,6 +533,7 @@ while ($true) {
       if (([DateTime]::Now - $script:lastClose).TotalSeconds -ge 5) { $script:lastClose = [DateTime]::Now; Close-AfterMeeting }
       if ($s.In -ne $script:warIn) { Write-Log $(if ($s.In) { 'Teams-Meeting erkannt' } else { 'kein Teams-Meeting' }); $script:warIn = $s.In }
     }
+    if ($Teilen) { Protect-ShareScreen }
   } catch {
     Write-Log ('Fehler: ' + $_.Exception.Message); $script:win = $null; Start-Sleep -Seconds 2
   }
