@@ -28,8 +28,10 @@ param(
 $ErrorActionPreference = 'Stop'
 # Echte Pixel auf allen Bildschirmen (Laptop 125 %, Monitore 100 %): sonst passen Bildschirm-, Fenster- und
 # Maus-Koordinaten nicht zusammen und die Maus-Sperre fuer den Teilen-Bildschirm sitzt an der falschen Stelle
-Add-Type -Namespace Dpi -Name Api -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetProcessDpiAwarenessContext(IntPtr v);'
+# (powershell.exe ist schon "system aware" -> die Prozess-Einstellung greift nicht, die Thread-Einstellung schon)
+Add-Type -Namespace Dpi -Name Api -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetProcessDpiAwarenessContext(IntPtr v); [DllImport("user32.dll")] public static extern IntPtr SetThreadDpiAwarenessContext(IntPtr v);'
 [void][Dpi.Api]::SetProcessDpiAwarenessContext([IntPtr](-4))   # PER_MONITOR_AWARE_V2
+[void][Dpi.Api]::SetThreadDpiAwarenessContext([IntPtr](-4))
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 $AE = [System.Windows.Automation.AutomationElement]
 $Scope = [System.Windows.Automation.TreeScope]
@@ -122,6 +124,9 @@ if (-not $Companion) { $Companion = if ($cfg -and $cfg.companion) { $cfg.compani
 $Teilen = -not ($cfg -and $cfg.teamsBild -eq 'kamera')
 $TeilenTon = -not ($cfg -and $cfg.teilenTon -eq $false)
 $TeilenName = if ($cfg -and $cfg.teilenBildschirm) { $cfg.teilenBildschirm } else { 'MTT' }
+#   teamsBildschirm: Teil des Monitornamens, auf dem Teams immer liegen soll (Sprecherplatz-Monitor). Ohne Angabe:
+#             der erste Bildschirm, der weder Haupt- noch Teilen-Bildschirm ist; gibt es keinen, bleibt Teams, wo es ist.
+$TeamsName = if ($cfg -and $cfg.teamsBildschirm) { $cfg.teamsBildschirm } else { '' }
 $IDS = @{ mute = 'microphone-button'; video = 'video-button'; leave = 'hangup-button' }
 # Beschriftung des Buttons, wenn der Zustand AUS ist (Mikro stumm / Kamera aus): "Mikrofon wieder aktivieren",
 # "Kamera aktivieren"; englisch "Unmute", "Turn camera on". An = "... stummschalten" / "Kamera ausschalten".
@@ -291,6 +296,33 @@ function Protect-ShareScreen {
   $erlaubt = [uint32[]]@(Get-Process ms-teams, obs64 -ErrorAction SilentlyContinue | ForEach-Object { [uint32]$_.Id })
   foreach ($k in [Schutz]::Fenster($s.Bounds.X, $s.Bounds.Y, $s.Bounds.Width, $s.Bounds.Height, $frei.X, $frei.Y, $frei.Width, $frei.Height, $h, $erlaubt)) { Write-Log "Teilen-Bildschirm: Fenster ($k) zurueck auf den Hauptbildschirm" }
 }
+function Get-TeamsScreen {
+  $alle = [System.Windows.Forms.Screen]::AllScreens; $teilen = Get-ShareScreen
+  if ($TeamsName) { foreach ($x in $alle) { if ([Fenster]::Monitor($x.DeviceName) -like "*$TeamsName*") { return $x.Bounds } } }
+  foreach ($x in $alle) { if (-not $x.Primary -and -not ($teilen -and $x.Bounds -eq $teilen.Bounds)) { return $x.Bounds } }
+  return $null
+}
+function Place-Teams {
+  # Teams-Fenster (Meeting, Hauptfenster) auf den Sprecherplatz-Monitor, maximiert. Minimierte Fenster (z. B. beim
+  # Teilen) und die Teilen-Leiste/-Rahmen auf dem Teilen-Bildschirm bleiben, wie sie sind.
+  $ziel = Get-TeamsScreen; if (-not $ziel) { return }
+  $teilen = Get-ShareScreen
+  $ids = @(Get-Process ms-teams -ErrorAction SilentlyContinue).Id
+  foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+    try {
+      if ($ids -notcontains $w.Current.ProcessId) { continue }
+      $h = [IntPtr]$w.Current.NativeWindowHandle; $r = $w.Current.BoundingRectangle
+      if ([Fenster]::IsIconic($h) -or -not [Fenster]::IsWindowVisible($h) -or $r.Width -lt 600 -or $r.Height -lt 400) { continue }
+      if ($teilen -and (In-Bounds $r $teilen.Bounds)) { continue }
+      if (In-Bounds $r $ziel) { continue }
+      [void][Fenster]::ShowWindow($h, 9)   # SW_RESTORE
+      [void][Fenster]::SetWindowPos($h, [IntPtr]::Zero, $ziel.X + 50, $ziel.Y + 50, [Math]::Min(1600, $ziel.Width - 100), [Math]::Min(900, $ziel.Height - 100), 0x14)
+      [void][Fenster]::ShowWindow($h, 3)   # SW_MAXIMIZE auf dem Ziel-Monitor
+      Write-Log "Teams-Fenster '$(($w.Current.Name -split ' \| ')[0])' auf den Sprecherplatz-Monitor gelegt"
+    } catch { }
+  }
+}
+$script:lastPlace = [DateTime]::MinValue; $script:lastOpen = [DateTime]::MinValue
 $script:lastSchutz = [DateTime]::MinValue; $script:lastProj = [DateTime]::MinValue; $script:projHwnd = [IntPtr]::Zero
 function Ensure-Projector {
   # OBS-Programm als Vollbild-Projektor auf dem Teilen-Bildschirm (Companion-Button 1/3/9, Monitor-Nr. in r5_proj_mon;
@@ -298,6 +330,17 @@ function Ensure-Projector {
   $s = Get-ShareScreen
   if (-not $s) { Write-Log 'Teilen: kein zweiter Bildschirm (Virtual Display Driver / HDMI-Dummy) gefunden'; return $null }
   if (Find-Projector $s.Bounds) { return $s }
+  # Nie einen zweiten "Inhalt"-Projektor oeffnen (z. B. wenn er nach dem Umstellen der Bildschirme woanders liegt)
+  $obs = @(Get-Process obs64 -ErrorAction SilentlyContinue).Id
+  $da = @($AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition) |
+          Where-Object { $obs -contains $_.Current.ProcessId -and $_.Current.Name -match '(?i)^(projektor|projector)' -and $_.Current.Name -match $PROJ })
+  if ($da.Count) {
+    if (-not $script:warnProj) { Write-Log "Teilen: OBS-Projektor '$PROJ' liegt nicht auf dem Teilen-Bildschirm ($($da[0].Current.BoundingRectangle)) - kein zweiter wird geoeffnet"; $script:warnProj = $true }
+    return $s
+  }
+  $script:warnProj = $false
+  if (([DateTime]::Now - $script:lastOpen).TotalSeconds -lt 120) { return $null }   # hoechstens alle 2 min einer
+  $script:lastOpen = [DateTime]::Now
   Close-OtherProjectors $s.Bounds
   [void](Set-Var 'r5_proj_mon' ([string]$s.Index))
   try { [void](Invoke-Companion 'POST' '/api/location/1/3/9/press') } catch { }
@@ -581,6 +624,7 @@ while ($true) {
       if ($s.In -ne $script:warIn) { Write-Log $(if ($s.In) { 'Teams-Meeting erkannt' } else { 'kein Teams-Meeting' }); $script:warIn = $s.In }
     }
     if ($Teilen) { Protect-ShareScreen }
+    if (([DateTime]::Now - $script:lastPlace).TotalSeconds -ge 5) { $script:lastPlace = [DateTime]::Now; Place-Teams }
   } catch {
     Write-Log ('Fehler: ' + $_.Exception.Message); $script:win = $null; Start-Sleep -Seconds 2
   }
