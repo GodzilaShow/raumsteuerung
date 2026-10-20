@@ -63,7 +63,7 @@ const camStuck = log => {
   st = await state();
   check(camStuck(st.log).length === 0 && st.log.includes('3/2/3 up'), '„up“ geht dreimal verloren -> wird wiederholt, Kamera hält an');
   await clear(); await set('slow=1500'); await tap('[data-move=right]', 50); await tap('[data-move=right]', 50); await tap('[data-move=down]', 50);
-  await p.waitForTimeout(6000); await set('slow=0');
+  await p.waitForTimeout(8000); await set('slow=0');   // 6 s reichten auf einem ausgelasteten Laptop nicht immer
   check(camStuck((await state()).log).length === 0, 'langsamer Companion, schnelles Tippen -> keine Kamera fährt weiter');
 
   console.log('Zufällige Bedienung mit Störungen (' + STEPS + ' Schritte, Seed ' + SEED + ')');

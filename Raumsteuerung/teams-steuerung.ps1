@@ -382,6 +382,17 @@ function Stop-Share {
   for ($i = 0; $i -lt 10; $i++) { Start-Sleep -Milliseconds 300; $b = $w.FindFirst($Scope::Descendants, (Cond 'share-button')); if ($b -and $b.Current.Name -notmatch $TEILT) { break } }
   Write-Log 'Teilen beendet'; return $true
 }
+$EintragDatei = Join-Path $PSScriptRoot 'teilen-eintrag.txt'
+function Get-ShareEntry([int]$anzahl) {
+  try { foreach ($z in Get-Content $EintragDatei -ErrorAction Stop) { if ($z -match "^$anzahl=(\d+)$") { return [int]$Matches[1] } } } catch { }
+  return $null
+}
+function Set-ShareEntry([int]$anzahl, [int]$nr) {
+  try {
+    $alt = @(Get-Content $EintragDatei -ErrorAction SilentlyContinue | Where-Object { $_ -notmatch "^$anzahl=" })
+    Set-Content -Path $EintragDatei -Value (@($alt) + "$anzahl=$nr") -Encoding ASCII
+  } catch { }
+}
 function Start-Share {
   $w = Find-Meeting
   if (-not $w) { Write-Log 'Teilen: kein Teams-Meeting offen'; return $false }
@@ -395,8 +406,10 @@ function Start-Share {
   }
   $h = [IntPtr]$w.Current.NativeWindowHandle; $vorne = [Fenster]::GetForegroundWindow()
   if ([Fenster]::IsIconic($h)) { [void][Fenster]::ShowWindow($h, 4); Start-Sleep -Milliseconds 500 }
-  # Bildschirme im Menue heissen alle gleich ("Generic PnP Monitor"). Teams listet sie in der Windows-Reihenfolge ->
-  # zuerst den Eintrag mit derselben Nummer, dann die uebrigen; an der Lage der Teams-Leiste pruefen, ob es stimmt
+  # Bildschirme im Menue heissen alle gleich ("Generic PnP Monitor") und Teams' Reihenfolge passt nicht immer zu
+  # Windows. Deshalb: zuerst der Eintrag, der beim letzten Mal richtig war (teilen-eintrag.txt, je Anzahl der
+  # Bildschirme), dann der mit der Windows-Nummer, dann die uebrigen; an der Lage der Teams-Leiste pruefen, ob es
+  # stimmt. Ein falscher Versuch zeigt den Teilnehmern kurz einen anderen Bildschirm - daher das Merken.
   $probiert = @()
   for ($versuch = 0; $versuch -lt 5; $versuch++) {
     $t = Find-ShareTray
@@ -418,7 +431,8 @@ function Start-Share {
       }
     } catch { Write-Log ('Teilen: Optionen nicht gesetzt (' + $_.Exception.Message + ')') }
     $items = @($t.List.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition))
-    $reihe = @($s.Index) + @(($items.Count - 1)..0 | Where-Object { $_ -ne $s.Index })
+    $gemerkt = Get-ShareEntry $items.Count
+    $reihe = @(@($gemerkt) + @($s.Index) + @(($items.Count - 1)..0) | Where-Object { $null -ne $_ } | Select-Object -Unique)
     $nr = $reihe | Where-Object { $_ -lt $items.Count -and $probiert -notcontains $_ } | Select-Object -First 1
     if ($null -eq $nr) { Write-Log 'Teilen: Teilen-Bildschirm nicht in der Teams-Liste'; return $false }
     $probiert += $nr
@@ -426,6 +440,7 @@ function Start-Share {
     $bar = $null; for ($i = 0; $i -lt 20 -and -not ($bar = Find-ShareBar); $i++) { Start-Sleep -Milliseconds 300 }
     if ($bar -and (In-Bounds $bar.Current.BoundingRectangle $s.Bounds)) {
       Write-Log "Teilen: Bildschirm $($s.Index) wird geteilt (Eintrag $($nr + 1) von $($items.Count), Ton $(if ($TeilenTon) { 'an' } else { 'aus' }))"
+      Set-ShareEntry $items.Count $nr
       if ($vorne -ne [IntPtr]::Zero -and [Fenster]::IsWindowVisible($vorne) -and -not [Fenster]::IsIconic($vorne)) { [void][Fenster]::SetForegroundWindow($vorne) }
       return $true
     }
@@ -629,7 +644,12 @@ while ($true) {
         if ($Teilen -and $s.Share -and (Get-Process obs64 -ErrorAction SilentlyContinue)) { [void](Ensure-Projector) }
       }
       if (([DateTime]::Now - $script:lastClose).TotalSeconds -ge 5) { $script:lastClose = [DateTime]::Now; Close-AfterMeeting }
-      if ($s.In -ne $script:warIn) { Write-Log $(if ($s.In) { 'Teams-Meeting erkannt' } else { 'kein Teams-Meeting' }); $script:warIn = $s.In }
+      if ($s.In -ne $script:warIn) {
+        Write-Log $(if ($s.In) { 'Teams-Meeting erkannt' } else { 'kein Teams-Meeting' })
+        # Meeting zu Ende: alte Fehlermeldung (z. B. "fehler: Präsentation teilen") nicht ins naechste Meeting mitnehmen
+        if (-not $s.In -and $script:warIn) { if ((Get-Var 'r5_t_status') -like 'fehler*') { [void](Set-Var 'r5_t_status' '') } }
+        $script:warIn = $s.In
+      }
     }
     if ($Teilen) { Protect-ShareScreen }
     if (([DateTime]::Now - $script:lastPlace).TotalSeconds -ge 5) { $script:lastPlace = [DateTime]::Now; Place-Teams }

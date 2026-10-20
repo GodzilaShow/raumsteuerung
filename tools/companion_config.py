@@ -117,7 +117,7 @@ def main(src, dst):
     for a in d['pages']['1']['controls']['0']['1']['steps']['0']['action_sets']['down']:
         if a['definitionId'] == 'set_scene':
             a['options']['scene'] = opt('Nur Redner')
-    extend(1, 0, 1, setvar('r5_room', '1'), setvar('r5_disp', '1'), setvar('r5_blank', '0'), setvar('r5_scene', 'redner'), touch())
+    extend(1, 0, 1, setvar('r5_room', '1'), setvar('r5_disp', '1'), setvar('r5_blank', '0'), setvar('r5_scene', 'redner'), setvar('r5_t_status', ''), touch())   # Raum an: alte Teams-Fehler vergessen
     extend(1, 0, 2, setvar('r5_room', '0'), setvar('r5_disp', '0'), setvar('r5_blank', '0'))
     for col, scene in enumerate(['alles', 'folien', 'diskussion', 'redner', 'pause'], start=1):
         extend(1, 1, col, setvar('r5_scene', scene), touch())
