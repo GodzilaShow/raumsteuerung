@@ -108,6 +108,7 @@ def main(src, dst):
     var('r5_t_video', 'Teams-Bild an (1/0)', '0', False)
     var('r5_t_status', 'Teams-Beitritt: start / fehler: ... / leer', '', False)
     var('r5_spk_mute', 'Lautsprecher stumm (1) / an (0)', '0', True)
+    var('r5_t_mode', 'Teams-Bild: teilen (Bildschirm + Kamera) / kamera (nur Virtuelle Kamera), von teams-steuerung.ps1', 'kamera', False)
     var('r5_proj_mon', 'OBS-Monitornummer des Teilen-Bildschirms (von teams-steuerung.ps1)', '1', False)
 
     # ---------- Seite 1: Tablet ----------
@@ -129,7 +130,7 @@ def main(src, dst):
     # Teams sieht dann die Pause-Fläche statt des Bildschirms, die Kameras bleiben. (Später zusätzlich: Matrix/Displays.)
     def blank(visible):
         return [obs_act('toggle_scene_item', {'scene': opt(sc), 'all': opt(False), 'source': opt('Präsentation pausiert'),
-                                              'visible': opt(visible)}) for sc in ('Alles im Blick', 'Folien Groß')]
+                                              'visible': opt(visible)}) for sc in ('Alles im Blick', 'Folien Groß', 'Inhalt')]
     put(1, 2, 4, button('Präsentation aus', [setvar('r5_blank', '1'), *blank('true'), touch()]))
     put(1, 2, 5, button('Präsentation an', [setvar('r5_blank', '0'), *blank('false'), touch()]))
     # Raum aus setzt r5_blank = 0 -> auch in OBS die Pause-Fläche wegnehmen, sonst sähe Teams sie beim nächsten Start
@@ -147,11 +148,12 @@ def main(src, dst):
     extend(1, 3, 6, touch())
     put(1, 3, 7, button('Displays neu starten', [setvar('r5_disp', '1'), touch()]))
     put(1, 3, 8, button('Noch in Benutzung', [touch()]))                   # Tablet: „Weiter nutzen“ / Bedienung
-    # Teams-Bild per Bildschirm teilen: OBS-Programm als Vollbild-Projektor auf den (virtuellen) Teilen-Bildschirm.
+    # Teams-Bild per Bildschirm teilen: OBS-Szene „Inhalt“ (nur Präsentation) als Vollbild-Projektor auf den
+    # (virtuellen) Teilen-Bildschirm; die Personen kommen getrennt über die Virtuelle Kamera (Programm).
     # teams-steuerung.ps1 setzt r5_proj_mon und drückt diesen Button, wenn der Projektor fehlt.
     put(1, 3, 9, button('OBS Projektor', [obs_act('custom_command', {
-        'command': opt('OpenVideoMixProjector'),
-        'arg': opt('{"videoMixType": "OBS_WEBSOCKET_VIDEO_MIX_TYPE_PROGRAM", "monitorIndex": $(custom:r5_proj_mon)}')})]))
+        'command': opt('OpenSourceProjector'),
+        'arg': opt('{"sourceName": "Inhalt", "monitorIndex": $(custom:r5_proj_mon)}')})]))
 
     # ---------- Teams: Befehle an teams-steuerung.ps1 (UI Automation, keine Teams-API nötig) ----------
     # Das Skript liest r5_tcmd, drückt den Button im Teams-Meetingfenster und leert r5_tcmd wieder.

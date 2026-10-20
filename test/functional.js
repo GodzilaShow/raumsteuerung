@@ -156,6 +156,13 @@ const clear = () => fetch(API + '/_test/clear');
   await set('r5_t_in=0'); await p.waitForTimeout(4500);
   check(!(await p.isVisible('#teamsBar')), 'nach dem Meeting verschwindet die Leiste');
   check((await p.textContent('#liveTxt')) === 'Nur im Raum', 'kein Meeting -> Live-Kachel „Nur im Raum“');
+  check(await p.isVisible('[data-scene=alles]') && await p.isVisible('[data-scene=folien]'), 'Modus kamera: alle 5 Ansichten sichtbar');
+  await set('r5_t_mode=teilen'); await p.waitForTimeout(3500);
+  check(!(await p.isVisible('[data-scene=alles]')) && !(await p.isVisible('[data-scene=folien]')) && await p.isVisible('[data-scene=redner]'),
+        'Modus teilen: „Alles im Blick“/„Folien groß“ ausgeblendet (Präsentation kommt über das Teilen)');
+  check((await p.textContent('#scenesH')).includes('Kamera in Teams'), 'Modus teilen: Überschrift „Kamera in Teams …“');
+  await set('r5_t_mode=kamera'); await p.waitForTimeout(3500);
+  check(await p.isVisible('[data-scene=alles]'), 'zurück auf Modus kamera: Ansichten wieder da');
 
   console.log('Ausschalten');
   await clear(); await p.click('[data-act=askOff]'); await p.waitForTimeout(400);
