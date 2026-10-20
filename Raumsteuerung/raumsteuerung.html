@@ -803,6 +803,8 @@ function setLive(on) {
   else if (joining) { txt = 'Teams startet …'; sub = 'Gleich sehen die Online-Teilnehmer den Raum.'; kind = 'off'; }
   else if (!T.inMeeting && /^fehler/i.test(T.status)) { txt = 'Teams-Start fehlgeschlagen'; sub = 'Oben „Teams-Meeting starten“ tippen.'; kind = 'warn'; }
   else if (!T.inMeeting) { txt = 'Nur im Raum'; sub = 'Kein Teams-Meeting – online sieht niemand den Raum.'; kind = 'off'; }
+  // „Präsentation zeigen“ ging nicht (kein Teilen-Bildschirm o. ä.) -> von Hand in Teams teilen; Kamera/Mikro laufen weiter
+  else if (/^fehler: (kein teilen|präsentation)/i.test(T.status)) { txt = 'Präsentation nicht geteilt'; sub = 'Am Rednerplatz in Teams „Teilen“ tippen und den Bildschirm wählen.'; kind = 'warn'; }
   else if (on !== true) { txt = 'Teams sieht kein Bild'; sub = 'Hilfe → „Kamera neu starten“ tippen.'; kind = 'warn'; }
   else if (!T.video) { txt = 'In Teams, Kamera aus'; sub = 'Oben „Kamera an“ tippen, damit man den Raum sieht.'; kind = 'warn'; }
   else { txt = S.scene === 'pause' ? 'Pausenbild live' : 'Live in Teams'; sub = 'Die Online-Teilnehmer sehen diese Ansicht.' + (T.muted ? ' Mikro ist aus.' : ''); kind = 'live'; }
@@ -869,7 +871,11 @@ function poll() {
     if (r[11] !== null && String(r[11]).trim() !== T.mode) { T.mode = String(r[11]).trim(); changed = true; }
     if (r[12] !== null && now - touched.share > 15000 && !T.offAt) { var sh = isOn(r[12]); if (sh !== T.share) { T.share = sh; changed = true; } }   // Teilen dauert bis ~15 s
     var tst = r[9] === null ? T.status : String(r[9]).trim();
-    if (tst !== T.status) { T.status = tst; if (/^fehler/i.test(tst)) T.joinAt = 0; changed = true; }
+    if (tst !== T.status) {
+      T.status = tst; if (/^fehler/i.test(tst)) T.joinAt = 0;
+      if (/^fehler: (kein teilen|präsentation)/i.test(tst)) { T.share = false; touched.share = 0; }   // Knopf wieder „zeigen“
+      changed = true;
+    }
     if (tin && now - touched.teams > 6000 && r[7] !== null && r[8] !== null) {   // Teams schaltet verzögert um -> länger dem eigenen Tippen glauben
       var tm = isOn(r[7]), tv = isOn(r[8]);
       if (tm !== T.muted || tv !== T.video) { T.muted = tm; T.video = tv; changed = true; }

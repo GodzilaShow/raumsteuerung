@@ -54,6 +54,49 @@ public static class Fenster {
     var dd = new DISPLAY_DEVICE(); dd.cb = Marshal.SizeOf(dd);
     return EnumDisplayDevices(dev, 0, ref dd, 0) ? dd.DeviceString + "  " + dd.DeviceID : "";
   }
+  // Grafik-Ausgang, dessen Treibername "name" enthaelt (z. B. "Virtual Display Driver"): "DISPLAYname|1" (1 = auf
+  // dem Desktop aktiv, 0 = vorhanden, aber abgeschaltet) oder "" wenn es ihn nicht gibt (Treiber fehlt/deaktiviert)
+  public static string Adapter(string name) {
+    for (int i = 0; i < 32; i++) {
+      var dd = new DISPLAY_DEVICE(); dd.cb = Marshal.SizeOf(dd);
+      if (!EnumDisplayDevices(null, i, ref dd, 0)) break;
+      if (dd.DeviceString != null && dd.DeviceString.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0)
+        return dd.DeviceName + "|" + ((dd.StateFlags & 1) != 0 ? "1" : "0");
+    }
+    return "";
+  }
+  // Bildschirme frisch von Windows (Screen.AllScreens aus .NET merkt sich die Liste und kennt Umstellungen nicht)
+  [StructLayout(LayoutKind.Sequential)] public struct RC { public int L, T, R, B; }
+  [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)] public struct MI { public int cb; public RC rc, work; public int flags;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string name; }
+  public delegate bool MonCb(IntPtr h, IntPtr dc, ref RC r, IntPtr d);
+  [DllImport("user32.dll")] static extern bool EnumDisplayMonitors(IntPtr dc, IntPtr clip, MonCb cb, IntPtr d);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern bool GetMonitorInfo(IntPtr h, ref MI mi);
+  public static string[] Bildschirme() {   // je "DISPLAYname|x|y|w|h|primaer"
+    var l = new System.Collections.Generic.List<string>();
+    EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (IntPtr h, IntPtr dc, ref RC r, IntPtr d) => {
+      var mi = new MI(); mi.cb = Marshal.SizeOf(mi);
+      if (GetMonitorInfo(h, ref mi)) l.Add(mi.name + "|" + mi.rc.L + "|" + mi.rc.T + "|" + (mi.rc.R - mi.rc.L) + "|" + (mi.rc.B - mi.rc.T) + "|" + (mi.flags & 1));
+      return true; }, IntPtr.Zero);
+    return l.ToArray();
+  }
+  [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)] public struct DEVMODE {
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string dmDeviceName; public short dmSpecVersion, dmDriverVersion, dmSize, dmDriverExtra; public int dmFields;
+    public int dmPositionX, dmPositionY, dmDisplayOrientation, dmDisplayFixedOutput; public short dmColor, dmDuplex, dmYResolution, dmTTOption, dmCollate;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string dmFormName; public short dmLogPixels; public int dmBitsPerPel, dmPelsWidth, dmPelsHeight, dmDisplayFlags, dmDisplayFrequency;
+    public int dmICMMethod, dmICMIntent, dmMediaType, dmDitherType, dmReserved1, dmReserved2, dmPanningWidth, dmPanningHeight; }
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern bool EnumDisplaySettings(string dev, int mode, ref DEVMODE dm);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int ChangeDisplaySettingsEx(string dev, ref DEVMODE dm, IntPtr h, int flags, IntPtr p);
+  [DllImport("user32.dll")] static extern int ChangeDisplaySettingsEx(IntPtr dev, IntPtr dm, IntPtr h, int flags, IntPtr p);
+  // Bildschirm an x,y mit w x h auf den Desktop legen (0 = ok)
+  public static int Platzieren(string dev, int x, int y, int w, int h) {
+    var dm = new DEVMODE(); dm.dmSize = (short)Marshal.SizeOf(dm);
+    EnumDisplaySettings(dev, -2, ref dm);   // ENUM_REGISTRY_SETTINGS
+    dm.dmPositionX = x; dm.dmPositionY = y; dm.dmPelsWidth = w; dm.dmPelsHeight = h; dm.dmFields = 0x20 | 0x80000 | 0x100000;
+    int r = ChangeDisplaySettingsEx(dev, ref dm, IntPtr.Zero, 0x10000001, IntPtr.Zero);   // UPDATEREGISTRY | NORESET
+    ChangeDisplaySettingsEx(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, 0, IntPtr.Zero);
+    return r;
+  }
 }
 '@
 # Schutz des Teilen-Bildschirms: Maus bleibt auf den echten Bildschirmen, versehentlich dorthin geschobene Fenster
@@ -78,6 +121,8 @@ public static class Schutz {
   static readonly string[] Shell = { "Shell_SecondaryTrayWnd", "Shell_TrayWnd", "Progman", "WorkerW" };
   // Maus auf "frei" begrenzen (Windows hebt die Begrenzung bei manchen Aktionen auf -> regelmaessig erneuern)
   // Rechtecke als x, y, Breite, Hoehe (ohne System.Drawing, laeuft in Windows PowerShell und PowerShell 7)
+  [DllImport("user32.dll", EntryPoint="ClipCursor")] static extern bool ClipCursorNull(IntPtr r);
+  public static void MausFrei() { ClipCursorNull(IntPtr.Zero); }
   public static void Maus(int x, int y, int w, int h) {
     RECT c; GetClipCursor(out c);
     if (c.L != x || c.T != y || c.R != x + w || c.B != y + h) { RECT r = new RECT { L = x, T = y, R = x + w, B = y + h }; ClipCursor(ref r); }
@@ -238,16 +283,44 @@ function Find-ShareTray {
   }
   return $null
 }
-function Get-ShareScreen {
-  # Bildschirm fuer das Teilen: Monitorname enthaelt $TeilenName (Virtual Display Driver: "VDD by MTT"),
-  # sonst der letzte Bildschirm, der nicht der Hauptbildschirm ist
-  $alle = [System.Windows.Forms.Screen]::AllScreens
-  for ($i = 0; $i -lt $alle.Count; $i++) {
-    if ([Fenster]::Monitor($alle[$i].DeviceName) -like "*$TeilenName*") { return @{ Index = $i; Bounds = $alle[$i].Bounds } }
+function Get-Screens {
+  # frisch von Windows, nicht aus dem .NET-Zwischenspeicher (der kennt Umstellungen der Anzeige nicht)
+  foreach ($z in [Fenster]::Bildschirme()) {
+    $t = $z -split '\|'
+    [pscustomobject]@{ DeviceName = $t[0]; Bounds = (New-Object System.Drawing.Rectangle ([int]$t[1]), ([int]$t[2]), ([int]$t[3]), ([int]$t[4])); Primary = ($t[5] -eq '1') }
   }
-  for ($i = $alle.Count - 1; $i -ge 0; $i--) { if (-not $alle[$i].Primary) { return @{ Index = $i; Bounds = $alle[$i].Bounds } } }
+}
+function Get-ShareScreen {
+  # Bildschirm fuer das Teilen NUR nach Namen: Monitorname enthaelt $TeilenName (Virtual Display Driver: "VDD by MTT";
+  # HDMI-Dummy: teilenBildschirm in mikro-automatik.json). Kein Raten - sonst wuerde ein echter Monitor (Sprecherplatz,
+  # Raum-Display) zum Teilen-Bildschirm: Projektor darauf, Maus gesperrt, Fenster weggeschoben.
+  $alle = @(Get-Screens)
+  for ($i = 0; $i -lt $alle.Count; $i++) {
+    if ([Fenster]::Monitor($alle[$i].DeviceName) -like "*$TeilenName*") { return @{ Index = $i; Bounds = $alle[$i].Bounds; Device = $alle[$i].DeviceName } }
+  }
   return $null
 }
+function Repair-ShareScreen {
+  # Fehlt der Teilen-Bildschirm, hat Windows den virtuellen Bildschirm meist nur abgeschaltet (Neustart, Win+P,
+  # Monitor an-/abgesteckt). Dann: Anzeige erweitern und ihn ganz rechts mit 1920x1080 wieder hinlegen.
+  # Hoechstens alle 2 min ein Versuch. Ist der Treiber weg/deaktiviert, geht das nur mit Administratorrechten.
+  if ($TeilenName -ne 'MTT') { return $null }   # HDMI-Dummy u. ae.: nichts zu reparieren
+  if (([DateTime]::Now - $script:lastRepair).TotalSeconds -lt 120) { return $null }
+  $script:lastRepair = [DateTime]::Now
+  $a = [Fenster]::Adapter('Virtual Display Driver')
+  if (-not $a) { Write-Log 'Teilen-Bildschirm fehlt: Virtual Display Driver nicht vorhanden oder deaktiviert (Geraete-Manager / VDD Control, Administrator)'; return $null }
+  $dev, $aktiv = $a -split '\|'
+  if ($aktiv -ne '1') {
+    Write-Log "Teilen-Bildschirm abgeschaltet ($dev) -> Anzeige erweitern"
+    Start-Process DisplaySwitch.exe '/extend' -Wait; Start-Sleep -Seconds 3
+  }
+  $rechts = 0; foreach ($x in @(Get-Screens)) { if ($x.DeviceName -ne $dev) { $rechts = [Math]::Max($rechts, $x.Bounds.Right) } }
+  $r = [Fenster]::Platzieren($dev, $rechts, 0, 1920, 1080); Start-Sleep -Seconds 2
+  $s = Get-ShareScreen
+  if ($s) { Write-Log "Teilen-Bildschirm wieder da ($dev, ganz rechts, 1920x1080)"; $script:ruheBis = [DateTime]::Now.AddSeconds(8) } else { Write-Log "Teilen-Bildschirm liess sich nicht wiederherstellen ($dev, Ergebnis $r)" }
+  return $s
+}
+$script:lastRepair = [DateTime]::MinValue; $script:lastReopen = [DateTime]::MinValue; $script:ruheBis = [DateTime]::MinValue
 function In-Bounds($rect, $b) {
   $x = $rect.X + $rect.Width / 2; $y = $rect.Y + $rect.Height / 2
   return ($x -ge $b.X -and $x -lt $b.X + $b.Width -and $y -ge $b.Y -and $y -lt $b.Y + $b.Height)
@@ -273,16 +346,22 @@ function Close-OtherProjectors($b) {
 }
 function Protect-ShareScreen {
   # nur wenn es einen Teilen-Bildschirm gibt; "frei" = die uebrigen Bildschirme (bzw. der Hauptbildschirm)
-  $s = Get-ShareScreen; if (-not $s) { return }
+  $s = Get-ShareScreen
+  if (-not $s) {
+    # kein Teilen-Bildschirm: nichts sperren, nichts schieben (Maus-Sperre von vorher aufheben); Wiederherstellung versuchen
+    if ($script:hatteSchutz) { [Schutz]::MausFrei(); $script:hatteSchutz = $false; Write-Log 'Teilen-Bildschirm fehlt - Maus-Sperre aufgehoben' }
+    [void](Repair-ShareScreen); return
+  }
+  $script:hatteSchutz = $true
   $frei = [System.Drawing.Rectangle]::Empty
-  foreach ($x in [System.Windows.Forms.Screen]::AllScreens) {
+  foreach ($x in @(Get-Screens)) {
     if ($x.Bounds -eq $s.Bounds) { continue }
     $frei = if ($frei.IsEmpty) { $x.Bounds } else { [System.Drawing.Rectangle]::Union($frei, $x.Bounds) }
   }
   if ($frei.IsEmpty -or $frei.IntersectsWith($s.Bounds)) {
     # Teilen-Bildschirm liegt zwischen zwei echten Monitoren -> Maus nur auf dem Hauptbildschirm moeglich
     if (-not $script:warnLage) { Write-Log 'Teilen-Bildschirm liegt zwischen den Monitoren - in den Anzeigeeinstellungen ganz nach rechts schieben (sonst kommt die Maus nicht auf die anderen Monitore)'; $script:warnLage = $true }
-    $frei = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+    $frei = (@(Get-Screens) | Where-Object Primary | Select-Object -First 1).Bounds
   } else { $script:warnLage = $false }
   [Schutz]::Maus($frei.X, $frei.Y, $frei.Width, $frei.Height)
   if (([DateTime]::Now - $script:lastSchutz).TotalMilliseconds -lt 1000) { return }
@@ -291,8 +370,29 @@ function Protect-ShareScreen {
   if (([DateTime]::Now - $script:lastProj).TotalSeconds -ge 5) {
     $script:lastProj = [DateTime]::Now
     Close-OtherProjectors $s.Bounds
+    [void](Fix-Projectors $s)
     $p = Find-Projector $s.Bounds
-    $script:projHwnd = if ($p) { [IntPtr]$p.Current.NativeWindowHandle } else { [IntPtr]::Zero }
+    if (-not $p -and (Get-Process obs64 -ErrorAction SilentlyContinue)) { [void](Ensure-Projector); $p = Find-Projector $s.Bounds }
+    # Projektor muss den Teilen-Bildschirm ganz fuellen (nach dem Wiederherstellen rechnet Windows die Groesse
+    # zwischen 125 % und 100 % um -> sonst saehe Teams einen Rand vom leeren Desktop)
+    if ($p) {
+      $r = $p.Current.BoundingRectangle; $b = $s.Bounds
+      if ([int]$r.X -ne $b.X -or [int]$r.Y -ne $b.Y -or [int]$r.Width -ne $b.Width -or [int]$r.Height -ne $b.Height) {
+        $hp = [IntPtr]$p.Current.NativeWindowHandle
+        for ($k = 0; $k -lt 2; $k++) { [void][Fenster]::SetWindowPos($hp, [IntPtr](-1), $b.X, $b.Y, $b.Width, $b.Height, 0x10); Start-Sleep -Milliseconds 300 }
+        $r2 = $p.Current.BoundingRectangle
+        if ([int]$r2.Width -eq $b.Width -and [int]$r2.Height -eq $b.Height) { Write-Log "Teilen: OBS-Projektor auf volle Groesse gebracht ($([int]$r.Width)x$([int]$r.Height) -> $($b.Width)x$($b.Height))" }
+        elseif ([DateTime]::Now -ge $script:ruheBis -and ([DateTime]::Now - $script:lastReopen).TotalSeconds -ge 120) {   # hoechstens alle 2 min, nie in Schleife
+          $script:lastReopen = [DateTime]::Now
+          # OBS haelt die alte Groesse fest (kennt den wiederhergestellten Bildschirm noch nicht neu) -> schliessen, neu oeffnen
+          Write-Log "Teilen: OBS-Projektor hat falsche Groesse ($([int]$r2.Width)x$([int]$r2.Height)) -> neu oeffnen"
+          try { $p.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close() } catch { }
+          Start-Sleep -Milliseconds 800; $script:lastOpen = [DateTime]::MinValue; [void](Ensure-Projector)
+          $p = Find-Projector $s.Bounds   # das alte Fenster ist zu
+        }
+      }
+    }
+    $script:projHwnd = [IntPtr]::Zero; if ($p) { try { $script:projHwnd = [IntPtr]$p.Current.NativeWindowHandle } catch { } }
   }
   $h = $script:projHwnd
   # Teams-Rahmen/-Leiste beim Teilen; OBS-Projektoren nie verschieben (Vollbild auf dem Hauptbildschirm wuerde ihn verdecken)
@@ -300,7 +400,7 @@ function Protect-ShareScreen {
   foreach ($k in [Schutz]::Fenster($s.Bounds.X, $s.Bounds.Y, $s.Bounds.Width, $s.Bounds.Height, $frei.X, $frei.Y, $frei.Width, $frei.Height, $h, $erlaubt)) { Write-Log "Teilen-Bildschirm: Fenster ($k) zurueck auf den Hauptbildschirm" }
 }
 function Get-TeamsScreen {
-  $alle = [System.Windows.Forms.Screen]::AllScreens; $teilen = Get-ShareScreen
+  $alle = @(Get-Screens); $teilen = Get-ShareScreen
   if ($TeamsName) { foreach ($x in $alle) { if ([Fenster]::Monitor($x.DeviceName) -like "*$TeamsName*") { return $x.Bounds } } }
   foreach ($x in $alle) { if (-not $x.Primary -and -not ($teilen -and $x.Bounds -eq $teilen.Bounds)) { return $x.Bounds } }
   return $null
@@ -327,11 +427,30 @@ function Place-Teams {
 }
 $script:lastPlace = [DateTime]::MinValue; $script:lastOpen = [DateTime]::MinValue
 $script:lastSchutz = [DateTime]::MinValue; $script:lastProj = [DateTime]::MinValue; $script:projHwnd = [IntPtr]::Zero
+function Fix-Projectors($s) {
+  # Regel: ein OBS-Projektor darf NIE auf einem echten Monitor bleiben (er wuerde ihn ganz verdecken).
+  # Liegt er woanders -> auf den Teilen-Bildschirm schieben (zweimal: Windows rechnet 125 %/100 % um); klappt das
+  # nicht -> schliessen. Gibt zurueck, ob danach einer auf dem Teilen-Bildschirm liegt.
+  $obs = @(Get-Process obs64 -ErrorAction SilentlyContinue).Id; $b = $s.Bounds; $da = $false
+  foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+    try {
+      if ($obs -notcontains $w.Current.ProcessId -or $w.Current.Name -notmatch '(?i)^(projektor|projector)') { continue }
+      if (In-Bounds $w.Current.BoundingRectangle $b) { $da = $true; continue }
+      $h = [IntPtr]$w.Current.NativeWindowHandle; $alt = $w.Current.BoundingRectangle
+      for ($k = 0; $k -lt 2; $k++) { [void][Fenster]::SetWindowPos($h, [IntPtr](-1), $b.X, $b.Y, $b.Width, $b.Height, 0x10); Start-Sleep -Milliseconds 300 }
+      if (In-Bounds $w.Current.BoundingRectangle $b) { Write-Log "Teilen: OBS-Projektor von $alt auf den Teilen-Bildschirm geholt"; $da = $true }
+      else { $w.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close(); Write-Log "Teilen: OBS-Projektor lag auf einem echten Monitor ($alt) und liess sich nicht verschieben -> geschlossen" }
+    } catch { }
+  }
+  return $da
+}
 function Ensure-Projector {
   # OBS-Programm als Vollbild-Projektor auf dem Teilen-Bildschirm (Companion-Button 1/3/9, Monitor-Nr. in r5_proj_mon;
   # OBS zaehlt die Bildschirme in derselben Reihenfolge wie Windows)
   $s = Get-ShareScreen
-  if (-not $s) { Write-Log 'Teilen: kein zweiter Bildschirm (Virtual Display Driver / HDMI-Dummy) gefunden'; return $null }
+  if (-not $s) { $script:lastRepair = [DateTime]::MinValue; $s = Repair-ShareScreen }   # beim Tippen sofort versuchen
+  if (-not $s) { Write-Log "Teilen: kein Teilen-Bildschirm ('$TeilenName') - bitte am Rednerplatz in Teams von Hand teilen"; $script:keinSchirm = $true; return $null }
+  $script:keinSchirm = $false
   if (Find-Projector $s.Bounds) { return $s }
   # Nie einen zweiten "Inhalt"-Projektor oeffnen (z. B. wenn er nach dem Umstellen der Bildschirme woanders liegt)
   $obs = @(Get-Process obs64 -ErrorAction SilentlyContinue).Id
@@ -340,16 +459,20 @@ function Ensure-Projector {
     try { if ($obs -contains $w.Current.ProcessId -and $w.Current.Name -match '(?i)^(projektor|projector)' -and $w.Current.Name -match $PROJ) { $da += $w } } catch { }
   }
   if ($da.Count) {
-    if (-not $script:warnProj) { Write-Log "Teilen: OBS-Projektor '$PROJ' liegt nicht auf dem Teilen-Bildschirm ($($da[0].Current.BoundingRectangle)) - kein zweiter wird geoeffnet"; $script:warnProj = $true }
-    return $s
+    # liegt woanders (z. B. nach Abschalten des Teilen-Bildschirms auf dem Hauptbildschirm) -> holen oder schliessen
+    if (Fix-Projectors $s) { return $s }
   }
+  if ([DateTime]::Now -lt $script:ruheBis) { return $null }   # OBS kennt den eben wiederhergestellten Bildschirm noch nicht
   $script:warnProj = $false
   if (([DateTime]::Now - $script:lastOpen).TotalSeconds -lt 120) { return $null }   # hoechstens alle 2 min einer
   $script:lastOpen = [DateTime]::Now
   Close-OtherProjectors $s.Bounds
-  [void](Set-Var 'r5_proj_mon' ([string]$s.Index))
+  # OBS zaehlt die Bildschirme anders als Windows: Hauptbildschirm zuerst, dann die uebrigen in Windows-Reihenfolge
+  $obsNr = 0; foreach ($x in @(@(Get-Screens) | Sort-Object { -not $_.Primary })) { if ($x.DeviceName -eq $s.Device) { break }; $obsNr++ }
+  [void](Set-Var 'r5_proj_mon' ([string]$obsNr))
   try { [void](Invoke-Companion 'POST' '/api/location/1/3/9/press') } catch { }
   for ($i = 0; $i -lt 10 -and -not (Find-Projector $s.Bounds); $i++) { Start-Sleep -Milliseconds 500 }
+  if (-not (Find-Projector $s.Bounds)) { [void](Fix-Projectors $s) }   # auf falschem Monitor aufgegangen -> holen/schliessen
   if (Find-Projector $s.Bounds) { Write-Log "Teilen: OBS-Projektor auf Bildschirm $($s.Index) geoeffnet"; return $s }
   Write-Log 'Teilen: OBS-Projektor laesst sich nicht oeffnen (laeuft OBS? Companion-Button 1/3/9?)'; return $null
 }
@@ -617,9 +740,9 @@ while ($true) {
           $nextState = [DateTime]::MinValue
         }
         elseif ($cmd -in 'share_on', 'share_off') {
-          if ($cmd -eq 'share_off') { [void](Stop-Share) }
+          if ($cmd -eq 'share_off') { [void](Stop-Share); if ((Get-Var 'r5_t_status') -like 'fehler*') { [void](Set-Var 'r5_t_status' '') } }
           elseif (Start-Share) { [void](Set-Var 'r5_t_status' ''); Set-PeopleScene }
-          else { [void](Set-Var 'r5_t_status' 'fehler: Präsentation teilen') }
+          else { [void](Set-Var 'r5_t_status' $(if ($script:keinSchirm) { 'fehler: kein Teilen-Bildschirm' } else { 'fehler: Präsentation teilen' })) }
           $nextState = [DateTime]::MinValue
         }
         elseif ($IDS.ContainsKey($cmd)) { [void](Invoke-Teams $cmd); $nextState = [DateTime]::MinValue }
