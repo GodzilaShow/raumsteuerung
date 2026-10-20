@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Redesign-Skizzen</title>
+<style>
+:root{--bg:#EEF3F6;--card:#fff;--ink:#0E2A3F;--muted:#52667A;--line:#B9C6D1;--blue:#0071BC;--red:#B42318;--green:#3B6D11;--lime:#8DC63F;--teams:#5B5FC7}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0f1820;--card:#17232e;--ink:#e6eef4;--muted:#9fb1c0;--line:#2f4252}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,Segoe UI,sans-serif;padding:24px 16px}
+h1{font-size:22px;margin:0 0 4px}p.lead{color:var(--muted);margin:0 0 24px;max-width:860px}
+.c{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin:0 0 28px;max-width:1000px}
+.c h2{margin:0 0 4px;font-size:18px}.c .why{color:var(--muted);margin:0 0 14px}
+.tab{aspect-ratio:16/10;border:2px solid var(--ink);border-radius:14px;padding:8px;display:grid;gap:6px;background:var(--bg);font-size:11px}
+.b{border:1.5px dashed var(--muted);border-radius:6px;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;color:var(--ink);background:var(--card)}
+.b.pri{border-style:solid;border-color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,var(--card));font-weight:600}
+.b.tm{border-style:solid;border-color:var(--teams);background:color-mix(in srgb,var(--teams) 14%,var(--card));font-weight:600}
+.b.off{border-style:solid;border-color:var(--red);color:var(--red);font-weight:600}
+.b.big{font-size:13px}
+.pc{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px}.pc div{font-size:14px}.pc b{display:block;margin-bottom:2px}
+ul{margin:4px 0;padding-left:18px}
+.vote{margin-top:10px;font-weight:600;color:var(--blue)}
+@media (max-width:640px){.pc{grid-template-columns:1fr}.tab{font-size:9px}}
+</style></head><body>
+<h1>Raumsteuerung – Redesign-Skizzen (nur Konzept, nichts umgesetzt)</h1>
+<p class="lead">Problem heute: Die Lautstärke nimmt rund 40 % der Fläche ein, wird aber selten benutzt. Teams-Knöpfe (Mikro, Kamera, Präsentation) sind klein oben in der Kopfzeile, obwohl sie im Meeting am wichtigsten sind. Drei Varianten:</p>
+
+<div class="c"><h2>A · „Teams im Mittelpunkt“</h2>
+<p class="why">Große Teams-Leiste als Hauptfläche, Ansichten darunter, Lautstärke schmal am Rand.</p>
+<div class="tab" style="grid-template-columns:repeat(6,1fr);grid-template-rows:.5fr 1.4fr 1.6fr .6fr">
+ <div class="b" style="grid-column:1/5">Logo · Sitzungszimmer 5 · Live-Status</div><div class="b off" style="grid-column:5/7">Raum aus</div>
+ <div class="b tm big">🎤 Mikro</div><div class="b tm big">📷 Kamera</div><div class="b tm big" style="grid-column:span 2">🖥 Präsentation zeigen</div><div class="b tm big">Verlassen</div>
+ <div class="b" style="grid-row:2/4;writing-mode:vertical-rl">🔊 Lautstärke<br>− ▮▮▮▯▯ +</div>
+ <div class="b pri">Nur Redner</div><div class="b">Diskussion</div><div class="b">Pausenbild</div><div class="b" style="grid-column:span 2">Präsentation ausblenden</div>
+ <div class="b" style="grid-column:1/7">Quelle: Raum-PC · Laptop · Kabellos &nbsp;|&nbsp; Steuerung · Kamera · Hilfe</div>
+</div>
+<div class="pc"><div><b>Plus</b><ul><li>Im Meeting ist alles Wichtige groß und daumengerecht</li><li>Lautstärke bleibt sichtbar, nimmt aber kaum Platz</li></ul></div>
+<div><b>Minus</b><ul><li>Ohne Teams wirkt die obere Leiste leer → dort dann groß „Teams-Meeting starten“</li></ul></div></div>
+<div class="vote">Meine Empfehlung</div></div>
+
+<div class="c"><h2>B · „Zwei Spalten: Meeting | Raum“</h2>
+<p class="why">Links alles, was die Online-Teilnehmer betrifft; rechts der Raum (Ton, Displays, Quelle).</p>
+<div class="tab" style="grid-template-columns:1.6fr 1fr;grid-template-rows:.5fr 2fr 1fr">
+ <div class="b" style="grid-column:1/3">Logo · Sitzungszimmer 5 · Live-Status · Raum aus</div>
+ <div class="b" style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1.3fr;gap:5px;padding:6px;border-style:solid">
+  <span class="b tm">Mikro</span><span class="b tm">Kamera</span><span class="b tm">Präsentation</span>
+  <span class="b pri">Nur Redner</span><span class="b">Diskussion</span><span class="b">Pause</span></div>
+ <div class="b" style="display:grid;grid-template-rows:1fr 1fr 1fr;gap:5px;padding:6px;border-style:solid">
+  <span class="b">🔊 − 60 % + · Ton aus</span><span class="b">Quelle: PC · Laptop · Kabellos</span><span class="b">Displays · Präsentation ausblenden</span></div>
+ <div class="b" style="grid-column:1/3">Steuerung · Kamera · Hilfe</div>
+</div>
+<div class="pc"><div><b>Plus</b><ul><li>Klare Logik: „was sieht Teams“ vs. „was passiert im Raum“</li><li>Lautstärke kompakt (− Wert +) statt großer Balken</li></ul></div>
+<div><b>Minus</b><ul><li>Mehr Elemente gleichzeitig sichtbar, etwas dichter</li></ul></div></div></div>
+
+<div class="c"><h2>C · „Ein Knopf pro Situation“</h2>
+<p class="why">Statt Einzelfunktionen große Szenarien-Kacheln; Feineinstellungen erst unter „Mehr“.</p>
+<div class="tab" style="grid-template-columns:repeat(3,1fr);grid-template-rows:.5fr 1.6fr 1.6fr .6fr">
+ <div class="b" style="grid-column:1/4">Logo · Sitzungszimmer 5 · Live-Status · Raum aus</div>
+ <div class="b pri big">🎤 Vortrag<br><small>Redner + Folien geteilt</small></div><div class="b big">💬 Diskussion<br><small>Redner + Publikum, keine Folien</small></div><div class="b big">☕ Pause<br><small>Pausenbild, Mikro aus</small></div>
+ <div class="b tm">Mikro</div><div class="b tm">Kamera</div><div class="b">🔊 − 60 % +</div>
+ <div class="b" style="grid-column:1/4">Mehr: Quelle · Displays · Kamera-Feinsteuerung · Hilfe</div>
+</div>
+<div class="pc"><div><b>Plus</b><ul><li>Am einfachsten für Gelegenheitsnutzer: ein Tipp = richtiger Zustand</li><li>„Vortrag“ schaltet Präsentation teilen + Nur Redner gemeinsam</li></ul></div>
+<div><b>Minus</b><ul><li>Weniger direkte Kontrolle; Sonderfälle unter „Mehr“</li><li>Größter Umbau (Logik in Companion/Skript)</li></ul></div></div></div>
+
+<p class="lead">Gemeinsam für alle Varianten: Lautstärke als kompakte Zeile „− 60 % + · Ton aus“ statt großer Balken; Teams-Knöpfe groß (mind. 64 px hoch); der wichtigste Zustand (Live/Mikro aus) immer oben sichtbar.</p>
+</body></html>
