@@ -108,6 +108,7 @@ def main(src, dst):
     var('r5_t_video', 'Teams-Bild an (1/0)', '0', False)
     var('r5_t_status', 'Teams-Beitritt: start / fehler: ... / leer', '', False)
     var('r5_spk_mute', 'Lautsprecher stumm (1) / an (0)', '0', True)
+    var('r5_t_share', 'Teams teilt die Präsentation (1/0, von teams-steuerung.ps1)', '0', False)
     var('r5_t_mode', 'Teams-Bild: teilen (Bildschirm + Kamera) / kamera (nur Virtuelle Kamera), von teams-steuerung.ps1', 'kamera', False)
     var('r5_proj_mon', 'OBS-Monitornummer des Teilen-Bildschirms (von teams-steuerung.ps1)', '1', False)
 

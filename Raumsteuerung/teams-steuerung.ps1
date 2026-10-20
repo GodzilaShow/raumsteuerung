@@ -113,7 +113,8 @@ if (-not $Companion) { $Companion = if ($cfg -and $cfg.companion) { $cfg.compani
 #   teamsBild "teilen" (Standard): zwei Kanaele wie bei Teams Rooms. Inhalt: OBS-Szene "Inhalt" (nur Praesentation)
 #             als Vollbild-Projektor auf einem eigenen (virtuellen) Bildschirm, Teams teilt ihn -> scharf und gross.
 #             Personen: Virtuelle Kamera (OBS-Programm, Szenen Nur Redner / Diskussion / Pausenbild) -> fluessig.
-#             "Bild an/aus" auf dem Tablet = Teilen + Kamera an/aus.
+#             Meeting-Start nur mit Kamera ("Nur Redner"); Teilen ueber "Präsentation zeigen" am Tablet (share_on/off,
+#             Zustand r5_t_share). "Bild an/aus" = Kamera.
 #   teamsBild "kamera": wie bisher ueber die Virtuelle Kamera von OBS.
 #   teilenTon true/false: "Sound einschliessen" (Ton von Videos in der Praesentation) - Standard an.
 #   teilenBildschirm: Teil des Monitornamens des Teilen-Bildschirms, Standard "MTT" (Virtual Display Driver);
@@ -185,7 +186,7 @@ function Get-TeamsState {
     In    = $true
     Mute  = [bool]($mic -and $mic.Current.Name -match $AUS)
     # Modus "teilen": "Bild an" heisst, Teams teilt den OBS-Bildschirm
-    Video = if ($Teilen) { $share } else { [bool]($cam -and $cam.Current.Name -notmatch $AUS) }
+    Video = [bool]($cam -and $cam.Current.Name -notmatch $AUS)
     Share = $share
     Menue = $false
   }
@@ -312,21 +313,18 @@ function Find-ShareBar {
   }
   return $null
 }
-function Set-PeopleScene {
-  # Beim Teilen kommt die Praesentation getrennt -> die Kamera soll Personen zeigen, nicht noch einmal die Folien
+function Set-PeopleScene([switch]$Immer) {
+  # Beim Teilen kommt die Praesentation getrennt -> die Kamera soll Personen zeigen, nicht noch einmal die Folien.
+  # -Immer (Meeting-Start): unabhaengig von der letzten Szene auf "Nur Redner"
   for ($i = 0; $i -lt 4; $i++) {   # langsamer PC: Companion antwortet evtl. erst beim zweiten Versuch
     try {
       $sc = (Invoke-Companion 'GET' '/api/variable/obs/scene_active/value').Trim()
-      if ($sc -notin 'Alles im Blick', 'Folien Groß', 'Folien groß') { return }
+      if (-not $Immer -and $sc -notin 'Alles im Blick', 'Folien Groß', 'Folien groß') { return }
+      if ($sc -eq 'Nur Redner') { return }
       [void](Invoke-Companion 'POST' '/api/location/1/1/4/press'); Write-Log "Teilen: Kamera-Szene '$sc' -> 'Nur Redner'"; return
     } catch { Start-Sleep -Milliseconds 700 }
   }
   Write-Log 'Teilen: Kamera-Szene nicht umgeschaltet (Companion antwortet nicht)'
-}
-function Set-Camera([bool]$an) {
-  $s = Get-TeamsState
-  $cam = $null; $w = Find-Meeting; if ($w) { $cam = $w.FindFirst($Scope::Descendants, (Cond $IDS.video)) }
-  if ($cam -and (($cam.Current.Name -notmatch $AUS) -ne $an)) { [void](Invoke-Teams 'video') }
 }
 function Stop-Share {
   $w = Find-Meeting; if (-not $w) { return $false }
@@ -516,8 +514,8 @@ function Join-Teams {
   Start-Sleep -Seconds 2
   $script:win = $null
   Write-Log 'Beitritt: im Meeting'
-  if ($Teilen -and -not (Start-Share)) { [void](Set-Var 'r5_t_status' 'fehler: Bild teilen'); return $true }
-  if ($Teilen) { Set-PeopleScene }
+  # Start nur mit Kamera, immer "Nur Redner"; die Praesentation teilt erst der Knopf "Präsentation zeigen" (share_on)
+  Set-PeopleScene -Immer
   [void](Set-Var 'r5_t_status' '')
   return $true
 }
@@ -548,17 +546,16 @@ while ($true) {
           $s = Get-TeamsState
           $ist = if ($was -eq 'mic') { -not $s.Mute } else { $s.Video }
           if (-not $s.In) { Write-Log "Befehl ${cmd}: kein Teams-Meeting offen" }
-          elseif ($was -eq 'video' -and $Teilen) {
-            # Bild an/aus = Praesentation (Teilen) und Personen (Kamera) zusammen
-            if ($soll) { if (Start-Share) { [void](Set-Var 'r5_t_status' ''); Set-PeopleScene } else { [void](Set-Var 'r5_t_status' 'fehler: Bild teilen') }; Set-Camera $true }
-            else { [void](Stop-Share); Set-Camera $false }
-          }
           elseif ($ist -ne $soll) { [void](Invoke-Teams $(if ($was -eq 'mic') { 'mute' } else { 'video' })) }
           else { Write-Log "Befehl ${cmd}: Teams steht schon so" }
           $nextState = [DateTime]::MinValue
         }
-        elseif ($cmd -eq 'video' -and $Teilen) { $s = Get-TeamsState; if ($s.Share) { [void](Stop-Share); Set-Camera $false } else { [void](Start-Share); Set-Camera $true }; $nextState = [DateTime]::MinValue }
-        elseif ($cmd -in 'share_on', 'share_off') { if ($cmd -eq 'share_on') { [void](Start-Share) } else { [void](Stop-Share) }; $nextState = [DateTime]::MinValue }
+        elseif ($cmd -in 'share_on', 'share_off') {
+          if ($cmd -eq 'share_off') { [void](Stop-Share) }
+          elseif (Start-Share) { [void](Set-Var 'r5_t_status' ''); Set-PeopleScene }
+          else { [void](Set-Var 'r5_t_status' 'fehler: Präsentation teilen') }
+          $nextState = [DateTime]::MinValue
+        }
         elseif ($IDS.ContainsKey($cmd)) { [void](Invoke-Teams $cmd); $nextState = [DateTime]::MinValue }
         else { Write-Log "Unbekannter Befehl '$cmd'" }
       }
@@ -568,7 +565,7 @@ while ($true) {
       $nextState = [DateTime]::Now.AddMilliseconds(1000)
       $s = Get-TeamsState
       if ($s.Menue) { Start-Sleep -Milliseconds 250; continue }   # Teilen-Menue offen: Zustand gerade nicht lesbar
-      $neu = @{ r5_t_in = [int]$s.In; r5_t_mute = [int]$s.Mute; r5_t_video = [int]$s.Video; r5_t_mode = $(if ($Teilen) { 'teilen' } else { 'kamera' }) }
+      $neu = @{ r5_t_in = [int]$s.In; r5_t_mute = [int]$s.Mute; r5_t_video = [int]$s.Video; r5_t_share = [int]$s.Share; r5_t_mode = $(if ($Teilen) { 'teilen' } else { 'kamera' }) }
       $alle = ([DateTime]::Now - $lastPush).TotalSeconds -ge 30
       foreach ($k in $neu.Keys) {
         if ($alle -or $last[$k] -ne $neu[$k]) { if (Set-Var $k ([string]$neu[$k])) { $last[$k] = $neu[$k] } }

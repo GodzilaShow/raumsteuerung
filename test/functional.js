@@ -140,6 +140,19 @@ const clear = () => fetch(API + '/_test/clear');
   await set('r5_t_video=1&r5_live=0'); await p.waitForTimeout(3500);
   check((await p.textContent('#liveTxt')) === 'Teams sieht kein Bild', 'Virtual Cam aus im Meeting -> „Teams sieht kein Bild“');
   await set('r5_live=1'); await p.waitForTimeout(3500);
+  check(!(await p.isVisible('#tShare')), 'Modus kamera: kein Knopf „Präsentation zeigen“');
+  await set('r5_t_mode=teilen&r5_t_share=0'); await p.waitForTimeout(3500);
+  check(await p.isVisible('#tShare') && (await p.textContent('#tShare')).includes('Präsentation zeigen'), 'Modus teilen: Knopf „Präsentation zeigen“ in der Teams-Leiste');
+  check(await p.isVisible('[data-scene=alles]'), 'Modus teilen, nicht geteilt: alle Ansichten sichtbar (Start nur mit Kamera)');
+  await clear(); await p.click('#tShare'); await p.waitForTimeout(300);
+  check((await state()).vars.r5_tcmd === 'share_on' && (await p.textContent('#tShare')).includes('beenden'), '„Präsentation zeigen“ -> r5_tcmd = share_on, Knopf „Präsentation beenden“');
+  await set('r5_t_share=1'); await p.waitForTimeout(3500);
+  check(!(await p.isVisible('[data-scene=alles]')) && !(await p.isVisible('[data-scene=folien]')) && await p.isVisible('[data-scene=redner]'),
+        'beim Teilen: „Alles im Blick“/„Folien groß“ ausgeblendet');
+  check((await p.textContent('#scenesH')).includes('Kamera in Teams'), 'beim Teilen: Überschrift „Kamera in Teams …“');
+  await clear(); await p.click('#tShare'); await p.waitForTimeout(300);
+  check((await state()).vars.r5_tcmd === 'share_off', '„Präsentation beenden“ -> r5_tcmd = share_off');
+  await set('r5_t_share=0&r5_t_mode=kamera'); await p.waitForTimeout(3500);
   await clear(); await p.click('#tMic'); await p.waitForTimeout(300);
   let ts = await state();
   check(ts.vars.r5_tcmd === 'mic_off', 'Mikro tippen -> Zielzustand r5_tcmd = mic_off (kein Umschalten)');
@@ -156,13 +169,6 @@ const clear = () => fetch(API + '/_test/clear');
   await set('r5_t_in=0'); await p.waitForTimeout(4500);
   check(!(await p.isVisible('#teamsBar')), 'nach dem Meeting verschwindet die Leiste');
   check((await p.textContent('#liveTxt')) === 'Nur im Raum', 'kein Meeting -> Live-Kachel „Nur im Raum“');
-  check(await p.isVisible('[data-scene=alles]') && await p.isVisible('[data-scene=folien]'), 'Modus kamera: alle 5 Ansichten sichtbar');
-  await set('r5_t_mode=teilen'); await p.waitForTimeout(3500);
-  check(!(await p.isVisible('[data-scene=alles]')) && !(await p.isVisible('[data-scene=folien]')) && await p.isVisible('[data-scene=redner]'),
-        'Modus teilen: „Alles im Blick“/„Folien groß“ ausgeblendet (Präsentation kommt über das Teilen)');
-  check((await p.textContent('#scenesH')).includes('Kamera in Teams'), 'Modus teilen: Überschrift „Kamera in Teams …“');
-  await set('r5_t_mode=kamera'); await p.waitForTimeout(3500);
-  check(await p.isVisible('[data-scene=alles]'), 'zurück auf Modus kamera: Ansichten wieder da');
 
   console.log('Ausschalten');
   await clear(); await p.click('[data-act=askOff]'); await p.waitForTimeout(400);
