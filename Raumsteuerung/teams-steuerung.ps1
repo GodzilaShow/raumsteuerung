@@ -617,13 +617,27 @@ function Invoke-Teams([string]$cmd) {
 # Startet OBS beim Anmelden und nach einem Absturz neu: im Infobereich, ohne "Abgesicherter Modus?"-Frage.
 # Ist der Raum gerade an (r5_room = 1), gleich mit Virtual Camera.
 $OBS = 'C:\Program Files\obs-studio\bin\64bit\obs64.exe'
+function Skip-ObsCrashDialog {
+  # Nach einem Absturz/Stromausfall fragt OBS trotz --disable-shutdown-check "Im abgesicherten Modus starten?" und
+  # wartet. Abgesicherter Modus = ohne WebSocket -> Companion/Tablet ohne OBS. Also: "Im normalen Modus starten".
+  $obs = @(Get-Process obs64 -ErrorAction SilentlyContinue).Id; if (-not $obs.Count) { return }
+  foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+    try {
+      if ($obs -notcontains $w.Current.ProcessId -or $w.Current.Name -notmatch '(?i)absturz|crash') { continue }
+      $cB = New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+      $b = @($w.FindAll($Scope::Descendants, $cB)) | Where-Object { $_.Current.Name -match '(?i)normalen modus|normal mode' } | Select-Object -First 1
+      if ($b) { $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Write-Log "OBS: Absturz-Abfrage -> '$($b.Current.Name)'" }
+    } catch { }
+  }
+}
 function Ensure-Obs {
-  if (Get-Process obs64 -ErrorAction SilentlyContinue) { return }
+  if (Get-Process obs64 -ErrorAction SilentlyContinue) { Skip-ObsCrashDialog; return }
   if (-not (Test-Path $OBS)) { if (-not $script:obsFehlt) { Write-Log "OBS nicht gefunden: $OBS"; $script:obsFehlt = $true }; return }
   $arg = '--minimize-to-tray --disable-shutdown-check'
   if ((Get-Var 'r5_room') -eq '1') { $arg += ' --startvirtualcam' }
   Start-Process -FilePath $OBS -ArgumentList $arg -WorkingDirectory (Split-Path $OBS)   # OBS braucht sein Programmverzeichnis
   Write-Log "OBS gestartet ($arg)"
+  for ($i = 0; $i -lt 10; $i++) { Start-Sleep -Seconds 1; Skip-ObsCrashDialog }   # Abfrage erscheint nach 1-5 s
 }
 
 # ---------- Nach dem Meeting: Fenster "Bleiben Sie nach Ihrer Besprechung in Verbindung" schliessen ----------
