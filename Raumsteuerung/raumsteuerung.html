@@ -87,8 +87,6 @@ h2{margin:0;font-size:21px;font-weight:600}
 .sl{background:#F4F7F9;border-radius:2px}.l1{height:5px;background:var(--blue)}.l2{height:4px;background:var(--line2)}
 .cam{background:#2C4A63;border-radius:2px;overflow:hidden}
 .head{border-radius:50%;background:#9FB4C6}.sh{background:#9FB4C6}
-.dots{display:flex!important;align-items:flex-end;justify-content:space-around;padding:0 4px 8px}
-.dots b{width:10px;height:10px;border-radius:50%;background:#9FB4C6}
 .live{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:6px;border:1px solid #F4C7C3;background:#FEF3F2;color:#A32D2D;text-align:center;padding:10px}
 .live b{display:flex;flex-direction:column;align-items:center;gap:10px;font-size:22px;font-weight:700;line-height:1.15}
 .live b:before{content:"";width:14px;height:14px;border-radius:7px;background:#D92D20;animation:pulse 1.6s ease-in-out infinite}
@@ -261,7 +259,7 @@ h2{margin:0;font-size:21px;font-weight:600}
 <button class="scene" data-scene="alles"><span class="thumb">
 <span class="sl" style="left:5%;top:10%;width:60%;height:80%"></span><span class="l1" style="left:10%;top:24%;width:34%"></span><span class="l2" style="left:10%;top:38%;width:44%"></span><span class="l2" style="left:10%;top:50%;width:40%"></span>
 <span class="cam" style="right:5%;top:10%;width:26%;height:38%"><span class="head" style="left:50%;bottom:15px;width:12px;height:12px;margin-left:-6px"></span><span class="sh" style="left:50%;bottom:0;width:30px;height:12px;margin-left:-15px;border-radius:15px 15px 0 0"></span></span>
-<span class="cam dots" style="right:5%;bottom:10%;width:26%;height:38%;padding-bottom:5px"><b style="width:7px;height:7px"></b><b style="width:7px;height:7px"></b><b style="width:7px;height:7px"></b></span>
+<span class="cam" style="right:5%;bottom:10%;width:26%;height:38%"><svg viewBox="1 15 118 40" preserveAspectRatio="xMidYMid meet" style="position:absolute;inset:0;width:100%;height:100%"><g fill="#9FB4C6"><circle cx="14" cy="27" r="5"/><path d="M6 46v-6a8 8 0 0 1 16 0v6z"/><circle cx="28" cy="27" r="5"/><path d="M20 46v-6a8 8 0 0 1 16 0v6z"/><circle cx="53" cy="27" r="5"/><path d="M45 46v-6a8 8 0 0 1 16 0v6z"/><circle cx="67" cy="27" r="5"/><path d="M59 46v-6a8 8 0 0 1 16 0v6z"/><circle cx="92" cy="27" r="5"/><path d="M84 46v-6a8 8 0 0 1 16 0v6z"/><circle cx="106" cy="27" r="5"/><path d="M98 46v-6a8 8 0 0 1 16 0v6z"/></g><g fill="#6E869B"><rect x="5" y="41" width="32" height="10" rx="1.5"/><rect x="44" y="41" width="32" height="10" rx="1.5"/><rect x="83" y="41" width="32" height="10" rx="1.5"/></g></svg></span>
 </span><span class="lbl">Alles im Blick</span></button>
 <button class="scene" data-scene="folien"><span class="thumb">
 <span class="sl" style="left:4%;top:8%;width:76%;height:84%"></span><span class="l1" style="left:10%;top:24%;width:40%"></span><span class="l2" style="left:10%;top:38%;width:56%"></span><span class="l2" style="left:10%;top:50%;width:50%"></span>
@@ -269,7 +267,8 @@ h2{margin:0;font-size:21px;font-weight:600}
 </span><span class="lbl">Folien groß</span></button>
 <button class="scene" data-scene="diskussion"><span class="thumb">
 <span class="cam" style="left:4%;top:20%;width:44%;height:60%"><span class="head" style="left:50%;bottom:21px;width:16px;height:16px;margin-left:-8px"></span><span class="sh" style="left:50%;bottom:0;width:42px;height:18px;margin-left:-21px;border-radius:21px 21px 0 0"></span></span>
-<span class="cam dots" style="right:4%;top:20%;width:44%;height:60%"><b></b><b></b><b></b><b></b></span>
+<!-- Publikum: drei Tischblöcke mit Personen (wie im Saalplan) -->
+<span class="cam" style="right:4%;top:20%;width:44%;height:60%"><svg viewBox="1 15 118 40" preserveAspectRatio="xMidYMid meet" style="position:absolute;inset:0;width:100%;height:100%"><g fill="#9FB4C6"><circle cx="14" cy="27" r="5"/><path d="M6 46v-6a8 8 0 0 1 16 0v6z"/><circle cx="28" cy="27" r="5"/><path d="M20 46v-6a8 8 0 0 1 16 0v6z"/><circle cx="53" cy="27" r="5"/><path d="M45 46v-6a8 8 0 0 1 16 0v6z"/><circle cx="67" cy="27" r="5"/><path d="M59 46v-6a8 8 0 0 1 16 0v6z"/><circle cx="92" cy="27" r="5"/><path d="M84 46v-6a8 8 0 0 1 16 0v6z"/><circle cx="106" cy="27" r="5"/><path d="M98 46v-6a8 8 0 0 1 16 0v6z"/></g><g fill="#6E869B"><rect x="5" y="41" width="32" height="10" rx="1.5"/><rect x="44" y="41" width="32" height="10" rx="1.5"/><rect x="83" y="41" width="32" height="10" rx="1.5"/></g></svg></span>
 </span><span class="lbl">Diskussion</span></button>
 <button class="scene" data-scene="redner"><span class="thumb">
 <span class="head" style="left:50%;bottom:38px;width:26px;height:26px;margin-left:-13px"></span><span class="sh" style="left:50%;bottom:0;width:70px;height:32px;margin-left:-35px;border-radius:35px 35px 0 0"></span>
