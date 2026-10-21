@@ -46,8 +46,9 @@ const clear = () => fetch(API + '/_test/clear');
   if (st.log.some(x => x.startsWith('rmcr:'))) check(st.log.includes('rmcr: set RM:NeOut_Fader/Ch/Level 0 0 0'), 'RM-CR bekommt „set RM:NeOut_Fader/Ch/Level 0 0 0“');
   check(await p.$eval('[data-act=volUp]', e => e.disabled), '„Lauter“ bei 100 % gesperrt');
   check(await p.textContent('#volNum') === '100', 'Anzeige 100');
-  await clear(); await p.click('#bars button:nth-child(3)'); await p.waitForTimeout(500);
-  st = await state(); check(st.vars.r5_vol_db === '-2600', 'Balken 30 % setzt -2600 (ist ' + st.vars.r5_vol_db + ', ' + st.log.join(',') + ')');
+  await clear(); await p.click('[data-act=volDown]'); await p.click('[data-act=volDown]'); await p.waitForTimeout(800);
+  st = await state(); check(st.vars.r5_vol_db === '-700' && await p.textContent('#volNum') === '80', 'zweimal Leiser von 100 % -> 80 % = -700 (ist ' + st.vars.r5_vol_db + ')');
+  check(!(await p.$('#bars')), 'Lautstärke ist eine Zeile „− % +“ (keine Balken)');
 
   console.log('Ton aus / an');
   await clear(); await p.click('#spkBtn'); await p.waitForTimeout(400);
@@ -125,6 +126,7 @@ const clear = () => fetch(API + '/_test/clear');
 
   console.log('Teams');
   check(!(await p.isVisible('#teamsBar')), 'ohne Teams-Meeting keine Teams-Leiste');
+  check(!(await p.isVisible('#tLeave')) && (await p.$eval('#tJoin', e => e.getBoundingClientRect().height)) >= 90, 'ohne Meeting: großer Knopf „Teams-Meeting starten“, kein „Verlassen“');
   await set('r5_t_status=fehler: Teams reagiert nicht'); await p.waitForTimeout(3500);
   check((await p.textContent('#tJoin')).includes('fehlgeschlagen'), 'Beitritt fehlgeschlagen -> Hinweis am Knopf');
   check((await p.textContent('#liveTxt')) === 'Teams-Start fehlgeschlagen' && await p.$eval('#live', e => e.classList.contains('warn')), 'Live-Kachel: „Teams-Start fehlgeschlagen“ (gelb)');
@@ -149,6 +151,11 @@ const clear = () => fetch(API + '/_test/clear');
   check(await p.$$eval('.scenes .scene', els => els.filter(e => e.offsetParent).map(e => e.dataset.scene).sort((x, y) => 0) && els.filter(e => e.offsetParent)
         .sort((x, y) => x.getBoundingClientRect().top - y.getBoundingClientRect().top || x.getBoundingClientRect().left - y.getBoundingClientRect().left)[0].dataset.scene) === 'redner',
         'Modus teilen: „Nur Redner“ steht links oben');
+  const big = await p.$$eval('#teamsBar .tbtn', els => els.filter(e => e.offsetParent).map(e => [e.id, Math.round(e.getBoundingClientRect().height)]));
+  check(big.map(x => x[0]).join() === 'tMic,tCam,tShare' && big.every(x => x[1] >= 90), 'Modus teilen: Mikro, Kamera, Präsentation groß unter dem Kopf (' + JSON.stringify(big) + ')');
+  check(await p.isVisible('header #tLeave') && !(await p.isVisible('#tJoin')), '„Verlassen“ klein im Kopf');
+  const cut = await p.$$eval('#s-main .panel, #s-main .scene, #s-main .btn, #s-main .tbtn', els => els.filter(e => e.offsetParent && (e.scrollHeight > e.clientHeight + 2 || e.scrollWidth > e.clientWidth + 2)).map(e => (e.id || e.className) + ' ' + e.textContent.trim().slice(0, 20)));
+  check(cut.length === 0, 'Steuerung im Meeting: nichts abgeschnitten ' + (cut.length ? JSON.stringify(cut) : ''));
   await clear(); await p.click('#tShare'); await p.waitForTimeout(300);
   check((await state()).vars.r5_tcmd === 'share_on' && (await p.textContent('#tShare')).includes('beenden'), '„Präsentation zeigen“ -> r5_tcmd = share_on, Knopf „Präsentation beenden“');
   await clear(); await p.click('#tShare'); await p.waitForTimeout(300);

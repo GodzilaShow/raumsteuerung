@@ -182,8 +182,8 @@ Automatisch aus - nur abends, tagsüber nie (Schulungen, lange Sitzungen ohne Be
 
 9. Teams vom Tablet aus bedienen (Mikro, Bild, Verlassen)
 -----------------------------------------------------------
-Auf der Steuerung erscheint oben eine Teams-Leiste, sobald auf dem Raum-PC ein Teams-Meeting offen ist:
-"Mikro an/aus", "Kamera an/aus", "Verlassen" (Verlassen erst nach zweitem Tippen).
+Auf der Steuerung erscheinen unter dem Kopf große Teams-Knöpfe, sobald auf dem Raum-PC ein Teams-Meeting offen ist:
+"Mikro an/aus", "Kamera an/aus", "Präsentation zeigen"; "Verlassen" klein oben im Kopf (erst nach zweitem Tippen).
 So funktioniert es: teams-steuerung.ps1 liest und drückt die Buttons im Teams-Meetingfenster
 über Windows UI Automation (wie ein Bildschirmleser). Keine Teams-API, kein Teams-Admin nötig.
   - Companion-Buttons 1/0/4 (Mikro), 1/0/5 (Bild), 1/0/6 (Verlassen) setzen r5_tcmd = mute/video/leave.
