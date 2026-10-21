@@ -1,4 +1,4 @@
-# Raumsteuerung Sitzungszimmer 5 - Schnellpruefung auf dem Raum-PC (keine Administratorrechte noetig)
+﻿# Raumsteuerung Sitzungszimmer 5 - Schnellpruefung auf dem Raum-PC (keine Administratorrechte noetig)
 # Zeigt gruen/gelb/rot: Companion, OBS, RM-CR, Mikrofone, Webserver, Automatik, Netzwerk, Firewall, Audio.
 # Aufruf: pruefen.cmd doppelklicken (oder .\pruefen.ps1). Aendert nichts.
 param([string]$Config = (Join-Path $PSScriptRoot 'mikro-automatik.json'))
@@ -54,6 +54,28 @@ if (Test-Path $ccfg) {
     if ($bind -eq '127.0.0.1') { Zeile WARN 'Companion-Netzwerk' 'hoert nur auf 127.0.0.1 - Tablet kann keine Befehle senden' 'Companion-Fenster: GUI Interface -> "All Interfaces: IPv4 Only"' }
     else { Zeile OK 'Companion-Netzwerk' ('hoert auf ' + $bind) }
   } catch { }
+}
+
+# ---------- Teilen-Bildschirm (Praesentation in Teams teilen) ----------
+if (-not ($cfg -and $cfg.teamsBild -eq 'kamera')) {
+  $tName = if ($cfg -and $cfg.teilenBildschirm) { $cfg.teilenBildschirm } else { 'MTT' }
+  Add-Type -Namespace Pruef -Name Anz -MemberDefinition @'
+[StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)] public struct DD { public int cb; [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string Name;
+  [MarshalAs(UnmanagedType.ByValTStr, SizeConst=128)] public string Text; public int Flags; [MarshalAs(UnmanagedType.ByValTStr, SizeConst=128)] public string Id;
+  [MarshalAs(UnmanagedType.ByValTStr, SizeConst=128)] public string Key; }
+[DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern bool EnumDisplayDevices(string dev, int i, ref DD dd, int f);
+'@ -ErrorAction SilentlyContinue
+  $gefunden = $null; $treiber = $null
+  for ($i = 0; $i -lt 16; $i++) {
+    $a = New-Object Pruef.Anz+DD; $a.cb = [Runtime.InteropServices.Marshal]::SizeOf($a)
+    if (-not [Pruef.Anz]::EnumDisplayDevices([NullString]::Value, $i, [ref]$a, 0)) { break }   # $null kaeme als "" an
+    if ($a.Text -like '*Virtual Display Driver*') { $treiber = $a }
+    $m = New-Object Pruef.Anz+DD; $m.cb = [Runtime.InteropServices.Marshal]::SizeOf($m)
+    if (($a.Flags -band 1) -and [Pruef.Anz]::EnumDisplayDevices($a.Name, 0, [ref]$m, 0) -and ("$($m.Text) $($m.Id)" -like "*$tName*")) { $gefunden = $a.Name }
+  }
+  if ($gefunden) { Zeile OK 'Teilen-Bildschirm' "$gefunden ('$tName') ist aktiv" }
+  elseif ($treiber) { Zeile WARN 'Teilen-Bildschirm' 'Virtual Display Driver vorhanden, aber abgeschaltet' 'Windows: Einstellungen -> Anzeige -> "Erweitern"; die Teams-Steuerung versucht das auch selbst (alle 2 min)' }
+  else { Zeile FEHLER 'Teilen-Bildschirm' "kein Bildschirm '$tName' - 'Praesentation zeigen' geht nicht (nur von Hand in Teams)" 'Virtual Display Driver installieren/aktivieren (Administrator) bzw. HDMI-Dummy stecken und teilenBildschirm in mikro-automatik.json eintragen' }
 }
 
 # ---------- RM-CR ----------

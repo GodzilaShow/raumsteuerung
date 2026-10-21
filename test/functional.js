@@ -160,6 +160,11 @@ const clear = () => fetch(API + '/_test/clear');
   check((await state()).vars.r5_tcmd === 'share_on' && (await p.textContent('#tShare')).includes('beenden'), '„Präsentation zeigen“ -> r5_tcmd = share_on, Knopf „Präsentation beenden“');
   await clear(); await p.click('#tShare'); await p.waitForTimeout(300);
   check((await state()).vars.r5_tcmd === 'share_off', '„Präsentation beenden“ -> r5_tcmd = share_off');
+  await set('r5_t_status=fehler: kein Teilen-Bildschirm'); await p.waitForTimeout(3500);
+  check((await p.textContent('#liveTxt')) === 'Präsentation nicht geteilt' && (await p.textContent('#liveSub')).includes('von Hand') === false
+        && (await p.textContent('#liveSub')).includes('Teilen') && (await p.textContent('#tShare')).includes('zeigen'),
+        'kein Teilen-Bildschirm -> Hinweis „in Teams von Hand teilen“, Knopf wieder „Präsentation zeigen“');
+  await set('r5_t_status='); await p.waitForTimeout(3500);
   await set('r5_t_share=0&r5_t_mode=kamera'); await p.waitForTimeout(3500);
   check(await p.isVisible('[data-scene=alles]') && (await p.textContent('#scenesH')) === 'Was sehen die Online-Teilnehmer?', 'Modus kamera: wieder alle 5 Ansichten');
   await clear(); await p.click('#tMic'); await p.waitForTimeout(300);

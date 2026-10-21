@@ -100,6 +100,16 @@ Im Raum (Raum-PC):
    danach Aufgabe „Raumsteuerung Mikrofon-Automatik“ neu starten.
 4. `pruefen.cmd`, dann Checkliste ANLEITUNG Abschnitt 6 und 9 (Teams-Leiste) mit echtem Teams-Meeting.
 5. Wenn Hardware kommt: Geräte-Aktionen in die vorhandenen Buttons legen (ANLEITUNG Abschnitt 8).
+6. Teams-Bild (Teilen) am Raum-PC einrichten, sobald Monitore und Capture-Karte feststehen:
+   - Teilen-Bildschirm: Virtual Display Driver (winget VirtualDrivers.Virtual-Display-Driver, dann „VDD Control“ als
+     Admin → Install Driver) oder HDMI-Dummy; Name in `mikro-automatik.json` → `teilenBildschirm` (Standard „MTT“).
+     In den Anzeigeeinstellungen ganz außen anordnen, 1920×1080.
+   - Was „Präsentation zeigen“ zeigt (OBS-Szene „Inhalt“): Standard = Bildschirm ohne Teams (nicht fest „Hauptbildschirm“);
+     Auswahl über die Tablet-Quelle „Raum-PC / Laptop (HDMI) / Kabellos“ (Capture-Karte bzw. Monitoraufnahme), letzte
+     Wahl merken. Noch nicht gebaut – erst mit der echten Hardware.
+   - Teams-Fenster: Sprecherplatz-Monitor per `teamsBildschirm` (Teil des Monitornamens) festlegen.
+   - Danach `pruefen.cmd` (Zeile „Teilen-Bildschirm“ grün) und Durchlauf Raum starten → Teams-Meeting starten →
+     Präsentation zeigen/beenden → Verlassen, Ergebnis per Handy im Meeting prüfen.
 
 ## Hardware-Lücken (für Ausstattungsplan v7)
 Tablet (Galaxy Tab A9+, ~209 €) + Halterung; HDMI-Matrix mit LAN (TESmart HMA404-E23, Companion-Modul vorhanden); 3. AOC-HDMI für Tisch-Laptop; WLAN-AP fürs AV-Netz (TP-Link EAP225 ~57 €); 3. Netzwerkkarte für RM-CR-Steuerung; LAN zu den ViewSonic-Displays. Publikum-Kamera mittig über den Displays montieren (FoMaKo 60° reicht nicht für ganze Reihen → Zonen).
