@@ -91,6 +91,24 @@ Am 13.10. außerdem:
   zurücksetzen (Sicherung in `C:\Raum5_Sicherung\`), Testlink „Raum5 Test“ in Teams löschen.
   Aufruf: `API_PORT=8100 PAGE_PORT=8180 bash test/alle-tests.sh` (Playwright global installiert).
 
+## Stand PC DESKTOP-9GQP24U (22.10.2026)
+- Eingerichtet mit `tools/Raum5_einrichten.ps1` (als Admin: Git, Klon nach `C:\Raum5`, OBS 32.2.2, Companion 5.1.0
+  per winget, dann `installieren.ps1`). Erneut ausführen = `git pull` + Neuinstallation von `C:\Raumsteuerung`.
+- OBS: Sammlung „Raum5“ importiert, WebSocket 4455 mit Testpasswort (auch in Companion „obs“ eingetragen, grün).
+- Companion: Konfig importiert („Import Preserving Unselected“), GUI auf 0.0.0.0, „Run at login“. Admin-Passwort
+  noch nicht gesetzt. `rmcr` rot (RM-CR noch nicht im Netz). Live geprüft: Raum an/aus, 5 Szenen, Präsentation
+  aus/an, Lautstärke, Ton aus/an, Publikum-Automatik, Trigger Live-Status, CORS (`*`).
+- Virtual Display Driver installiert (`pruefen.cmd`: Teilen-Bildschirm MTT grün). `teams-link.txt` = Test-Meeting
+  (teams.live.com, privat) – Teams auf dem PC nicht angemeldet -> Gast -> Wartebereich.
+- Durchlauf: Teams-Meeting starten -> Wartebereich -> eingelassen -> im Meeting erkannt; „Präsentation zeigen“ teilt
+  nach ca. 6 s.
+- Am 22.10. geändert: „Raum ausschalten“ im Kopf ruhig (Kontur, rotes Symbol); Teams-Steuerung verwirft beim Start
+  liegengebliebene `r5_tcmd`; läuft unsichtbar (conhost --headless); erkennt den Wartebereich
+  (`r5_t_status` = `warten: Wartebereich`, Tablet „Wartet auf Einlass“, nach 15 min `fehler: nicht eingelassen`).
+- Offen hier: Netzwerkprofil „Privat“, RM-CR (Netz + USB-Audio), Raumkonto (M365-Benutzer mit Teams-Lizenz,
+  automatische Anmeldung, eigenes Dauer-Meeting mit Wartebereich umgehen = Alle), Teams-Autostart, Companion-Admin-
+  Passwort, echte Passwörter statt Testpasswörter.
+
 ## Nächster Schritt
 Im Raum (Raum-PC):
 1. OBS + Szenen-Backup, Companion + `Raum5_Companion.companionconfig` (vorher exportieren), `installieren.ps1`.
