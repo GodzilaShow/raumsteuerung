@@ -224,8 +224,12 @@ namespace Raumsteuerung
             tray.Icon = Symbol(g);
             var probleme = z.Where(x => x.Farbe == Ampel.Rot || x.Farbe == Ampel.Gelb).ToList();
             lage.Farbe = g;
-            lage.Satz = g == Ampel.Gruen ? "Alles bereit" : probleme.Count == 1 ? probleme[0].Name + " braucht Aufmerksamkeit" : probleme.Count + " Dinge brauchen Aufmerksamkeit";
-            lage.Unter = g == Ampel.Gruen ? "Tablet und Teams-Steuerung laufen." : "Was zu tun ist, steht unten bei „Technik“.";
+            int rot = probleme.Count(x => x.Farbe == Ampel.Rot), gelb = probleme.Count - rot;
+            var teile = new List<string>();
+            if (rot > 0) teile.Add(rot + " Fehler");
+            if (gelb > 0) teile.Add(gelb + (gelb == 1 ? " Warnung" : " Warnungen"));
+            lage.Satz = g == Ampel.Gruen ? "Alles bereit" : teile.Count > 0 ? string.Join(" · ", teile) + " erkannt" : "Prüfe …";
+            lage.Unter = g == Ampel.Gruen ? "Tablet und Teams-Steuerung laufen." : "";
             lage.Zeit = "Geprüft " + DateTime.Now.ToString("HH:mm:ss");
             lage.Invalidate();
             string trayText = "Raumsteuerung 5: " + (probleme.Count == 0 ? "alles bereit" : string.Join(", ", probleme.Select(x => x.Name)));

@@ -301,9 +301,9 @@ namespace Raumsteuerung
                 else if (Farbe == Ampel.Grau) { }
                 else { g.DrawLine(pen, cx, cy - 9, cx, cy + 2); using (var b = new SolidBrush(c)) g.FillEllipse(b, cx - 2.2f, cy + 6, 4.4f, 4.4f); }
             }
-            TextRenderer.DrawText(g, Satz, Theme.Schrift(17f, FontStyle.Bold, true), new Point(76, 14), Theme.Text);
+            TextRenderer.DrawText(g, Satz, Theme.Schrift(17f, FontStyle.Bold, true), new Point(76, Unter == "" ? 26 : 14), Theme.Text);   // ohne Unterzeile mittig
             TextRenderer.DrawText(g, Unter, Theme.Schrift(10f), new Rectangle(77, 46, Width - 77 - 110, 22), Theme.Leise, TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
-            TextRenderer.DrawText(g, Zeit, Theme.Schrift(9f), new Rectangle(Width - 110, 22, 110, 20), Theme.Aus, TextFormatFlags.Right);
+            TextRenderer.DrawText(g, Zeit, Theme.Schrift(9f), new Rectangle(Width - 110, Unter == "" ? 33 : 22, 110, 20), Theme.Aus, TextFormatFlags.Right);
         }
     }
 
