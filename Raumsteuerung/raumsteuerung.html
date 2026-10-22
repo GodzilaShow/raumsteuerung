@@ -39,6 +39,8 @@ h2{margin:0;font-size:21px;font-weight:600}
 .btn.outline{border-color:var(--blue);color:var(--blue)}
 .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
 .btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+/* Raum ausschalten im Kopf: ruhig (Rot bleibt fuer Zustaende wie Mikro aus), nur das Symbol rot */
+.btn.quiet-off{color:var(--ink)}.btn.quiet-off svg{color:var(--red)}
 /* Teams-Reihe unter dem Kopf: Mikro, Kamera, Präsentation groß (Verlassen klein im Kopf) */
 .teams{display:flex;align-items:center;gap:8px}
 #tJoin[hidden]{display:none}
@@ -247,7 +249,7 @@ h2{margin:0;font-size:21px;font-weight:600}
 <div class="title"><b>Sitzungszimmer 5</b><span>KH II</span></div>
 <div class="grow"></div>
 <button class="tbtn" hidden data-act="tLeave" id="tLeave"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/></svg><span>Verlassen</span></button>
-<button class="btn danger" data-act="askOff"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg>Raum ausschalten</button>
+<button class="btn quiet-off" data-act="askOff"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg>Raum ausschalten</button>
 </header>
 <div class="stripe"></div>
 <div class="body" style="grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr) auto auto">
