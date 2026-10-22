@@ -254,10 +254,14 @@ namespace Raumsteuerung
         public readonly List<string[]> Punkte = new List<string[]>();   // { Text, Symbol }
         int aktiv, ueber = -1; public event Action<int> Gewaehlt;
         public int Aktiv { get { return aktiv; } set { aktiv = value; Invalidate(); if (Gewaehlt != null) Gewaehlt(value); } }
-        public Navi() { BackColor = Theme.Seite; Cursor = Cursors.Hand; }
+        public Navi() { BackColor = Theme.Seite; }   // Hand nur über den Punkten (siehe OnMouseMove), sonst Pfeil
         Rectangle R(int i) { return new Rectangle(10, 66 + i * 40, Width - 20, 34); }
-        protected override void OnMouseMove(MouseEventArgs e) { int u = Enumerable.Range(0, Punkte.Count).FirstOrDefault(i => R(i).Contains(e.Location)) ; if (!R(u).Contains(e.Location)) u = -1; if (u != ueber) { ueber = u; Invalidate(); } }
-        protected override void OnMouseLeave(EventArgs e) { ueber = -1; Invalidate(); }
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            int u = Enumerable.Range(0, Punkte.Count).FirstOrDefault(i => R(i).Contains(e.Location)); if (!R(u).Contains(e.Location)) u = -1;
+            if (u != ueber) { ueber = u; Cursor = u >= 0 ? Cursors.Hand : Cursors.Default; Invalidate(); }
+        }
+        protected override void OnMouseLeave(EventArgs e) { ueber = -1; Cursor = Cursors.Default; Invalidate(); }
         protected override void OnMouseClick(MouseEventArgs e) { for (int i = 0; i < Punkte.Count; i++) if (R(i).Contains(e.Location)) Aktiv = i; }
         protected override void OnPaint(PaintEventArgs e)
         {
