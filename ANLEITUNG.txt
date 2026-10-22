@@ -192,6 +192,8 @@ Einrichtung:
   a) installieren.ps1 legt die Aufgabe "Raumsteuerung Teams-Steuerung" an. Sie startet bei jeder
      Windows-Anmeldung im Benutzerkonto (nicht als SYSTEM - sie braucht den Desktop).
      Raum-PC: automatische Anmeldung des Raum-Kontos einrichten, sonst läuft sie erst nach Anmeldung.
+     Sie läuft unsichtbar (conhost --headless), kein Fenster in der Taskleiste. Nicht über den Task-Manager
+     beenden - sonst geht die Teams-Leiste am Tablet nicht mehr (Neustart: Aufgabe ausführen oder neu anmelden).
   b) Nach der Installation einmal ab- und wieder anmelden.
   c) Test: Teams-Meeting starten -> Tablet zeigt die Leiste. "Mikro" tippen -> Teams schaltet stumm.
      Ohne Tablet: C:\Raumsteuerung\teams-steuerung.ps1 -Status   bzw.  -Befehl mute
