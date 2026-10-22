@@ -127,6 +127,8 @@ Am 13.10. außerdem:
 - `installieren.ps1`: beendet Programm/alte Aufgaben, kopiert, Firewall, Autostart `HKLM\...\Run` „--tray“, startet
   die exe als normaler Benutzer (über explorer.exe). Findet die exe noch alte Aufgaben, startet sie nichts doppelt
   (Status „über Aufgabenplanung“).
+- Oberfläche wie Systemeinstellungen (Seitenleiste, gruppierte Listen, eigene Knöpfe/Schalter/Felder in `Ui.cs`,
+  Segoe UI Variable + Segoe Fluent Icons unter Windows 11, Titelleiste in Grundfarbe).
 - Unter Windows noch nicht getestet (nur Mono/Xvfb: Fenster, alle Seiten, JSON-Rundlauf).
 
 ## Nächster Schritt
