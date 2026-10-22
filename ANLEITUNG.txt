@@ -198,7 +198,7 @@ Teams-Bild: Präsentation geteilt + Personen über die Kamera (Standard; seit 22
      alle Bildschirme mit Nummer und zeigt, welcher geteilt wird. Ist der eingetragene nicht da (Monitor aus),
      teilt das Skript nichts und das Tablet sagt "Präsentation nicht geteilt - in Teams von Hand teilen".
      Einfacher: Raumsteuerung -> Einstellungen -> Bildschirme. Dort "Präsentation zeigen" und "Teams-Fenster"
-     wählen; "Nummern zeigen" blendet auf jedem Bildschirm 5 s lang Nummer und Aufgabe ein.
+     wählen; "Nummern zeigen" blendet auf jedem Bildschirm 4 s lang Nummer und Aufgabe ein.
      Teams-Fenster ("teamsBildschirm"): Nummer, Teil des Monitornamens oder "aus" (nie verschieben). Ohne Eintrag
      der erste Neben-Bildschirm, der nicht geteilt wird. Das Skript legt große Teams-Fenster alle 5 s dorthin,
      auch vom Präsentations-Bildschirm weg (außer während des Teilens).

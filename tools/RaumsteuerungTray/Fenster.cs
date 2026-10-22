@@ -164,7 +164,7 @@ namespace Raumsteuerung
             teamsSchirm = new Auswahl { Width = 320 };
             schirme.Zeile(new Eintrag("Teams-Fenster", "Hierhin legt die Steuerung das Meeting", teamsSchirm, 320) { Linie = true });
             var zeigen = new Knopf("Nummern zeigen"); zeigen.Click += (s, e) => NummernZeigen();
-            schirme.Zeile(new Eintrag("Welcher ist welcher?", "Zeigt 5 Sekunden lang Nummer und Aufgabe auf jedem Bildschirm", zeigen) { Linie = true });
+            schirme.Zeile(new Eintrag("Welcher ist welcher?", "Zeigt 4 Sekunden lang Nummer und Aufgabe auf jedem Bildschirm", zeigen) { Linie = true });
             var start = p.Dazu(new Gruppe("Start"));
             autostart = new Schalter();
             autostartZeile = new Eintrag("Mit Windows starten", "Startet bei der Anmeldung im Infobereich", autostart);
@@ -336,10 +336,10 @@ namespace Raumsteuerung
             }
             if (nummernAus == null)
             {
-                nummernAus = new System.Windows.Forms.Timer { Interval = 5000 };
+                nummernAus = new System.Windows.Forms.Timer { Interval = 4000 };
                 nummernAus.Tick += (s, e) => { nummernAus.Stop(); foreach (var f in nummern) f.Close(); nummern.Clear(); };
             }
-            nummernAus.Stop(); nummernAus.Start();   // erneut geklickt -> wieder volle 5 s
+            nummernAus.Stop(); nummernAus.Start();   // erneut geklickt -> wieder volle 4 s
         }
 
         void Speichern()
