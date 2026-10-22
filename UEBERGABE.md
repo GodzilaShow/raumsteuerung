@@ -123,7 +123,8 @@ Am 13.10. außerdem:
 - Fenster: Status (Companion, OBS, Raum, RM-CR, Webserver, Automatik, Teams-Steuerung, Teams, Netzprofil), Tablet-
   Adresse; Einstellungen (RM-CR-IP, `teilenBildschirm` als Auswahlliste, Teams-Link, Mikrofon-Kanäle, Autostart) –
   schreibt `mikro-automatik.json` (+ `.bak`) im bisherigen Format; Werkzeuge (Prüfen = pruefen.ps1, Mikrofone testen,
-  Protokolle, Dienste neu starten, Aktualisieren = `git pull` in `C:\Raum5` + Kopieren, tauscht auch die exe).
+  Protokolle, Dienste neu starten). „Aktualisieren“ und „Deinstallieren“ gibt es im Programm bewusst nicht (22.10.,
+  Wunsch Nutzer) – neue Version = `installieren.ps1` erneut, entfernen = `deinstallieren.ps1` (beide als Admin).
 - `installieren.ps1`: beendet Programm/alte Aufgaben, kopiert, Firewall, Autostart `HKLM\...\Run` „--tray“, startet
   die exe als normaler Benutzer (über explorer.exe). Findet die exe noch alte Aufgaben, startet sie nichts doppelt
   (Status „über Aufgabenplanung“).

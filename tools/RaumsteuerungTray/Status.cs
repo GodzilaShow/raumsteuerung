@@ -149,7 +149,9 @@ namespace Raumsteuerung
                 var p = Process.Start(new ProcessStartInfo("powershell.exe",
                     "-NoProfile -Command \"Get-NetConnectionProfile | ForEach-Object { $_.InterfaceAlias + '|' + $_.NetworkCategory }\"")
                 { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true });
-                string o = p.StandardOutput.ReadToEnd(); p.WaitForExit(8000);
+                var aus = p.StandardOutput.ReadToEndAsync();
+                if (!p.WaitForExit(8000)) { try { p.Kill(); } catch { } }   // nie hängen bleiben
+                string o = aus.Wait(2000) ? aus.Result : "";
                 var oeff = o.Split('\n').Select(s => s.Trim()).Where(s => s.EndsWith("|Public")).Select(s => s.Split('|')[0]).ToList();
                 netzZeile = oeff.Count == 0 ? new Zeile("Netzwerk", Ampel.Gruen, "Profil Privat/Domäne")
                     : new Zeile("Netzwerk", Ampel.Gelb, "„Öffentlich“: " + string.Join(", ", oeff), "Tablet erreicht den PC nicht: Einstellungen → Netzwerk → Netzwerkprofiltyp „Privat“");

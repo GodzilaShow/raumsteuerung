@@ -69,7 +69,7 @@ Raum5_OBS_Szenen_Backup.json      OBS-Szenen (Stand 05.10., Platzhalter statt ec
   Webserver (Port 8080), Mikrofon-Automatik und Teams-Steuerung - und startet sie neu, falls sie abbrechen.
   Klick auf das Symbol: Status aller Teile, Tablet-Adresse, Einstellungen (RM-CR-IP, Bildschirm für
   "Präsentation zeigen", Teams-Link, Mikrofon-Kanäle), Werkzeuge (Prüfen, Mikrofone testen, Protokolle,
-  Dienste neu starten, Aktualisieren von GitHub über C:\Raum5). X schließt nur das Fenster.
+  Dienste neu starten). Neue Version: installieren.ps1 erneut ausführen. X schließt nur das Fenster.
   Beenden nur über Rechtsklick -> Beenden (dann gehen Tablet und Automatik nicht mehr).
 - Die Seite findet Companion automatisch (gleicher PC, Port 8000).
 - Wichtig: Der Raum-PC braucht eine feste IP-Adresse (oder DHCP-Reservierung).

@@ -1,6 +1,6 @@
 // Raumsteuerung Sitzungszimmer 5 - ein Programm statt Aufgabenplanung + Konsolenfenster.
 // Startet Webserver, Mikrofon-Automatik und Teams-Steuerung unsichtbar, zeigt den Zustand im Infobereich (Tray),
-// Einstellungen ohne JSON-Bearbeitung, Prüfen/Mikrofone testen/Aktualisieren per Knopf.
+// Einstellungen ohne JSON-Bearbeitung, Prüfen/Mikrofone testen per Knopf. Aktualisieren: installieren.ps1 erneut ausführen.
 // Läuft als angemeldeter Benutzer (Teams-Steuerung braucht den Desktop). Start: Autostart „--tray“.
 using System;
 using System.IO;
@@ -13,7 +13,7 @@ namespace Raumsteuerung
 {
     static class Program
     {
-        public const string Version = "1.0 (22.10.2026)";
+        public const string Version = "1.1 (22.10.2026)";
         public static string Ordner;
         static string logPfad;
         static readonly object logSperre = new object();
@@ -24,17 +24,12 @@ namespace Raumsteuerung
             Ordner = Path.GetDirectoryName(Application.ExecutablePath);
             logPfad = Path.Combine(Ordner, "raumsteuerung.log");
             bool tray = args.Any(a => a.Equals("--tray", StringComparison.OrdinalIgnoreCase));
-            bool nachUpdate = args.Any(a => a.Equals("--nach-update", StringComparison.OrdinalIgnoreCase));
 
             bool neu;
             var mutex = new Mutex(true, @"Local\Raumsteuerung5", out neu);
             var zeigen = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\Raumsteuerung5_Zeigen");
-            if (!neu)
-            {
-                // Nach einem Update wartet die neue Version, bis die alte beendet ist; sonst: vorhandenes Fenster zeigen
-                if (!(nachUpdate && mutex.WaitOne(20000))) { zeigen.Set(); return; }
-            }
-            try { var alt = Application.ExecutablePath + ".old"; if (File.Exists(alt)) File.Delete(alt); } catch { }
+            if (!neu) { zeigen.Set(); return; }   // läuft schon -> dessen Fenster zeigen
+            try { var alt = Application.ExecutablePath + ".old"; if (File.Exists(alt)) File.Delete(alt); } catch { }   // Rest der früheren Update-Funktion
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);

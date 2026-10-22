@@ -68,6 +68,7 @@ namespace Raumsteuerung
         Ampel letzte = Ampel.Grau;
         List<string> letzteAdressen = new List<string>();
         bool pruefLaeuft, beenden;
+        int statusLaeuft;   // 1 = eine Statusabfrage läuft noch -> keine zweite starten
         readonly System.Windows.Forms.Timer dienstTimer = new System.Windows.Forms.Timer { Interval = 2000 };
         readonly System.Windows.Forms.Timer statusTimer = new System.Windows.Forms.Timer { Interval = 5000 };
 
@@ -176,7 +177,6 @@ namespace Raumsteuerung
                 k("Öffnen", false, (s, e) => Starten(Path.Combine(Program.Ordner, "mikrofone-testen.cmd")))) { Linie = true });
             w.Zeile(new Eintrag("Dienste neu starten", "Webserver, Mikrofon-Automatik, Teams-Steuerung",
                 k("Neu starten", false, (s, e) => { Dienste.AlleNeuStarten(); ausgabeKarte.Visible = true; Schreib("Dienste neu gestartet."); werkzeugSeite.PerformLayout(); })) { Linie = true });
-            w.Zeile(new Eintrag("Aktualisieren", "Neuen Stand von GitHub holen und installieren", k("Aktualisieren", false, (s, e) => Aktualisieren())) { Linie = true });
             var logs = p.Dazu(new Gruppe("Protokolle"));
             bool erste = true;
             foreach (var l in new[] { new[] { "Teams-Steuerung", "teams-steuerung.log" }, new[] { "Mikrofon-Automatik", "mikro-automatik.log" }, new[] { "Raumsteuerung", "raumsteuerung.log" } })
@@ -197,12 +197,17 @@ namespace Raumsteuerung
         // ---------- Status ----------
         void StatusHolen()
         {
+            if (Interlocked.Exchange(ref statusLaeuft, 1) == 1) return;
             var c = cfg;
             Task.Run(() =>
             {
-                List<Zeile> z; try { z = Status.Erheben(c); } catch (Exception ex) { z = new List<Zeile> { new Zeile("Prüfung", Ampel.Rot, ex.Message) }; }
-                var ad = Status.Adressen();
-                try { BeginInvoke((Action)(() => StatusZeigen(z, ad))); } catch { }
+                try
+                {
+                    List<Zeile> z; try { z = Status.Erheben(c); } catch (Exception ex) { z = new List<Zeile> { new Zeile("Prüfung", Ampel.Rot, ex.Message) }; }
+                    var ad = Status.Adressen();
+                    try { BeginInvoke((Action)(() => StatusZeigen(z, ad))); } catch { }
+                }
+                finally { Interlocked.Exchange(ref statusLaeuft, 0); }
             });
         }
 
@@ -290,11 +295,13 @@ namespace Raumsteuerung
                 for (int i = 0; i < 5; i++) neu.SetKanaele(i + 1, mic[i].Text);
                 neu.TeamsLink = link.Text.Trim();
                 neu.Speichern(); cfg = neu;
-                if (autostart.Enabled) Einstellungen.AutostartIch = autostart.An;
                 // Skripte lesen die Einstellungen beim Start
                 foreach (var d in new[] { Dienste.Automatik, Dienste.Teams }) if (!d.Extern) d.NeuStarten();
                 Program.Log("Einstellungen gespeichert");
-                MessageBox.Show(this, "Gespeichert. Mikrofon-Automatik und Teams-Steuerung wurden neu gestartet.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                string hinweis = "";
+                if (autostart.Enabled) try { Einstellungen.AutostartIch = autostart.An; } catch (Exception ex) { hinweis = "\n\nAutostart nicht geändert: " + ex.Message; }
+                MessageBox.Show(this, "Gespeichert. Mikrofon-Automatik und Teams-Steuerung wurden neu gestartet." + hinweis, Text, MessageBoxButtons.OK,
+                    hinweis == "" ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
             }
             catch (Exception ex) { MessageBox.Show(this, ex.Message, "Nicht gespeichert", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         }
@@ -321,60 +328,13 @@ namespace Raumsteuerung
                 var oem = Encoding.GetEncoding(CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
                 var p = Process.Start(new ProcessStartInfo(exe, arg)
                 { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, StandardOutputEncoding = oem, StandardErrorEncoding = oem, WorkingDirectory = Program.Ordner });
-                var err = p.StandardError.ReadToEndAsync(); string o = p.StandardOutput.ReadToEnd();
-                if (!p.WaitForExit(ms)) { try { p.Kill(); } catch { } o += "\n(abgebrochen nach " + ms / 1000 + " s)"; }
-                string e = err.Result; return (o + (e.Trim() != "" ? "\n" + e : "")).TrimEnd();
+                var err = p.StandardError.ReadToEndAsync(); var aus = p.StandardOutput.ReadToEndAsync();
+                string ende = "";
+                if (!p.WaitForExit(ms)) { try { p.Kill(); } catch { } ende = "\n(abgebrochen nach " + ms / 1000 + " s)"; }
+                string o = aus.Wait(3000) ? aus.Result : "", e = err.Wait(1000) ? err.Result : "";
+                return (o + (e.Trim() != "" ? "\n" + e : "") + ende).TrimEnd();
             }
             catch (Exception ex) { return exe + ": " + ex.Message; }
-        }
-
-        void Aktualisieren()
-        {
-            const string repo = @"C:\Raum5";
-            if (!Directory.Exists(Path.Combine(repo, ".git"))) { Schreib(repo + " ist kein Git-Ordner – erst tools\\Raum5_einrichten.ps1 ausführen."); return; }
-            if (MessageBox.Show(this, "Neuen Stand von GitHub holen und installieren?\nDie Dienste starten dabei kurz neu (nicht während eines Meetings).", Text,
-                MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
-            ausgabeKarte.Visible = true; ausgabe.Clear(); Schreib("git pull …"); werkzeugSeite.PerformLayout();
-            Task.Run(() =>
-            {
-                var o = Ausfuehren("git", "-C \"" + repo + "\" pull --ff-only", 120000); Schreib(o);
-                if (o.IndexOf("fatal", StringComparison.OrdinalIgnoreCase) >= 0 || o.IndexOf("error", StringComparison.OrdinalIgnoreCase) >= 0) { Schreib("Abgebrochen."); return; }
-                bool exeNeu = false;
-                try { exeNeu = Kopieren(Path.Combine(repo, "Raumsteuerung"), Program.Ordner); }
-                catch (Exception ex) { Schreib("Kopieren fehlgeschlagen: " + ex.Message); return; }
-                BeginInvoke((Action)(() =>
-                {
-                    if (exeNeu)
-                    {
-                        Schreib("Neue Programmversion – starte neu …"); Program.Log("Update: neue Programmversion, Neustart");
-                        Dienste.AlleStoppen();
-                        Process.Start(new ProcessStartInfo(Application.ExecutablePath, "--tray --nach-update") { UseShellExecute = false });
-                        beenden = true; tray.Visible = false; Application.Exit();
-                    }
-                    else { Dienste.AlleNeuStarten(); Schreib("Fertig, Dienste neu gestartet."); Program.Log("Update installiert"); }
-                }));
-            });
-        }
-
-        // wie installieren.ps1: alles außer Einstellungen/Protokollen; das laufende Programm wird umbenannt und ersetzt
-        bool Kopieren(string von, string nach)
-        {
-            var behalten = new[] { "mikro-automatik.json", "teams-link.txt", "teilen-eintrag.txt" };
-            bool exeNeu = false;
-            foreach (var q in Directory.GetFiles(von))
-            {
-                string n = Path.GetFileName(q), z = Path.Combine(nach, n);
-                if (behalten.Contains(n, StringComparer.OrdinalIgnoreCase) && File.Exists(z)) continue;
-                if (n.EndsWith(".log", StringComparison.OrdinalIgnoreCase) || n.EndsWith(".bak", StringComparison.OrdinalIgnoreCase)) continue;
-                if (File.Exists(z) && File.ReadAllBytes(z).SequenceEqual(File.ReadAllBytes(q))) continue;
-                if (string.Equals(z, Application.ExecutablePath, StringComparison.OrdinalIgnoreCase))
-                {
-                    var alt = z + ".old"; if (File.Exists(alt)) File.Delete(alt);
-                    File.Move(z, alt); File.Copy(q, z); exeNeu = true; Schreib("  " + n + " (neue Version)"); continue;
-                }
-                File.Copy(q, z, true); Schreib("  " + n);
-            }
-            return exeNeu;
         }
 
         static void Oeffnen(string url) { try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); } catch { } }
