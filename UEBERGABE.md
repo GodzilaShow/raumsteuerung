@@ -107,6 +107,11 @@ Am 13.10. außerdem:
 - Am 22.10. geändert: „Raum ausschalten“ im Kopf ruhig (Kontur, rotes Symbol); Teams-Steuerung verwirft beim Start
   liegengebliebene `r5_tcmd`; läuft unsichtbar (conhost --headless); erkennt den Wartebereich
   (`r5_t_status` = `warten: Wartebereich`, Tablet „Wartet auf Einlass“, nach 15 min `fehler: nicht eingelassen`).
+- 22.10. 08:40: `teams-steuerung.ps1`, `pruefen.ps1`, `raumsteuerung.html` (Stand b7814c1) nach `C:\Raumsteuerung`
+  kopiert. Die laufende Teams-Steuerung (Start 07:08) hat noch den alten Code - erst `Raum5_einrichten.ps1` als
+  Admin (registriert die Aufgabe headless neu und startet sie neu) bzw. ab-/anmelden. Aufgabenplanung läuft erhöht,
+  dort war Neustart per Fernbedienung nicht möglich. Teams: angemeldet (privates Konto), „Teams automatisch starten“
+  und „im Hintergrund öffnen“ an. Durchlauf mit dem neuen Code steht noch aus.
 - Offen hier: Netzwerkprofil „Privat“, RM-CR (Netz + USB-Audio), Raumkonto (M365-Benutzer mit Teams-Lizenz,
   automatische Anmeldung, eigenes Dauer-Meeting mit Wartebereich umgehen = Alle), Teams-Autostart, Companion-Admin-
   Passwort, echte Passwörter statt Testpasswörter.
