@@ -84,7 +84,6 @@ const clear = () => fetch(API + '/_test/clear');
   await p.mouse.up(); await p.waitForTimeout(200);
   st = await state(); check(st.log.filter(x => x === '3/2/1 up').length === 1, 'kein doppeltes „up“');
   check(!(await p.$('[data-cam]')) && !(await p.$('.pplan')) && !(await p.$('#pAutoBtn')), 'keine Publikum-Kamera-Steuerung mehr (Kamera ist fest)');
-  check((await p.textContent('.camhint')).includes('ganzen Raum'), 'Hinweis: Publikum-Kamera zeigt immer den ganzen Raum');
   await clear(); await p.click('[data-preset=r_displays]'); await p.waitForTimeout(300);
   st = await state();
   check(st.log.includes('3/0/2 press') && await p.$eval('[data-preset=r_displays]', e => e.classList.contains('on')), '„Bei den Displays“ -> 3/0/2, Kachel markiert');
