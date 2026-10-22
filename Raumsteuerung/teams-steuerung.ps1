@@ -728,6 +728,10 @@ if ($Befehl) { [void](Invoke-Teams $Befehl); Start-Sleep -Milliseconds 800; $s =
 
 # ---------- Hauptschleife ----------
 Write-Log ('Start Teams-Steuerung, Companion ' + $Companion + ', Benutzer ' + $env:USERNAME)
+# Befehl, der vor dem Start liegen geblieben ist (z. B. Tablet getippt, als das Skript nicht lief), verwerfen -
+# sonst tritt Teams nach der naechsten Anmeldung/Neustart unerwartet dem Meeting bei
+$alt = Get-Var 'r5_tcmd'
+if ($alt) { [void](Set-Var 'r5_tcmd' ''); Write-Log "Alter Befehl beim Start verworfen: $alt" }
 $last = @{}; $lastPush = [DateTime]::MinValue; $nextState = [DateTime]::MinValue; $companionOk = $true; $script:lastClose = [DateTime]::MinValue; $script:lastObs = [DateTime]::MinValue
 while ($true) {
   try {
