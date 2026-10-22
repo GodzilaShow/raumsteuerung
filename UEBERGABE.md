@@ -98,7 +98,9 @@ Am 13.10. außerdem:
 - Companion: Konfig importiert („Import Preserving Unselected“), GUI auf 0.0.0.0, „Run at login“. Admin-Passwort
   noch nicht gesetzt. `rmcr` rot (RM-CR noch nicht im Netz). Live geprüft: Raum an/aus, 5 Szenen, Präsentation
   aus/an, Lautstärke, Ton aus/an, Publikum-Automatik, Trigger Live-Status, CORS (`*`).
-- Virtual Display Driver installiert (`pruefen.cmd`: Teilen-Bildschirm MTT grün). `teams-link.txt` = Test-Meeting
+- Virtual Display Driver installiert (`pruefen.cmd`: Teilen-Bildschirm MTT grün). **Seit 22.10. (später) nicht mehr nötig** – „Präsentation zeigen“
+  teilt einen echten Bildschirm. VDD dort abschalten (VDD Control → Disable bzw. Geräte-Manager), sonst verschwindet die
+  Maus auf einen unsichtbaren Bildschirm; danach `pruefen.cmd` → Zeile „Praesentation teilen“. `teams-link.txt` = Test-Meeting
   (teams.live.com, privat) – Teams auf dem PC nicht angemeldet -> Gast -> Wartebereich.
 - Durchlauf: Teams-Meeting starten -> Wartebereich -> eingelassen -> im Meeting erkannt; „Präsentation zeigen“ teilt
   nach ca. 6 s.
