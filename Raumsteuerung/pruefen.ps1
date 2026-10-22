@@ -58,7 +58,7 @@ if (Test-Path $ccfg) {
 
 # ---------- Bildschirme / Praesentation in Teams teilen ----------
 if (-not ($cfg -and $cfg.teamsBild -eq 'kamera')) {
-  $tName = if ($cfg -and $cfg.teilenBildschirm) { [string]$cfg.teilenBildschirm } else { '' }
+  $tName = if ($cfg -and $cfg.teilenBildschirm) { ([string]$cfg.teilenBildschirm).Trim() } else { '' }
   Add-Type -Namespace Pruef -Name Anz -MemberDefinition @'
 [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)] public struct DD { public int cb; [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string Name;
   [MarshalAs(UnmanagedType.ByValTStr, SizeConst=128)] public string Text; public int Flags; [MarshalAs(UnmanagedType.ByValTStr, SizeConst=128)] public string Id;
@@ -89,8 +89,10 @@ if (-not ($cfg -and $cfg.teamsBild -eq 'kamera')) {
     $ziel = $null
     if ($mName) { $ziel = $schirme | Where-Object { if ($mName -match '^\d+$') { $_.Nr -eq $mName } else { $_.Name -like "*$mName*" } } | Select-Object -First 1 }
     $auto = -not $ziel
-    if ($auto) { $ziel = $schirme | Where-Object { -not $_.Haupt -and "Bildschirm $($_.Nr)" -ne $gefunden } | Select-Object -First 1 }
-    if (-not $ziel) { Zeile WARN 'Teams-Fenster' 'kein freier Neben-Bildschirm - Teams bleibt, wo es ist' 'Sprecherplatz-Monitor anstecken oder in Raumsteuerung.exe -> Einstellungen -> Bildschirme waehlen' }
+    if ($auto -and $tName -and -not $gefunden) { $ziel = $null }   # wie teams-steuerung.ps1: ohne Teilen-Bildschirm nicht raten
+    elseif ($auto) { $ziel = $schirme | Sort-Object { [int]$_.Nr } | Where-Object { -not $_.Haupt -and "Bildschirm $($_.Nr)" -ne $gefunden } | Select-Object -First 1 }
+    if (-not $ziel -and $auto -and $tName -and -not $gefunden) { Zeile WARN 'Teams-Fenster' 'Praesentations-Bildschirm fehlt - Teams wird nicht verschoben' 'Monitor einschalten/anstecken' }
+    elseif (-not $ziel) { Zeile WARN 'Teams-Fenster' 'kein freier Neben-Bildschirm - Teams bleibt, wo es ist' 'Sprecherplatz-Monitor anstecken oder in Raumsteuerung.exe -> Einstellungen -> Bildschirme waehlen' }
     elseif ($auto -and $mName) { Zeile WARN 'Teams-Fenster' "'$mName' nicht gefunden - nehme Bildschirm $($ziel.Nr)" 'Monitor anstecken oder in Raumsteuerung.exe -> Einstellungen -> Bildschirme neu waehlen' }
     elseif ("Bildschirm $($ziel.Nr)" -eq $gefunden) { Zeile FEHLER 'Teams-Fenster' "Bildschirm $($ziel.Nr) = Praesentations-Bildschirm" 'Zwei verschiedene Bildschirme waehlen (Raumsteuerung.exe -> Einstellungen -> Bildschirme)' }
     else { Zeile OK 'Teams-Fenster' "Bildschirm $($ziel.Nr)$(if ($auto) { ' (automatisch)' } else { " ('$mName')" })" }

@@ -71,7 +71,7 @@ public static class Fenster {
   }
 }
 '@
-Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
 $cfg = $null
 try { $cfg = Get-Content -Raw -Encoding UTF8 (Join-Path $PSScriptRoot 'mikro-automatik.json') | ConvertFrom-Json } catch { }
@@ -88,7 +88,7 @@ if (-not $Companion) { $Companion = if ($cfg -and $cfg.companion) { $cfg.compani
 #             oder Teil des Monitornamens (z. B. "ViewSonic"). Ohne Angabe: der Hauptbildschirm.
 $Teilen = -not ($cfg -and $cfg.teamsBild -eq 'kamera')
 $TeilenTon = -not ($cfg -and $cfg.teilenTon -eq $false)
-$TeilenName = if ($cfg -and $cfg.teilenBildschirm) { [string]$cfg.teilenBildschirm } else { '' }
+$TeilenName = if ($cfg -and $cfg.teilenBildschirm) { ([string]$cfg.teilenBildschirm).Trim() } else { '' }
 #   teamsBildschirm: Teil des Monitornamens, auf dem Teams immer liegen soll (Sprecherplatz-Monitor). Ohne Angabe:
 #             der erste Bildschirm, der weder Haupt- noch Teilen-Bildschirm ist; gibt es keinen, bleibt Teams, wo es ist.
 $TeamsName = if ($cfg -and $cfg.teamsBildschirm) { ([string]$cfg.teamsBildschirm).Trim() } else { '' }
@@ -111,9 +111,12 @@ function Invoke-Companion([string]$method, [string]$path) {
   $req = [System.Net.HttpWebRequest]::Create($Companion + $path)
   $req.Method = $method; $req.Timeout = 1500; $req.ReadWriteTimeout = 1500
   if ($method -eq 'POST') { $req.ContentLength = 0 }
-  $res = $req.GetResponse()
+  # Fehlerantwort (404 bei fehlender Variable, 500) schliessen - sonst bleibt die Verbindung belegt und nach zwei
+  # solchen laufen alle Anfragen in den Timeout ("Companion nicht erreichbar", obwohl er laeuft)
+  try { $res = $req.GetResponse() } catch [System.Net.WebException] { if ($_.Exception.Response) { $_.Exception.Response.Close() }; throw }
   try { $sr = New-Object System.IO.StreamReader($res.GetResponseStream()); return $sr.ReadToEnd() } finally { $res.Close() }
 }
+[System.Net.ServicePointManager]::DefaultConnectionLimit = 16
 function Get-Var([string]$name) { try { return (Invoke-Companion 'GET' "/api/custom-variable/$name/value").Trim() } catch { return $null } }
 function Set-Var([string]$name, [string]$value) {
   try { [void](Invoke-Companion 'POST' ("/api/custom-variable/$name/value?value=" + [Uri]::EscapeDataString($value))); return $true } catch { return $false }
@@ -203,6 +206,16 @@ function Find-ShareTray {
   }
   return $null
 }
+function Close-ShareTray {
+  # Offenes Teilen-Menue verdeckt die Meeting-Leiste (kein hangup-button -> Raum gilt als "nicht im Meeting",
+  # Verlassen/Mikro gingen ins Leere). Erst share-button erneut druecken (klappt das Menue zu), sonst Esc.
+  $t = Find-ShareTray; if (-not $t) { return }
+  try { $b = $t.Win.FindFirst($Scope::Descendants, (Cond 'share-button')); if ($b) { $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 500 } } catch { }
+  if (Find-ShareTray) {
+    try { [void][Fenster]::SetForegroundWindow([IntPtr]$t.Win.Current.NativeWindowHandle); Start-Sleep -Milliseconds 200; [System.Windows.Forms.SendKeys]::SendWait('{ESC}'); Start-Sleep -Milliseconds 400 } catch { }
+  }
+  Write-Log $(if (Find-ShareTray) { 'Teilen-Menue laesst sich nicht schliessen' } else { 'Teilen-Menue geschlossen' })
+}
 function Get-Screens {
   # frisch von Windows, nicht aus dem .NET-Zwischenspeicher (der kennt Umstellungen der Anzeige nicht)
   foreach ($z in [Fenster]::Bildschirme()) {
@@ -238,7 +251,11 @@ function Get-TeamsScreen {
       if ($treffer) { return $x.Bounds }
     }
   }
-  foreach ($x in $alle) { if (-not $x.Primary -and -not ($teilen -and $x.Bounds -eq $teilen.Bounds)) { return $x.Bounds } }
+  # Teilen-Bildschirm eingetragen, aber nicht gefunden (umnummeriert/aus): nicht raten - der "erste Neben-Bildschirm"
+  # koennte gerade das Publikums-Display sein
+  if ($TeilenName -and -not $teilen) { return $null }
+  # nach Windows-Nummer, wie pruefen.ps1 und Raumsteuerung.exe
+  foreach ($x in ($alle | Sort-Object { [int]($_.DeviceName -replace '\D', '') })) { if (-not $x.Primary -and -not ($teilen -and $x.Bounds -eq $teilen.Bounds)) { return $x.Bounds } }
   return $null
 }
 function Place-Teams {
@@ -247,7 +264,8 @@ function Place-Teams {
   $ziel = Get-TeamsScreen; if (-not $ziel) { return }
   # Auf dem Teilen-Bildschirm nur waehrend des Teilens nichts anfassen (Teilen-Rahmen/Mini-Fenster); sonst gehoert
   # ein grosses Teams-Fenster dort nicht hin (das Publikum saehe das Meeting statt der Folien)
-  $teilen = if (Find-ShareBar) { Get-ShareScreen } else { $null }
+  $teilen = $null; $bar = Find-ShareBar
+  if ($bar) { $teilen = @(Get-Screens | Where-Object { In-Bounds $bar.Current.BoundingRectangle $_.Bounds })[0]; if (-not $teilen) { $teilen = Get-ShareScreen } }
   $ids = @(Get-Process ms-teams -ErrorAction SilentlyContinue).Id
   foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
     try {
@@ -305,6 +323,7 @@ function Set-ShareEntry([int]$anzahl, [int]$nr) {
   } catch { }
 }
 function Start-Share {
+  $script:keinSchirm = $false
   $w = Find-Meeting
   if (-not $w) { Write-Log 'Teilen: kein Teams-Meeting offen'; return $false }
   $s = Get-ShareScreen
@@ -343,10 +362,14 @@ function Start-Share {
         if (($tp.Current.ToggleState -eq [System.Windows.Automation.ToggleState]::On) -ne $TeilenTon) { $tp.Toggle() }
       }
     } catch { Write-Log ('Teilen: Optionen nicht gesetzt (' + $_.Exception.Message + ')') }
-    $items = @($t.List.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition))
+    $items = @()
+    for ($i = 0; $i -lt 10 -and -not $items.Count; $i++) {   # langsamer PC: Liste ist anfangs noch leer
+      $items = @($t.List.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)); if (-not $items.Count) { Start-Sleep -Milliseconds 300 }
+    }
+    if (-not $items.Count) { Write-Log 'Teilen: Bildschirm-Liste in Teams bleibt leer'; return $false }
     $gemerkt = Get-ShareEntry $items.Count
     $reihe = @(@($gemerkt) + @($s.Index) + @(($items.Count - 1)..0) | Where-Object { $null -ne $_ } | Select-Object -Unique)
-    $nr = $reihe | Where-Object { $_ -lt $items.Count -and $probiert -notcontains $_ } | Select-Object -First 1
+    $nr = $reihe | Where-Object { $_ -ge 0 -and $_ -lt $items.Count -and $probiert -notcontains $_ } | Select-Object -First 1
     if ($null -eq $nr) { Write-Log 'Teilen: Teilen-Bildschirm nicht in der Teams-Liste'; return $false }
     $probiert += $nr
     $items[$nr].GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
@@ -377,6 +400,8 @@ function Invoke-Teams([string]$cmd) {
   # wiederherstellen (4 = SW_SHOWNOACTIVATE), dann druecken. Das Fenster bleibt danach offen
   # (Teams laeuft auf dem eigenen Monitor am Sprecherplatz).
   if ($warMin) { [void][Fenster]::ShowWindow($h, 4); $warMin = $false; Start-Sleep -Milliseconds 500; $b = $w.FindFirst($Scope::Descendants, (Cond $IDS[$cmd])) }
+  for ($i = 0; $i -lt 6 -and -not $b; $i++) { Start-Sleep -Milliseconds 300; $b = $w.FindFirst($Scope::Descendants, (Cond $IDS[$cmd])) }
+  if (-not $b) { Write-Log "Befehl ${cmd}: Button $($IDS[$cmd]) nach dem Wiederherstellen nicht gefunden"; return $false }
   $name = $b.Current.Name
   try { $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
   catch {
@@ -553,6 +578,7 @@ while ($true) {
       # Befehl alle 250 ms wieder (mute/video wuerden hin- und herschalten); naechste Runde neu versuchen
       if ($cmd -and -not (Set-Var 'r5_tcmd' '')) { if (-not $script:warnLeer) { Write-Log "Befehl ${cmd}: r5_tcmd laesst sich nicht leeren - nicht ausgefuehrt"; $script:warnLeer = $true }; $cmd = '' }
       elseif ($cmd) { $script:warnLeer = $false }
+      if ($cmd -and $cmd -ne 'share_on' -and (Find-ShareTray)) { Close-ShareTray }   # sonst gilt der Raum als "nicht im Meeting"
       if ($cmd) {
         # Verlassen / Raum aus waehrend der Raum im Wartebereich steht: Wartefenster schliessen (sonst wuerde der
         # Raum spaeter noch eingelassen, obwohl er aus ist)
@@ -578,7 +604,8 @@ while ($true) {
         elseif ($cmd -in 'share_on', 'share_off') {
           if ($cmd -eq 'share_off') { [void](Stop-Share); if ((Get-Var 'r5_t_status') -like 'fehler*') { [void](Set-Var 'r5_t_status' '') } }
           elseif (Start-Share) { [void](Set-Var 'r5_t_status' ''); Set-PeopleScene }
-          else { [void](Set-Var 'r5_t_status' $(if ($script:keinSchirm) { 'fehler: kein Teilen-Bildschirm' } else { 'fehler: Präsentation teilen' })) }
+          else {
+            Close-ShareTray; [void](Set-Var 'r5_t_status' $(if ($script:keinSchirm) { 'fehler: kein Teilen-Bildschirm' } else { 'fehler: Präsentation teilen' })) }
           $nextState = [DateTime]::MinValue
         }
         elseif ($IDS.ContainsKey($cmd)) { [void](Invoke-Teams $cmd); $nextState = [DateTime]::MinValue }
@@ -589,7 +616,12 @@ while ($true) {
     if ([DateTime]::Now -ge $nextState) {
       $nextState = [DateTime]::Now.AddMilliseconds(1000)
       $s = Get-TeamsState
-      if ($s.Menue) { Start-Sleep -Milliseconds 250; continue }   # Teilen-Menue offen: Zustand gerade nicht lesbar
+      if ($s.Menue) {   # Teilen-Menue offen: Zustand gerade nicht lesbar; bleibt es offen (vergessen), nach 60 s schliessen
+        if (-not $script:menueSeit) { $script:menueSeit = [DateTime]::Now }
+        elseif (([DateTime]::Now - $script:menueSeit).TotalSeconds -ge 60) { $script:menueSeit = $null; Close-ShareTray }
+        Start-Sleep -Milliseconds 250; continue
+      }
+      $script:menueSeit = $null
       $neu = @{ r5_t_in = [int]$s.In; r5_t_mute = [int]$s.Mute; r5_t_video = [int]$s.Video; r5_t_share = [int]$s.Share; r5_t_mode = $(if ($Teilen) { 'teilen' } else { 'kamera' }) }
       $alle = ([DateTime]::Now - $lastPush).TotalSeconds -ge 30
       foreach ($k in $neu.Keys) {

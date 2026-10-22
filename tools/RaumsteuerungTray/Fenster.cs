@@ -298,11 +298,12 @@ namespace Raumsteuerung
         }
 
         static string Nummer(Screen s) { return new string(s.DeviceName.Where(char.IsDigit).ToArray()); }
+        static int NummerZahl(Screen s) { int n; return int.TryParse(Nummer(s), out n) ? n : 0; }   // DISPLAY10 nach DISPLAY2
 
         static void SchirmListe(Auswahl a, string akt, params KeyValuePair<string, string>[] vorne)
         {
             a.Eintraege.Clear(); a.Eintraege.AddRange(vorne);
-            foreach (var s in Screen.AllScreens.OrderBy(s => s.DeviceName))
+            foreach (var s in Screen.AllScreens.OrderBy(s => NummerZahl(s)))
                 a.Eintraege.Add(new KeyValuePair<string, string>(Nummer(s), "Bildschirm " + Nummer(s) + " – " + s.Bounds.Width + " × " + s.Bounds.Height + (s.Primary ? " (Haupt)" : "")));
             if (!a.Eintraege.Any(w => w.Key == akt)) a.Eintraege.Add(new KeyValuePair<string, string>(akt, "„" + akt + "“ – nicht angeschlossen?"));
             a.Wert = akt;
@@ -317,7 +318,8 @@ namespace Raumsteuerung
             var t = teamsSchirm.Wert == "" ? null : Screen.AllScreens.FirstOrDefault(s => Passt(s, teamsSchirm.Wert));
             if (t != null) return t;
             var teilen = TeilenSchirm();
-            return Screen.AllScreens.OrderBy(s => s.DeviceName).FirstOrDefault(s => !s.Primary && (teilen == null || s.DeviceName != teilen.DeviceName));
+            if (bildschirm.Wert != "" && teilen == null) return null;   // wie teams-steuerung.ps1: nicht raten
+            return Screen.AllScreens.OrderBy(s => NummerZahl(s)).FirstOrDefault(s => !s.Primary && (teilen == null || s.DeviceName != teilen.DeviceName));
         }
 
         readonly List<Form> nummern = new List<Form>();
