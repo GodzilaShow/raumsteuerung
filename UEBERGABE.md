@@ -3,6 +3,13 @@
 Neuer Chat: Repo https://github.com/godzilashow/raumsteuerung, Branch `claude/website-testing-fixes-ahd51r`.
 Schreiben: „Wir machen hier weiter. Lies UEBERGABE.md und setz bei ‚Nächster Schritt‘ an. Antworte auf Russisch."
 
+**Aktualisieren am PC (bestätigt funktionierend, PowerShell als Admin; Repo liegt in `C:\Raum5`, Git nicht im PATH):**
+```powershell
+cd C:\Raum5
+& "C:\Program Files\Git\cmd\git.exe" pull origin claude/modest-mayer-tbnbre
+powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Raum5\Raumsteuerung\installieren.ps1"
+```
+
 ## Projekt
 - Hybrider Teams-Raum „Sitzungszimmer 5", Landkreis Emsland. Tablet-Steuerung (eine HTML-Datei, Vanilla JS) → Bitfocus Companion 5.0.6 (HTTP-API) → OBS (WebSocket 4455) + Yamaha RM-CR (RCP, TCP 49280).
 - Test-PC = privater PC von Arsenij (nicht der Raum-PC). Companion: http://127.0.0.1:8000.
