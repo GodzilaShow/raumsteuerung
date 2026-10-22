@@ -23,7 +23,13 @@ namespace Raumsteuerung
         {
             int y = Padding.Top + AutoScrollPosition.Y, w = ClientSize.Width - Padding.Horizontal;
             foreach (Control c in Controls) { if (!c.Visible) continue; c.SetBounds(Padding.Left, y, w, c.Height); if (c is Gruppe) c.PerformLayout(); y += c.Height + c.Margin.Bottom; }
-            AutoScrollMinSize = new Size(0, y - AutoScrollPosition.Y + Padding.Bottom);
+            base.OnLayout(e);   // berechnet die Scrollfläche aus den Positionen
+        }
+        // Scrollrad überall auf der Seite (auch über Knöpfen/Listen, die selbst nicht scrollen)
+        public void Rad(int delta)
+        {
+            int y = -AutoScrollPosition.Y - delta / 120 * 60;
+            AutoScrollPosition = new Point(0, Math.Max(0, y));
         }
     }
 
@@ -43,7 +49,7 @@ namespace Raumsteuerung
         }
     }
 
-    class Fenster : Form
+    class Fenster : Form, IMessageFilter
     {
         readonly NotifyIcon tray = new NotifyIcon();
         readonly Icon basis;
@@ -71,7 +77,7 @@ namespace Raumsteuerung
         {
             Text = "Raumsteuerung";
             Font = Theme.Schrift(10f); AutoScaleMode = AutoScaleMode.Dpi;
-            ClientSize = new Size(880, 620); MinimumSize = new Size(720, 520);
+            ClientSize = new Size(900, 680); MinimumSize = new Size(720, 520);
             StartPosition = FormStartPosition.CenterScreen; BackColor = Theme.Grund;
             try { basis = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { basis = SystemIcons.Application; }
             Icon = basis;
@@ -101,10 +107,21 @@ namespace Raumsteuerung
 
             CreateHandle();
             Theme.Titelleiste(this);
+            Application.AddMessageFilter(this);
             if (!Dienste.AlteAufgaben) foreach (var d in Dienste.Alle) d.Starten();
             dienstTimer.Tick += (s, e) => Dienste.Pruefen(); dienstTimer.Start();
             statusTimer.Tick += (s, e) => StatusHolen(); statusTimer.Start();
             StatusHolen();
+        }
+
+        // WM_MOUSEWHEEL an die sichtbare Seite unter dem Mauszeiger
+        public bool PreFilterMessage(ref Message m)
+        {
+            if (m.Msg != 0x020A || !Visible) return false;
+            var seite = seiten.FirstOrDefault(s => s.Visible);
+            if (seite == null || !seite.RectangleToScreen(seite.ClientRectangle).Contains(Cursor.Position)) return false;
+            seite.Rad((short)((long)m.WParam >> 16));
+            return true;
         }
 
         // ---------- Seiten ----------
