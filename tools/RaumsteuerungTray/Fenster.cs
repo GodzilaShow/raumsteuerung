@@ -25,6 +25,17 @@ namespace Raumsteuerung
             foreach (Control c in Controls) { if (!c.Visible) continue; c.SetBounds(Padding.Left, y, w, c.Height); if (c is Gruppe) c.PerformLayout(); y += c.Height + c.Margin.Bottom; }
             base.OnLayout(e);   // berechnet die Scrollfläche aus den Positionen
         }
+        // Höhe, die der Inhalt ohne Scrollen braucht
+        public int InhaltHoehe
+        {
+            get
+            {
+                // Summe statt Positionen: unabhängig von der Scrollposition (Mono meldet sie anders als Windows)
+                PerformLayout(); int h = Padding.Vertical, letzter = 0;
+                foreach (Control c in Controls) if (c.Visible) { h += c.Height + c.Margin.Bottom; letzter = c.Margin.Bottom; }
+                return h - letzter;
+            }
+        }
         // Scrollrad überall auf der Seite (auch über Knöpfen/Listen, die selbst nicht scrollen)
         public void Rad(int delta)
         {
@@ -67,7 +78,7 @@ namespace Raumsteuerung
         Einstellungen cfg = Einstellungen.Laden();
         Ampel letzte = Ampel.Grau;
         List<string> letzteAdressen = new List<string>();
-        bool pruefLaeuft, beenden;
+        bool pruefLaeuft, beenden, anpassen;   // anpassen: nach dem Öffnen Höhe an die Übersicht anpassen
         int statusLaeuft;   // 1 = eine Statusabfrage läuft noch -> keine zweite starten
         readonly System.Windows.Forms.Timer dienstTimer = new System.Windows.Forms.Timer { Interval = 2000 };
         readonly System.Windows.Forms.Timer statusTimer = new System.Windows.Forms.Timer { Interval = 5000 };
@@ -243,6 +254,18 @@ namespace Raumsteuerung
                 if (ad.Count == 0) tablet.Zeile(new Eintrag("Kein Netzwerk", "Der PC hat keine IP-Adresse"));
             }
             seiten[0].PerformLayout();
+            if (anpassen && Visible) { anpassen = false; HoeheAnpassen(); }
+        }
+
+        // Fenster beim Öffnen so hoch, dass die Übersicht ohne Scrollen passt (höchstens Bildschirmhöhe, nur größer)
+        void HoeheAnpassen()
+        {
+            var wa = Screen.FromControl(this).WorkingArea;
+            int rand = Height - ClientSize.Height;
+            int h = Math.Min(seiten[0].InhaltHoehe, wa.Height - rand);
+            if (h <= ClientSize.Height) return;
+            ClientSize = new Size(ClientSize.Width, h);
+            if (Bottom > wa.Bottom) Top = Math.Max(wa.Top, wa.Bottom - Height);
         }
 
         Icon Symbol(Ampel a)
@@ -347,7 +370,9 @@ namespace Raumsteuerung
         // ---------- Fenster / Beenden ----------
         public void Zeigen()
         {
+            bool warZu = !Visible;
             Show(); if (WindowState == FormWindowState.Minimized) WindowState = FormWindowState.Normal;
+            if (warZu && WindowState == FormWindowState.Normal) { HoeheAnpassen(); anpassen = true; }   // nach dem Status noch einmal (Zeilen kommen dann erst)
             Activate(); BringToFront(); StatusHolen();
         }
 

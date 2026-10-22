@@ -13,7 +13,7 @@ namespace Raumsteuerung
 {
     static class Program
     {
-        public const string Version = "1.1 (22.10.2026)";
+        public const string Version = "1.2 (22.10.2026)";
         public static string Ordner;
         static string logPfad;
         static readonly object logSperre = new object();
