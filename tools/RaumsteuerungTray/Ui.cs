@@ -338,10 +338,22 @@ namespace Raumsteuerung
         public string Wert { get { return wert; } set { wert = value ?? ""; Invalidate(); } }
         public Auswahl() { Height = 34; Cursor = Cursors.Hand; TabStop = true; SetStyle(ControlStyles.Selectable, true); }
         string Anzeige { get { var e = Eintraege.FirstOrDefault(x => x.Key == wert); return e.Value ?? wert; } }
+        ContextMenuStrip offen; DateTime zuDurchKlick = DateTime.MinValue;
         protected override void OnClick(EventArgs e)
         {
             Focus(); base.OnClick(e);
+            // Klick auf die offene Liste = zuklappen. Windows schließt sie schon beim Drücken, das Loslassen käme
+            // danach hier als neuer Klick an und würde sie gleich wieder öffnen.
+            if ((DateTime.Now - zuDurchKlick).TotalMilliseconds < 1000) { zuDurchKlick = DateTime.MinValue; return; }
+            if (offen != null) { offen.Close(); return; }
             var m = new ContextMenuStrip { Renderer = new MenueStil(), Font = Theme.Schrift(10.5f), ShowImageMargin = false, ShowCheckMargin = true };
+            m.Closed += (s, a) =>
+            {
+                offen = null;
+                if (a.CloseReason == ToolStripDropDownCloseReason.AppClicked && ClientRectangle.Contains(PointToClient(Cursor.Position))) zuDurchKlick = DateTime.Now;
+                BeginInvoke((Action)m.Dispose);
+            };
+            offen = m;
             foreach (var kv in Eintraege)
             {
                 var k = kv; var it = new ToolStripMenuItem(k.Value) { Checked = k.Key == wert, Padding = new Padding(4, 4, 4, 4) };
@@ -350,7 +362,7 @@ namespace Raumsteuerung
             m.MinimumSize = new Size(Width, 0);
             m.Show(this, new Point(0, Height + 2));
         }
-        protected override void OnKeyUp(KeyEventArgs e) { if (e.KeyCode == Keys.Space || e.KeyCode == Keys.Enter || e.KeyCode == Keys.F4) OnClick(EventArgs.Empty); base.OnKeyUp(e); }
+        protected override void OnKeyUp(KeyEventArgs e) { if (e.KeyCode == Keys.Space || e.KeyCode == Keys.Enter || e.KeyCode == Keys.F4) { zuDurchKlick = DateTime.MinValue; OnClick(EventArgs.Empty); } base.OnKeyUp(e); }
         protected override void OnGotFocus(EventArgs e) { Invalidate(); base.OnGotFocus(e); }
         protected override void OnLostFocus(EventArgs e) { Invalidate(); base.OnLostFocus(e); }
         protected override void OnPaint(PaintEventArgs e)
