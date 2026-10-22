@@ -1,6 +1,6 @@
 // Raumsteuerung Sitzungszimmer 5 - ein Programm statt Aufgabenplanung + Konsolenfenster.
-// Startet Webserver, Mikrofon-Automatik und Teams-Steuerung unsichtbar, zeigt den Zustand im Infobereich (Tray),
-// Einstellungen ohne JSON-Bearbeitung, Prüfen/Mikrofone testen per Knopf. Aktualisieren: installieren.ps1 erneut ausführen.
+// Startet Webserver und Teams-Steuerung unsichtbar, zeigt den Zustand im Infobereich (Tray),
+// Einstellungen ohne JSON-Bearbeitung, Prüfen per Knopf. Aktualisieren: installieren.ps1 erneut ausführen.
 // Läuft als angemeldeter Benutzer (Teams-Steuerung braucht den Desktop). Start: Autostart „--tray“.
 using System;
 using System.IO;
@@ -13,7 +13,7 @@ namespace Raumsteuerung
 {
     static class Program
     {
-        public const string Version = "1.2 (22.10.2026)";
+        public const string Version = "1.3 (22.10.2026)";
         public static string Ordner;
         static string logPfad;
         static readonly object logSperre = new object();

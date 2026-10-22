@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Prüft Raum5_Companion.companionconfig gegen Tablet-Seite und Mikrofon-Automatik.
+"""Prüft Raum5_Companion.companionconfig gegen die Tablet-Seite.
 Aufruf: python3 -I test/check-companion-config.py"""
 import gzip, json, re, sys, os
 root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 d = json.load(gzip.open(os.path.join(root, 'Raum5_Companion.companionconfig'), 'rt', encoding='utf-8'))
 html = open(os.path.join(root, 'Raumsteuerung', 'raumsteuerung.html'), encoding='utf-8').read()
-mic = json.load(open(os.path.join(root, 'Raumsteuerung', 'mikro-automatik.json'), encoding='utf-8-sig'))
 ok = bad = 0
 def check(c, m):
     global ok, bad
@@ -28,12 +27,6 @@ print('Tablet-Buttons (%d)' % len(buttons))
 for name, loc in buttons.items():
     c = control(loc)
     check(c is not None and c['steps']['0']['action_sets']['down'], f'{name} -> {loc} vorhanden und mit Aktion')
-
-print('Mikrofon-Automatik')
-for loc in list(mic['zonen'].values()) + [mic['ganzerRaum']]:
-    check(control(loc) is not None, f'Zone {loc} vorhanden')
-for v in (mic['autoVariable'], mic['micVariable']):
-    check(v in d['custom_variables'], f'Variable {v} vorhanden')
 
 print('Variablen')
 for v in re.findall(r"(\w+Variable):\s*'(\w+)'", cfg):

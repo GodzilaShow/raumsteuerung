@@ -5,7 +5,7 @@ Einrichtung auf dem Raum-PC: siehe `ANLEITUNG.txt`. Projektstand: `UEBERGABE.md`
 
 ## Programm Raumsteuerung.exe
 
-`Raumsteuerung/Raumsteuerung.exe` (Symbol im Infobereich) startet Webserver, Mikrofon-Automatik und Teams-Steuerung
+`Raumsteuerung/Raumsteuerung.exe` (Symbol im Infobereich) startet Webserver und Teams-Steuerung
 unsichtbar, zeigt den Zustand und bietet Einstellungen/Werkzeuge. Quelltext `tools/RaumsteuerungTray/` (C#, .NET Framework
 4.8 – in Windows enthalten). Bauen: `tools/RaumsteuerungTray/build.sh` (Mono `mcs`), danach die exe mit committen.
 
@@ -22,11 +22,11 @@ Mit einem neueren Export aus dem Raum geht es genauso (erster Parameter = neuer 
 ## Testen ohne Raum-PC
 
 ```
-PWSH=pwsh test/alle-tests.sh     # Konfiguration, Tablet, Chaos (Störungen + 500 Zufallstipps), Mikrofon-Automatik
+test/alle-tests.sh     # Konfiguration, Tablet, Chaos (Störungen + 500 Zufallstipps)
 API_PORT=8100 PAGE_PORT=8180 PWSH=pwsh test/alle-tests.sh   # wenn echter Companion/Webserver 8000/8080 belegen
 ```
 
-Die Mocks (`test/mock-companion.js --config …`, `test/mock-rmcr.js`) führen die Buttons aus der
+Der Mock (`test/mock-companion.js --config …`) führt die Buttons aus der
 echten Konfiguration aus. Einzeln: `node test/mock-companion.js --config Raum5_Companion.companionconfig`,
 Seite unter http://127.0.0.1:8080/, Zustand ändern z. B. `curl "127.0.0.1:8000/_test/set?r5_pmic=3"`,
 Companion „abstürzen“ lassen mit `?down=1`, hängen mit `?hang=1`, Störungen `slow=ms`, `flaky=0.2`, `lagdown=ms`, `dropup=n`, Pegel `curl "127.0.0.1:8001/set?1=78"`.

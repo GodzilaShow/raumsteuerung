@@ -73,7 +73,7 @@ namespace Raumsteuerung
         readonly Gruppe tablet = new Gruppe("Tablet");
         readonly TextBox ausgabe = new TextBox();
         Gruppe ausgabeKarte;
-        Feld rmcrIp, link; Auswahl bildschirm; readonly Feld[] mic = new Feld[5]; Schalter autostart;
+        Feld rmcrIp, link; Auswahl bildschirm; Schalter autostart;
         Eintrag autostartZeile;
         Einstellungen cfg = Einstellungen.Laden();
         Ampel letzte = Ampel.Grau;
@@ -161,12 +161,6 @@ namespace Raumsteuerung
             var praes = p.Dazu(new Gruppe("Präsentation zeigen"));
             bildschirm = new Auswahl { Width = 320 };
             praes.Zeile(new Eintrag("Bildschirm", "Diesen Bildschirm teilt Teams", bildschirm, 320));
-            var mics = p.Dazu(new Gruppe("Tischmikrofone → RM-CR-Kanal"));
-            for (int i = 0; i < 5; i++)
-            {
-                mic[i] = new Feld(i == 0 ? "z. B. 1  oder  1, 2" : "leer = nicht vorhanden"); mic[i].Width = 220;
-                mics.Zeile(new Eintrag("Mikrofon " + (i + 1), null, mic[i], 220) { Linie = i > 0 });
-            }
             var start = p.Dazu(new Gruppe("Start"));
             autostart = new Schalter();
             autostartZeile = new Eintrag("Mit Windows starten", "Startet bei der Anmeldung im Infobereich", autostart);
@@ -184,13 +178,11 @@ namespace Raumsteuerung
             var w = p.Dazu(new Gruppe());
             Func<string, bool, EventHandler, Knopf> k = (txt, haupt, h) => { var b = new Knopf(txt, haupt); b.Click += h; return b; };
             w.Zeile(new Eintrag("Anlage prüfen", "Companion, OBS, RM-CR, Netzwerk, Firewall, Audio", k("Prüfen", false, (s, e) => Pruefen())));
-            w.Zeile(new Eintrag("Mikrofone testen", "Pegel aller Kanäle live – nacheinander in jedes Mikrofon sprechen",
-                k("Öffnen", false, (s, e) => Starten(Path.Combine(Program.Ordner, "mikrofone-testen.cmd")))) { Linie = true });
-            w.Zeile(new Eintrag("Dienste neu starten", "Webserver, Mikrofon-Automatik, Teams-Steuerung",
+            w.Zeile(new Eintrag("Dienste neu starten", "Webserver, Teams-Steuerung",
                 k("Neu starten", false, (s, e) => { Dienste.AlleNeuStarten(); ausgabeKarte.Visible = true; Schreib("Dienste neu gestartet."); werkzeugSeite.PerformLayout(); })) { Linie = true });
             var logs = p.Dazu(new Gruppe("Protokolle"));
             bool erste = true;
-            foreach (var l in new[] { new[] { "Teams-Steuerung", "teams-steuerung.log" }, new[] { "Mikrofon-Automatik", "mikro-automatik.log" }, new[] { "Raumsteuerung", "raumsteuerung.log" } })
+            foreach (var l in new[] { new[] { "Teams-Steuerung", "teams-steuerung.log" }, new[] { "Raumsteuerung", "raumsteuerung.log" } })
             {
                 string datei = l[1];
                 logs.Zeile(new Eintrag(l[0], datei, k("Öffnen", false, (s, e) => Starten("notepad.exe", Path.Combine(Program.Ordner, datei)))) { Linie = !erste });
@@ -229,7 +221,7 @@ namespace Raumsteuerung
             var probleme = z.Where(x => x.Farbe == Ampel.Rot || x.Farbe == Ampel.Gelb).ToList();
             lage.Farbe = g;
             lage.Satz = g == Ampel.Gruen ? "Alles bereit" : probleme.Count == 1 ? probleme[0].Name + " braucht Aufmerksamkeit" : probleme.Count + " Dinge brauchen Aufmerksamkeit";
-            lage.Unter = g == Ampel.Gruen ? "Tablet, Teams und Automatik laufen." : "Was zu tun ist, steht unten bei „Technik“.";
+            lage.Unter = g == Ampel.Gruen ? "Tablet und Teams-Steuerung laufen." : "Was zu tun ist, steht unten bei „Technik“.";
             lage.Zeit = "Geprüft " + DateTime.Now.ToString("HH:mm:ss");
             lage.Invalidate();
             string trayText = "Raumsteuerung 5: " + (probleme.Count == 0 ? "alles bereit" : string.Join(", ", probleme.Select(x => x.Name)));
@@ -290,7 +282,6 @@ namespace Raumsteuerung
         {
             cfg = Einstellungen.Laden();
             rmcrIp.Text = cfg.RmcrIp; link.Text = cfg.TeamsLink;
-            for (int i = 0; i < 5; i++) mic[i].Text = cfg.Kanaele(i + 1);
             bildschirm.Eintraege.Clear();
             bildschirm.Eintraege.Add(new KeyValuePair<string, string>("", "Hauptbildschirm (automatisch)"));
             foreach (var s in Screen.AllScreens.OrderBy(s => s.DeviceName))
@@ -315,15 +306,14 @@ namespace Raumsteuerung
                 var neu = Einstellungen.Laden();
                 neu.RmcrIp = rmcrIp.Text.Trim();
                 neu.TeilenBildschirm = bildschirm.Wert;
-                for (int i = 0; i < 5; i++) neu.SetKanaele(i + 1, mic[i].Text);
                 neu.TeamsLink = link.Text.Trim();
                 neu.Speichern(); cfg = neu;
                 // Skripte lesen die Einstellungen beim Start
-                foreach (var d in new[] { Dienste.Automatik, Dienste.Teams }) if (!d.Extern) d.NeuStarten();
+                if (!Dienste.Teams.Extern) Dienste.Teams.NeuStarten();
                 Program.Log("Einstellungen gespeichert");
                 string hinweis = "";
                 if (autostart.Enabled) try { Einstellungen.AutostartIch = autostart.An; } catch (Exception ex) { hinweis = "\n\nAutostart nicht geändert: " + ex.Message; }
-                MessageBox.Show(this, "Gespeichert. Mikrofon-Automatik und Teams-Steuerung wurden neu gestartet." + hinweis, Text, MessageBoxButtons.OK,
+                MessageBox.Show(this, "Gespeichert. Die Teams-Steuerung wurde neu gestartet." + hinweis, Text, MessageBoxButtons.OK,
                     hinweis == "" ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
             }
             catch (Exception ex) { MessageBox.Show(this, ex.Message, "Nicht gespeichert", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
@@ -385,7 +375,7 @@ namespace Raumsteuerung
 
         void Beenden()
         {
-            if (MessageBox.Show(this, "Raumsteuerung beenden?\nDanach funktionieren Tablet, Teams-Steuerung und Mikrofon-Automatik nicht mehr, bis das Programm wieder läuft.",
+            if (MessageBox.Show(this, "Raumsteuerung beenden?\nDanach funktionieren Tablet und Teams-Steuerung nicht mehr, bis das Programm wieder läuft.",
                 Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
             beenden = true; tray.Visible = false; Dienste.AlleStoppen(); Application.Exit();
         }

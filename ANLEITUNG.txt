@@ -10,9 +10,8 @@ Raumsteuerung\                    Tablet-Seite + kleiner Webserver
   server.ps1                      Webserver (Port 8080)
   installieren.ps1                Richtet alles ein (als Administrator)
   deinstallieren.ps1              Entfernt Programm-Autostart und Firewall-Regeln
-  mikro-automatik.ps1             Publikum-Kamera folgt dem Tischmikrofon (läuft im Hintergrund)
-  mikro-automatik.json            Einstellungen dazu (Mikrofon -> Kanal, Schwellen, Zeiten)
-  mikrofone-testen.cmd            Doppelklick: Pegel aller Kanäle live (Zuordnung herausfinden)
+  teams-steuerung.ps1             Teams-Meeting vom Tablet bedienen (läuft im Hintergrund)
+  mikro-automatik.json            Einstellungen (RM-CR-IP, Bildschirm für "Präsentation zeigen" ...; Name historisch)
   pruefen.cmd                     Doppelklick: prüft Companion, OBS, RM-CR, Webserver, Netzwerk (ändert nichts)
 Raum5_OBS_Szenen_Backup.json      OBS-Szenen (Stand 05.10., Platzhalter statt echter Quellen)
 
@@ -45,8 +44,9 @@ Raum5_OBS_Szenen_Backup.json      OBS-Szenen (Stand 05.10., Platzhalter statt ec
 - Web-Oberfläche öffnen: http://127.0.0.1:8000
 - VORHER die laufende Konfiguration sichern: Import / Export -> Export (Datei aufheben).
 - Import / Export -> Raum5_Companion.companionconfig importieren (alles übernehmen).
-  Enthält alle Buttons für Tablet und Mikrofon-Automatik (Seite 1 Steuerung, Seite 3 Kamera),
-  die Variablen (r5_room, r5_pauto, r5_pmic, ...) und die Trigger.
+  Enthält alle Buttons für das Tablet (Seite 1 Steuerung, Seite 3 Kamera), die Variablen (r5_room, ...)
+  und die Trigger. (Die Buttons der früheren Publikum-Automatik 3/1/x, 3/3/x sind noch drin, werden aber
+  nicht mehr benutzt - die Publikum-Kamera ist fest auf den ganzen Raum gerichtet.)
 - Connections -> obs -> Passwort von OBS eintragen (ist im Paket absichtlich leer).
 - Connections -> rmcr -> IP-Adresse des RM-CR prüfen.
 - Beide Verbindungen müssen grün sein.
@@ -66,9 +66,9 @@ Raum5_OBS_Szenen_Backup.json      OBS-Szenen (Stand 05.10., Platzhalter statt ec
   * entfernt die früheren Aufgaben in der Aufgabenplanung (bis 22.10.2026)
   * zeigt am Ende die Adresse für das Tablet an, z. B. http://192.168.1.50:8080
 - Raumsteuerung.exe (Symbol unten rechts im Infobereich, Punkt grün/gelb/rot) startet unsichtbar:
-  Webserver (Port 8080), Mikrofon-Automatik und Teams-Steuerung - und startet sie neu, falls sie abbrechen.
+  Webserver (Port 8080) und Teams-Steuerung - und startet sie neu, falls sie abbrechen.
   Klick auf das Symbol: Status aller Teile, Tablet-Adresse, Einstellungen (RM-CR-IP, Bildschirm für
-  "Präsentation zeigen", Teams-Link, Mikrofon-Kanäle), Werkzeuge (Prüfen, Mikrofone testen, Protokolle,
+  "Präsentation zeigen", Teams-Link), Werkzeuge (Prüfen, Protokolle,
   Dienste neu starten). Neue Version: installieren.ps1 erneut ausführen. X schließt nur das Fenster.
   Beenden nur über Rechtsklick -> Beenden (dann gehen Tablet und Automatik nicht mehr).
 - Die Seite findet Companion automatisch (gleicher PC, Port 8000).
@@ -111,7 +111,6 @@ Zuerst C:\Raumsteuerung\pruefen.cmd doppelklicken: alles grün = Technik läuft,
 [ ] Companion beenden -> Tablet zeigt Hinweis "Keine Verbindung zum Raum-PC",
     die Live-Kachel zeigt "Status unbekannt"
 [ ] Kamera: Pfeil gedrückt halten -> Kamera fährt, loslassen -> Kamera stoppt
-[ ] Publikum-Kamera auf "Automatisch", dann Pfeil drücken -> Automatik geht aus
 [ ] Raum am Stream Deck ausschalten -> Tablet springt auf den Startbildschirm
     (nur wenn Companion die Variable r5_room setzt, siehe unten)
 
@@ -119,50 +118,12 @@ Zuerst C:\Raumsteuerung\pruefen.cmd doppelklicken: alles grün = Technik läuft,
 Bei Problemen: IT-Service 2020
 
 
-7. Mikrofon-Automatik (Publikum-Kamera folgt dem Tischmikrofon)
------------------------------------------------------------------
-So funktioniert es: mikro-automatik.ps1 liest die Pegel vom RM-CR (Meter RM:NeInPostFader)
-und drückt in Companion den passenden Publikum-Button. Regeln:
-  - ein Mikrofon spricht (mind. 0,4 s)  -> Zone dieses Mikrofons
-  - zwei gleichzeitig                    -> Ganzer Raum
-    (ausser eines ist deutlich lauter, "vorsprungStufen", Standard 8 -> dessen Zone;
-     so stoert ein Nachbarmikrofon nicht, das dieselbe Stimme leiser mithoert)
-  - 3 s Stille                           -> Ganzer Raum
-  - höchstens eine Bewegung alle 4 s; Husten/Klopfen (< 0,4 s) wird ignoriert
-  - Wortwechsel zwischen zwei Mikrofonen schaltet direkt um (kein Umweg über "Ganzer Raum")
-  - nur wenn auf dem Tablet "Automatisch" an ist (r5_pauto = 1)
-Mikrofon -> Zone: 1 -> 3/1/1 (Reihe 1-2 links), 2 -> 3/1/2, 3 -> 3/1/3, 4 -> 3/1/4, 5 -> 3/1/3.
-
-a) Zuordnung herausfinden
-   - C:\Raumsteuerung\mikrofone-testen.cmd doppelklicken.
-   - Nacheinander in Mikrofon 1, 2, ... sprechen. Der Kanal mit "<-- SPRICHT" gehört dazu.
-     Spitze = höchster Wert der letzten 3 s. 7E = 0 dBFS.
-   - Grundrauschen ohne Sprache notieren (im Test ca. 61). Es muss unter "schwelleAusHex" liegen.
-   - In mikro-automatik.json eintragen, z. B. "1": [1], "2": [2]
-     (liefert ein RM-TT zwei Kanäle: "1": [1, 2]). Nicht vorhandene Mikrofone: [].
-   - Schwellen anpassen: "schwelleHex" = Sprache sicher darüber (Standard 6C),
-     "schwelleAusHex" etwas niedriger (Standard 68).
-   - Einfacher: Raumsteuerung -> Einstellungen -> "Tischmikrofon n -> Kanal" und Speichern
-     (startet die Automatik selbst neu). Von Hand in der JSON: danach Werkzeuge -> Dienste neu starten.
-   - Alternative zum Testen: Meter "RM:NeInAutomixGain" (zeigt, wem der Automixer das Wort gibt).
-
-b) Companion (ist in Raum5_Companion.companionconfig schon enthalten)
-   - Variablen r5_pauto (1 = Automatik an) und r5_pmic (sprechendes Mikrofon).
-   - Buttons 3/1/6 / 3/1/7: Automatik an / aus.
-   - Buttons 3/1/1 bis 3/1/5: setzen r5_ppreset. Sobald die Publikum-Kamera da ist,
-     dort zusätzlich "Preset abrufen" der Kamera eintragen.
-   - Optional Bild einfrieren beim Schwenk: Buttons 3/1/8 (Freeze an) und 3/1/9 (Freeze aus)
-     mit OBS-Aktion "Filter sichtbar" auf der Publikum-Quelle (Freeze-Filter-Plugin nötig),
-     dann in mikro-automatik.json "freezeAn": "3/1/8", "freezeAus": "3/1/9".
-
-c) Prüfen
-   - Companion-Verbindung "rmcr" muss grün bleiben, während die Automatik läuft
-     (das Skript hat eine eigene RCP-Verbindung zum RM-CR).
-   - Protokoll: C:\Raumsteuerung\mikro-automatik.log (wer spricht, welcher Button gedrückt wurde).
-   - Ohne Kamera gefahrlos testen: in Admin-PowerShell
-       C:\Raumsteuerung\mikro-automatik.ps1 -Trocken
-     (zeigt nur an, was es tun würde; vorher Raumsteuerung beenden: Rechtsklick auf das Symbol -> Beenden).
-   - Tablet, Kamera-Seite: das sprechende Mikrofon leuchtet grün.
+7. Publikum-Kamera (seit 22.10.2026 fest)
+-----------------------------------------
+Die Publikum-Kamera ist fest montiert, ohne Zoom, und zeigt immer den ganzen Raum. Es gibt keine
+Steuerung und keine Automatik mehr (früher: mikro-automatik.ps1 schwenkte zum sprechenden Tischmikrofon).
+Sie erscheint in den Ansichten "Diskussion" und "Alles im Blick". In OBS nur die Quelle einrichten.
+"Prüfen" zeigt weiterhin die Mikrofon-Pegel des RM-CR (nützlich bei Tonproblemen).
 
 
 8. Wenn die fehlende Hardware kommt – wo in Companion ergänzen
@@ -176,7 +137,6 @@ Jeweils die Geräte-Aktion in den Button dazulegen (Tablet muss nicht geändert 
                              und in 1/0/1 (Raum an) / 1/0/2 (Raum aus)
   Redner-Kamera              3/0/1-3 Presets, 3/2/1-6 Bewegung (Taste DRÜCKEN = fahren,
                              LOSLASSEN = stoppen), 3/2/7 Grundstellung, 1/3/3-4 Tracking
-  Publikum-Kamera            3/1/1-5 Presets, 3/3/1-6 Bewegung, 3/3/7 Grundstellung
 Danach den Test aus Abschnitt 6 wiederholen.
 
 Automatisch aus - nur abends, tagsüber nie (Schulungen, lange Sitzungen ohne Bedienung bleiben an):
@@ -249,7 +209,7 @@ hangup-button) - dann in teams-steuerung.ps1 ($IDS) anpassen.
 -------------------------------------------------------------------------------
 Ziel: Nach dem Einschalten des PCs läuft alles von selbst, am Tablet nur "Raum starten".
 Startet automatisch:
-  - Raumsteuerung.exe               bei Anmeldung (installieren.ps1); startet Webserver, Mikrofon-Automatik,
+  - Raumsteuerung.exe               bei Anmeldung (installieren.ps1); startet Webserver,
                                     Teams-Steuerung + OBS-Wächter (startet OBS im Infobereich
                                     (--minimize-to-tray --disable-shutdown-check) und nach einem Absturz neu,
                                     bei eingeschaltetem Raum gleich mit Virtual Camera

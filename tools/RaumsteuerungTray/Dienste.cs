@@ -50,7 +50,7 @@ namespace Raumsteuerung
         public Process Proc;
         public string Zustand = "startet …";
         public bool Extern;            // läuft noch über die alte Aufgabenplanung -> nicht doppelt starten
-        public bool Aus;               // bewusst angehalten (z. B. Mikrofone testen)
+        public bool Aus;               // bewusst angehalten
         DateTime naechsterStart = DateTime.MinValue;
         int fehlstarts;
         DateTime gestartet;
@@ -101,9 +101,8 @@ namespace Raumsteuerung
     static class Dienste
     {
         public static readonly Dienst Webserver = new Dienst("Webserver", "server.ps1");
-        public static readonly Dienst Automatik = new Dienst("Mikrofon-Automatik", "mikro-automatik.ps1");
         public static readonly Dienst Teams = new Dienst("Teams-Steuerung", "teams-steuerung.ps1");
-        public static readonly Dienst[] Alle = { Webserver, Automatik, Teams };
+        public static readonly Dienst[] Alle = { Webserver, Teams };   // Mikrofon-Automatik entfällt (Publikum-Kamera fest, 22.10.2026)
         public static bool AlteAufgaben;
 
         // Vor dem ersten Start: laufen die Skripte noch über die Aufgabenplanung (vor der Umstellung mit installieren.ps1)?

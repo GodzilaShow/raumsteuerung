@@ -73,7 +73,6 @@ namespace Raumsteuerung
             // Dienste
             var web = Get("http://127.0.0.1:8080/manifest.json");
             z.Add(DienstZeile(Dienste.Webserver, web != null, web != null ? "Tablet-Seite erreichbar" : "Port 8080 antwortet nicht"));
-            z.Add(LogZeile(Dienste.Automatik, "mikro-automatik.log"));
             var tz = LogZeile(Dienste.Teams, "teams-steuerung.log");
             if (room != null && tz.Farbe == Ampel.Gruen)
             {

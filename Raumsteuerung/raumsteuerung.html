@@ -64,7 +64,6 @@ h2{margin:0;font-size:21px;font-weight:600}
 .seg{display:flex;border:1px solid var(--line2);border-radius:6px;overflow:hidden}
 .seg button{height:52px;min-width:150px;padding:0 18px;border:0;border-left:1px solid var(--line2);background:#fff;font-size:17px;font-weight:600}
 .seg button:first-child{border-left:0}
-#camSeg{flex-shrink:0}
 .seg button.on{background:var(--blue);color:#fff}
 .toggle{display:flex;align-items:center;gap:14px;min-height:52px;border:0;background:none;font-size:17px;padding:0;text-align:left}
 .toggle i{width:52px;height:30px;border-radius:15px;padding:3px;display:flex;background:#9AA8B5;flex-shrink:0;transition:background .25s ease}
@@ -112,13 +111,11 @@ h2{margin:0;font-size:21px;font-weight:600}
 .tabs button{position:relative;z-index:1;transition:color .3s ease}.tabs button.on{color:#fff}
 .tabind{position:absolute;top:5px;left:0;height:46px;border-radius:23px;background:var(--blue);transition:transform .38s cubic-bezier(.4,1.2,.5,1),width .38s cubic-bezier(.4,1.2,.5,1)}
 /* camera plan */
-.plan{position:relative;flex-grow:1;border:2px solid var(--line2);border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:10px;background:#F7FAFB}
 .front{align-self:center;margin-top:-2px;padding:3px 26px;background:var(--ink);color:#fff;font-size:13px;font-weight:600;letter-spacing:.5px;border-radius:0 0 4px 4px}
 .zone{border-radius:6px;border:1px solid var(--line2);background:#fff;font-size:17px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
 .zone.on.r{background:var(--blue);border-color:var(--blue);color:#fff}
-.zone.on.p{background:var(--green);border-color:var(--green);color:#fff}
-.zone .rows{display:flex;flex-direction:column;gap:7px;width:70%}.zone .rows i{height:6px;border-radius:3px;background:var(--line)}
-.zone.on .rows i{background:var(--lime)}
+.rpresets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:220px;gap:14px}.rpresets .zone{font-size:20px;gap:14px}.rpresets .zone svg{width:48px;height:48px}
+.camhint{margin:auto 0 0;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:6px;background:var(--bg);font-size:16px;color:var(--muted)}
 .dpad{display:grid;grid-template-columns:repeat(3,84px);gap:8px;justify-content:center}
 .hold{touch-action:none}
 .dpad button{height:70px;border-radius:6px;border:1px solid var(--line2);background:#fff;display:flex;align-items:center;justify-content:center}
@@ -126,27 +123,6 @@ h2{margin:0;font-size:21px;font-weight:600}
 .dpad .home{height:70px;border-radius:35px;border:1px solid var(--line2);background:var(--bg);color:var(--blue);display:flex;align-items:center;justify-content:center;transition:background-color .2s ease,transform .15s ease}
 .dpad .home:active{transform:scale(.92);background:#E6F1F8}
 #homeBtn.done{background:#F1F8E8;color:#27500A;border-color:var(--lime);animation:bump .35s ease}
-.autobar{display:flex;align-items:center;gap:14px;min-height:64px;padding:8px 14px;border:1px solid var(--line2);border-radius:6px;background:#fff;text-align:left;transition:background-color .22s ease,border-color .22s ease}
-.autobar i{width:52px;height:30px;border-radius:15px;padding:3px;display:flex;background:#9AA8B5;flex-shrink:0;transition:background .25s ease}
-.autobar i:after{content:"";width:24px;height:24px;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .3s cubic-bezier(.3,1.4,.5,1)}
-.autobar.on{background:#F1F8E8;border-color:#9CCB6A}.autobar.on i{background:var(--green)}.autobar.on i:after{transform:translateX(22px)}
-.autobar .at{display:flex;flex-direction:column;gap:2px}.autobar b{font-size:17px}.autobar small{font-size:14px;color:var(--muted)}
-.autobar.on small{color:#27500A}
-.pzones{flex-grow:1;display:flex;flex-direction:column;gap:8px;min-height:0}
-.pplan{position:relative;flex-grow:1;min-height:150px;border:2px solid var(--line2);border-radius:8px;background:#fff;overflow:hidden}
-.pplan:before,.pplan:after{content:"";position:absolute;pointer-events:none;z-index:0}
-.pplan:before{left:51.5%;top:4%;bottom:4%;border-left:2px dashed #D6DEE5}
-.pplan:after{left:4%;right:2%;top:38.5%;border-top:2px dashed #D6DEE5}
-.pplan .tb{position:absolute;height:11%;border-radius:4px;background:#E3E9EE;transition:background-color .25s ease}
-.pplan .rn{position:absolute;left:0;width:5%;height:11%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#9AA8B5}
-.pplan .mic{position:absolute;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:#fff;border:1.5px solid #B9C6D1;color:#7F93A5;display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none;transition:background-color .25s ease,color .25s ease,transform .25s ease,border-color .25s ease}
-.pplan .mic.talk{background:var(--green);border-color:var(--green);color:#fff;transform:scale(1.25);animation:micring 1.6s ease-out infinite}
-@keyframes micring{0%{box-shadow:0 0 0 0 rgba(59,109,17,.5)}80%,100%{box-shadow:0 0 0 12px rgba(59,109,17,0)}}
-.pplan .pz{position:absolute;padding:0;border:2px solid transparent;border-radius:8px;background:transparent;z-index:1;transition:background-color .22s ease,border-color .22s ease}
-.pplan .pz:active{background:rgba(59,109,17,.08)}
-.pplan .pz.on{background:rgba(141,198,63,.22);border-color:var(--green)}
-.pplan .pz.auto{background:rgba(141,198,63,.14);border-color:#9CCB6A;border-style:dashed}
-.pall{min-height:50px;flex-direction:row!important;gap:10px}
 .fix .btn.go{color:var(--ink);border-color:var(--line2)}
 /* help */
 .fix{display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid #E3E9EE}
@@ -312,27 +288,17 @@ h2{margin:0;font-size:21px;font-weight:600}
 </header>
 <div class="stripe"></div>
 <div class="body" style="grid-template-columns:7fr 5fr">
-<div class="panel" style="gap:12px">
-<h2>Wohin soll die Kamera schauen?</h2>
-<div class="plan">
-
-<span style="font-size:15px;font-weight:600;color:var(--blue)">Redner-Kamera</span>
-<div style="display:grid;grid-template-columns:1.05fr 1.3fr 1fr;gap:8px">
-<button class="zone r" style="min-height:84px" data-preset="r_pult"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="7" r="3.2"/><path d="M5.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/></svg>Am Sprecherplatz</button>
-<button class="zone r" style="min-height:84px" data-preset="r_displays"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="11" rx="1.5"/><path d="M9 20h6M12 16v4"/></svg>Bei den Displays</button>
-<button class="zone r" style="min-height:84px" data-preset="r_front"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5h3M21 8V5h-3M3 16v3h3M21 16v3h-3"/></svg>Ganze Front</button>
+<div class="panel" style="gap:14px">
+<h2>Wohin soll die Redner-Kamera schauen?</h2>
+<div class="rpresets">
+<button class="zone r" data-preset="r_pult"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="7" r="3.2"/><path d="M5.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/></svg>Am Sprecherplatz</button>
+<button class="zone r" data-preset="r_displays"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="11" rx="1.5"/><path d="M9 20h6M12 16v4"/></svg>Bei den Displays</button>
+<button class="zone r" data-preset="r_front"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5h3M21 8V5h-3M3 16v3h3M21 16v3h-3"/></svg>Ganze Front</button>
 </div>
-<div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:4px"><span style="font-size:15px;font-weight:600;color:var(--green)">Publikum-Kamera</span><span style="font-size:13px;color:var(--muted)">▲ oben = vorne bei den Displays · Bereich antippen</span></div>
-<button class="autobar" id="pAutoBtn" data-act="pAuto"><i></i><span class="at"><b>Automatisch</b><small id="pAutoSub">Die Kamera zeigt, wer am Tischmikrofon spricht.</small></span></button>
-<div class="pzones" id="pZones">
-<div class="pplan"><span class="rn" style="top:6%">1</span><i class="tb" style="left:6%;top:6%;width:22%"></i><i class="tb" style="left:30%;top:6%;width:44%"></i><i class="tb" style="left:76%;top:6%;width:20%"></i><b class="mic" data-mic="1" style="left:43%;top:11.5%"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg></b><span class="rn" style="top:24%">2</span><i class="tb" style="left:6%;top:24%;width:22%"></i><i class="tb" style="left:30%;top:24%;width:44%"></i><i class="tb" style="left:76%;top:24%;width:20%"></i><b class="mic" data-mic="2" style="left:58.5%;top:29.5%"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg></b><span class="rn" style="top:42%">3</span><i class="tb" style="left:6%;top:42%;width:22%"></i><i class="tb" style="left:30%;top:42%;width:44%"></i><i class="tb" style="left:76%;top:42%;width:20%"></i><b class="mic" data-mic="3" style="left:43%;top:47.5%"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg></b><span class="rn" style="top:60%">4</span><i class="tb" style="left:6%;top:60%;width:22%"></i><i class="tb" style="left:30%;top:60%;width:44%"></i><i class="tb" style="left:76%;top:60%;width:20%"></i><b class="mic" data-mic="4" style="left:58.5%;top:65.5%"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg></b><span class="rn" style="top:78%">5</span><i class="tb" style="left:6%;top:78%;width:22%"></i><i class="tb" style="left:30%;top:78%;width:44%"></i><i class="tb" style="left:76%;top:78%;width:20%"></i><b class="mic" data-mic="5" style="left:43%;top:83.5%"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg></b><button class="pz" data-preset="p_vl" aria-label="Reihe 1–2 links" style="left:3%;top:2%;width:48.5%;height:36%"></button><button class="pz" data-preset="p_vr" aria-label="Reihe 1–2 rechts" style="left:51.5%;top:2%;width:45.5%;height:36%"></button><button class="pz" data-preset="p_hl" aria-label="Reihe 3–5 links" style="left:3%;top:39%;width:48.5%;height:58%"></button><button class="pz" data-preset="p_hr" aria-label="Reihe 3–5 rechts" style="left:51.5%;top:39%;width:45.5%;height:58%"></button></div>
-<button class="zone p pall" data-preset="p_all"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V4h4M21 8V4h-4M3 16v4h4M21 16v4h-4"/></svg>Ganzer Raum</button>
-</div>
-</div>
+<p class="camhint"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.6c2.6-.3 4.6 1.2 5 4.4"/></svg>Die Publikum-Kamera zeigt immer den ganzen Raum – dort ist nichts einzustellen.</p>
 </div>
 <div class="panel" style="gap:10px">
 <h2>Genauer einstellen</h2>
-<div class="seg" id="camSeg" style="display:grid;grid-template-columns:1fr 1fr"><button data-cam="r">Redner-Kamera</button><button data-cam="p">Publikum-Kamera</button></div>
 <div class="dpad">
 <span></span><button class="hold" data-move="up" aria-label="Nach oben"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></button><span></span>
 <button class="hold" data-move="left" aria-label="Nach links"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
@@ -365,7 +331,7 @@ h2{margin:0;font-size:21px;font-weight:600}
 <div class="fix"><div><b>Online sehen kein Bild</b><span>Teams zeigt schwarz oder das falsche Bild.</span></div><button class="btn" data-fix="fix_kamera">Kamera neu starten</button></div>
 <div class="fix"><div><b>Kein Ton im Raum</b><span>Erst unter „Steuerung“ prüfen: richtige Quelle gewählt, Lautstärke nicht auf 0?</span></div><button class="btn" data-fix="fix_ton">Ton zurücksetzen</button></div>
 <div class="fix"><div><b>Display bleibt schwarz</b><span>Das Bild erscheint nicht auf den Displays.</span></div><button class="btn" data-fix="fix_displays">Displays neu starten</button></div>
-<div class="fix"><div><b>Kamera zeigt den falschen Bereich</b><span>Auf der Kamera-Seite die Stelle im Raum antippen.</span></div><button class="btn go" data-go="kamera">Zur Kamera</button></div>
+<div class="fix"><div><b>Kamera zeigt den falschen Bereich</b><span>Auf der Kamera-Seite „Am Sprecherplatz“, „Bei den Displays“ oder „Ganze Front“ antippen.</span></div><button class="btn go" data-go="kamera">Zur Kamera</button></div>
 </div>
 <div class="panel">
 <h2>So starten Sie ein Teams-Meeting</h2>
@@ -416,8 +382,6 @@ var CONFIG = {
   pollSeconds: 3,                              // Zustand von Companion/OBS abfragen
   liveVariable: 'r5_live',                     // Companion Custom Variable: 1 = Virtual Cam läuft
   roomVariable: 'r5_room',                     // 1 = Raum an, 0 = aus (wenn per Stream Deck/Trigger geschaltet, folgt das Tablet)
-  autoVariable: 'r5_pauto',                    // 1 = Publikum-Kamera folgt dem Mikrofon
-  micVariable: 'r5_pmic',                      // Nummer des aktiven Tischmikrofons (0 = keins)
   castCode: '',                                // Code für „Kabellos“ (leer = Hinweis ohne Code)
   serviceNumber: '2020',                       // IT-Service, erscheint in Fehlermeldungen
   autoFullscreen: true,                        // Tablet: beim ersten Antippen Vollbild (am PC mit Maus nicht)
@@ -442,11 +406,8 @@ var CONFIG = {
     fix_kamera: '1/3/5', fix_ton: '1/3/6', fix_displays: '1/3/7',
     alive: '1/3/8',       // „Noch in Benutzung“: setzt r5_last_use (Auto-Aus-Sicherheitsnetz in Companion)
     r_pult: '3/0/1', r_displays: '3/0/2', r_front: '3/0/3',   // Sprecherplatz (Ecke links), bei den Displays, ganze Front
-    p_vl: '3/1/1', p_vr: '3/1/2', p_hl: '3/1/3', p_hr: '3/1/4', p_all: '3/1/5',
     r_up: '3/2/1', r_down: '3/2/2', r_left: '3/2/3', r_right: '3/2/4', r_zoomin: '3/2/5', r_zoomout: '3/2/6',
-    p_up: '3/3/1', p_down: '3/3/2', p_left: '3/3/3', p_right: '3/3/4', p_zoomin: '3/3/5', p_zoomout: '3/3/6',
-    r_home: '3/2/7', p_home: '3/3/7',         // Kamera in Grundstellung (Mitte, Zoom zurück)
-    p_auto_on: '3/1/6', p_auto_off: '3/1/7',  // Publikum-Kamera folgt dem Tischmikrofon an/aus
+    r_home: '3/2/7',                          // Kamera in Grundstellung (Mitte, Zoom zurück)
     teams_mic: '1/0/4', teams_cam: '1/0/5', teams_leave: '1/0/6',   // Teams im Meeting: setzen r5_tcmd (mute/video/leave)
     teams_join: '1/0/7'   // Meeting des Raums beitreten (r5_tcmd = join, Link in C:\Raumsteuerung\teams-link.txt)
   }
@@ -469,13 +430,15 @@ var $ = function (q, el) { return (el || document).querySelector(q); };
 var $$ = function (q, el) { return Array.prototype.slice.call((el || document).querySelectorAll(q)); };
 $$('img[data-logo]').forEach(function (i) { i.src = $('#logoImg').src; });
 
-var S = { pAuto: true, pMic: 0, screen: 'start', scene: 'alles', src: 'pc', vol: 6, blank: false, disp: true, track: true, cam: 'r', rPreset: 'r_pult', pPreset: 'p_all' };
+// Publikum-Kamera ist fest (ganzer Raum) -> nur die Redner-Kamera wird bedient (S.cam immer 'r')
+var S = { screen: 'start', scene: 'alles', src: 'pc', vol: 6, blank: false, disp: true, track: true, cam: 'r', rPreset: 'r_pult' };
 try { var saved = JSON.parse(localStorage.getItem('raum5') || '{}'); for (var k in saved) S[k] = saved[k]; } catch (e) {}
+S.cam = 'r'; delete S.pAuto; delete S.pMic; delete S.pPreset;   // gespeicherter Stand von früher (mit Publikum-Kamera)
 function save() { try { localStorage.setItem('raum5', JSON.stringify(S)); } catch (e) {} }
 
 /* ---- Companion ---- */
 var connTimer, MSG_NOCONN = 'Keine Verbindung zum Raum-PC. Bitte IT-Service ' + CONFIG.serviceNumber + ' anrufen.';
-var touched = { scene: 0, vol: 0, auto: 0, room: 0, teams: 0, spk: 0, share: 0 };
+var touched = { scene: 0, vol: 0, room: 0, teams: 0, spk: 0, share: 0 };
 var T = { inMeeting: false, muted: false, video: true, status: '', joinAt: 0, mode: '', share: false };   // joinAt: wann Beitritt angestoßen   // Teams-Zustand (nicht gespeichert)
 function sendFailed() {
   var c = $('#conn'); c.textContent = MSG_NOCONN; c.classList.add('show');
@@ -580,15 +543,8 @@ function render() {
 
   tweenVol(S.vol * 10);
 
-  $$('#camSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.cam === S.cam); });
-  $$('[data-preset]').forEach(function (b) { b.classList.toggle('on', b.dataset.preset === S.rPreset || (!S.pAuto && b.dataset.preset === S.pPreset)); });
-  $('#pAutoBtn').classList.toggle('on', S.pAuto);
-  var MICZONE = { 1: 'p_vl', 2: 'p_vr', 3: 'p_hl', 4: 'p_hr', 5: 'p_hl' };
-  $$('.pplan .mic').forEach(function (m) { m.classList.toggle('talk', S.pAuto && +m.dataset.mic === S.pMic); });
-  $$('.pplan .pz').forEach(function (z) { z.classList.toggle('auto', S.pAuto && MICZONE[S.pMic] === z.dataset.preset); });
-  $('#pAutoSub').textContent = !S.pAuto ? 'Aus – Bereich unten selbst wählen.' : (S.pMic > 0 ? 'Mikrofon ' + S.pMic + ' spricht – Kamera ist dort.' : 'Die Kamera zeigt, wer am Tischmikrofon spricht.');
+  $$('[data-preset]').forEach(function (b) { b.classList.toggle('on', b.dataset.preset === S.rPreset); });
   $('#trackBtn').classList.toggle('on', S.track);
-  $('#trackBtn').style.visibility = S.cam === 'r' ? 'visible' : 'hidden';
 }
 
 function teamsCmd(c) {
@@ -632,15 +588,8 @@ var ACTIONS = {
   volUp: function () { setVol(S.vol + 1); },
   blank: function () { S.blank = !S.blank; call(S.blank ? 'blank_on' : 'blank_off'); },
   disp: function () { S.disp = !S.disp; if (!S.disp) S.blank = false; call(S.disp ? 'disp_on' : 'disp_off'); },
-  pAuto: function () {
-    S.pAuto = !S.pAuto; touched.auto = Date.now();
-    call(S.pAuto ? 'p_auto_on' : 'p_auto_off');
-    if (S.pAuto) S.pPreset = null;
-  },
   camHome: function () {
-    manualCam();
-    call(S.cam + '_home');
-    if (S.cam === 'r') S.rPreset = null; else S.pPreset = null;
+    call('r_home'); S.rPreset = null;
     var b = $('#homeBtn');
     if (!b._old) b._old = b.innerHTML;     // Originaltext nur einmal merken (doppeltes Tippen)
     b.classList.add('done'); b.lastChild.textContent = 'Kamera fährt in die Mitte …';
@@ -669,9 +618,8 @@ document.addEventListener('click', function (e) {
   else if (t.dataset.act && ACTIONS[t.dataset.act]) { ACTIONS[t.dataset.act](); save(); render(); }
   else if (t.dataset.scene) { S.scene = t.dataset.scene; touched.scene = Date.now(); call('scene_' + t.dataset.scene); save(); render(); }
   else if (t.dataset.src) { S.src = t.dataset.src; call('src_' + t.dataset.src); save(); render(); }
-  else if (t.dataset.cam) { S.cam = t.dataset.cam; save(); render(); }
   else if (t.dataset.preset) {
-    var p = t.dataset.preset; if (p[0] === 'r') { S.rPreset = p; S.cam = 'r'; } else { S.pPreset = p; S.cam = 'p'; if (S.pAuto) { S.pAuto = false; touched.auto = Date.now(); call('p_auto_off'); } }
+    var p = t.dataset.preset; S.rPreset = p;
     call(p); save(); render();
   }
   else if (t.dataset.fix) {
@@ -700,10 +648,6 @@ function roomOff() {
   forgetTeams(); call('raum_aus'); touched.room = Date.now();
   $('#dlgOff').classList.remove('show'); stopIdle(); go('start');
 }
-/* Publikum-Kamera von Hand bewegen -> Automatik aus, sonst fährt sie gleich wieder weg */
-function manualCam() {
-  if (S.cam === 'p' && S.pAuto) { S.pAuto = false; S.pPreset = null; touched.auto = Date.now(); call('p_auto_off'); }
-}
 
 /* hold-to-move (camera): Companion down on press, up on release */
 var holding = [];   // gerade gedrückte Bewegungen (zum sicheren Loslassen)
@@ -723,9 +667,8 @@ $$('[data-move]').forEach(function (b) {
   function up() { if (active) { var n = active; active = null; camUp(n, sent, frei); } }
   b.addEventListener('pointerdown', function (e) {
     e.preventDefault(); if (active) return;
-    manualCam();
-    active = S.cam + '_' + b.dataset.move; holding.push(up);
-    sent = call(active, 'down'); if (S.cam === 'r') S.rPreset = null; else S.pPreset = null; save(); render();
+    active = 'r_' + b.dataset.move; holding.push(up);
+    sent = call(active, 'down'); S.rPreset = null; save(); render();
   });
   ['pointerup', 'pointerleave', 'pointercancel', 'lostpointercapture'].forEach(function (ev) { b.addEventListener(ev, up); });
 });
@@ -797,8 +740,6 @@ function poll() {
     getText(B + '/api/variable/' + CONFIG.obsConnection + '/scene_active/value'),
     getText(V + CONFIG.volVariable + '/value'),
     getText(V + CONFIG.liveVariable + '/value'),
-    getText(V + CONFIG.autoVariable + '/value'),
-    getText(V + CONFIG.micVariable + '/value'),
     getText(V + CONFIG.roomVariable + '/value'),
     getText(V + CONFIG.teamsVariables.inMeeting + '/value'),
     getText(V + CONFIG.teamsVariables.muted + '/value'),
@@ -809,8 +750,8 @@ function poll() {
     getText(V + CONFIG.teamsVariables.share + '/value')
   ]).then(function (r) {
     polling = false;
-    var scene = r[0], vol = r[1], live = r[2], room = r[5], changed = false, grace = 4000, now = Date.now();
-    if (r.slice(0, 6).every(function (x) { return x === null; })) {
+    var scene = r[0], vol = r[1], live = r[2], room = r[3], changed = false, grace = 4000, now = Date.now();
+    if (r.slice(0, 4).every(function (x) { return x === null; })) {
       if (++fails >= 2) { showConn(MSG_NOCONN); liveState = null; setLive(null); }
       return;
     }
@@ -827,9 +768,7 @@ function poll() {
     }
     // einzelne verlorene Antworten (Raum-PC kurz ausgelastet) ändern nichts: letzten bekannten Wert behalten
     if (live !== null) liveState = isOn(live);
-    if (r[10] !== null && now - touched.spk > grace) { var sm = isOn(r[10]); if (sm !== !!S.spkMute) { S.spkMute = sm; changed = true; } }
-    if (r[3] !== null && now - touched.auto > grace) { var au = isOn(r[3]); if (au !== S.pAuto) { S.pAuto = au; changed = true; } }
-    if (r[4] !== null) { var mi = parseInt(r[4], 10) || 0; if (mi !== S.pMic) { S.pMic = mi; changed = true; } }
+    if (r[8] !== null && now - touched.spk > grace) { var sm = isOn(r[8]); if (sm !== !!S.spkMute) { S.spkMute = sm; changed = true; } }
     // Raum wurde woanders (Stream Deck, Auto-Aus in Companion) ein- oder ausgeschaltet -> Tablet folgt.
     // Nur auf echte Wechsel reagieren, damit eine nie gesetzte Variable nichts kaputt macht.
     if (room !== null) {
@@ -841,20 +780,20 @@ function poll() {
       roomPrev = ro;
     }
     // Teams: Leiste nur im Meeting (teams-steuerung.ps1 meldet r5_t_in = 1); ohne Skript bleibt sie aus
-    var tin = r[6] === null ? T.inMeeting : isOn(r[6]);
-    if (r[6] !== null && !isOn(r[6])) T.offAt = 0;           // Verlassen bestätigt
+    var tin = r[4] === null ? T.inMeeting : isOn(r[4]);
+    if (r[4] !== null && !isOn(r[4])) T.offAt = 0;           // Verlassen bestätigt
     if (tin && T.offAt && now - T.offAt < 60000) tin = false;  // Meeting wird nach „Raum aus“ gerade verlassen
     if (tin !== T.inMeeting) { T.inMeeting = tin; if (tin) T.joinAt = 0; changed = true; }
-    if (r[11] !== null && String(r[11]).trim() !== T.mode) { T.mode = String(r[11]).trim(); changed = true; }
-    if (r[12] !== null && now - touched.share > 15000 && !T.offAt) { var sh = isOn(r[12]); if (sh !== T.share) { T.share = sh; changed = true; } }   // Teilen dauert bis ~15 s
-    var tst = r[9] === null ? T.status : String(r[9]).trim();
+    if (r[9] !== null && String(r[9]).trim() !== T.mode) { T.mode = String(r[9]).trim(); changed = true; }
+    if (r[10] !== null && now - touched.share > 15000 && !T.offAt) { var sh = isOn(r[10]); if (sh !== T.share) { T.share = sh; changed = true; } }   // Teilen dauert bis ~15 s
+    var tst = r[7] === null ? T.status : String(r[7]).trim();
     if (tst !== T.status) {
       T.status = tst; if (/^fehler/i.test(tst)) T.joinAt = 0;
       if (/^fehler: (kein teilen|präsentation)/i.test(tst)) { T.share = false; touched.share = 0; }   // Knopf wieder „zeigen“
       changed = true;
     }
-    if (tin && now - touched.teams > 6000 && r[7] !== null && r[8] !== null) {   // Teams schaltet verzögert um -> länger dem eigenen Tippen glauben
-      var tm = isOn(r[7]), tv = isOn(r[8]);
+    if (tin && now - touched.teams > 6000 && r[5] !== null && r[6] !== null) {   // Teams schaltet verzögert um -> länger dem eigenen Tippen glauben
+      var tm = isOn(r[5]), tv = isOn(r[6]);
       if (tm !== T.muted || tv !== T.video) { T.muted = tm; T.video = tv; changed = true; }
     }
     setLive(liveState);   // erst jetzt: Live-Kachel braucht den Teams-Zustand dieser Abfrage

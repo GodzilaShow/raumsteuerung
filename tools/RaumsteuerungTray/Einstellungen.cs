@@ -1,4 +1,4 @@
-// Einstellungen: mikro-automatik.json (gemeinsam mit den Skripten), teams-link.txt, Autostart
+// Einstellungen: mikro-automatik.json (Name historisch; gemeinsam mit den Skripten), teams-link.txt, Autostart
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -28,27 +28,6 @@ namespace Raumsteuerung
         public string TeamsLink = "";
 
         string Text(string k, string std) { object v; return Json.TryGetValue(k, out v) && v != null ? Convert.ToString(v, CultureInfo.InvariantCulture) : std; }
-
-        // Mikrofon 1..5 -> Kanäle als Text "1" bzw. "1, 2"
-        public string Kanaele(int mic)
-        {
-            object m; if (!Json.TryGetValue("mikrofone", out m)) return "";
-            var d = m as IDictionary; if (d == null || !d.Contains(mic.ToString())) return "";
-            var l = d[mic.ToString()] as IEnumerable; if (l == null) return "";
-            return string.Join(", ", l.Cast<object>().Select(x => Convert.ToString(x, CultureInfo.InvariantCulture)));
-        }
-        public void SetKanaele(int mic, string text)
-        {
-            object m; IDictionary d;
-            if (!Json.TryGetValue("mikrofone", out m) || (d = m as IDictionary) == null) { d = new Dictionary<string, object>(); Json["mikrofone"] = d; }
-            var l = new ArrayList();
-            foreach (var t in (text ?? "").Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries))
-            {
-                int k; if (!int.TryParse(t, out k) || k < 1 || k > 16) throw new FormatException("Mikrofon " + mic + ": Kanal „" + t + "“ ungültig (1–16)");
-                l.Add(k);
-            }
-            d[mic.ToString()] = l;
-        }
 
         public static Einstellungen Laden()
         {

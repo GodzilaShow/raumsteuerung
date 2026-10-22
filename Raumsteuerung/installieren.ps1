@@ -1,7 +1,7 @@
 ﻿# Einmalig auf dem Raum-PC als Administrator ausfuehren:
 # Rechtsklick -> "Mit PowerShell ausfuehren" (oder in Admin-PowerShell: .\installieren.ps1)
 # Kopiert alles nach C:\Raumsteuerung, oeffnet die Firewall und startet Raumsteuerung.exe bei jeder Anmeldung.
-# Das Programm (Symbol im Infobereich) startet Webserver, Mikrofon-Automatik und Teams-Steuerung unsichtbar -
+# Das Programm (Symbol im Infobereich) startet Webserver und Teams-Steuerung unsichtbar -
 # die frueheren Aufgaben in der Aufgabenplanung werden entfernt.
 $ErrorActionPreference = 'Stop'
 # Ohne Administratorrechte neu starten (sonst scheitern Firewall und Autostart fuer alle Benutzer)
@@ -30,8 +30,10 @@ Start-Sleep -Seconds 1
 
 New-Item -ItemType Directory -Force -Path $ziel | Out-Null
 Copy-Item -Path (Join-Path $PSScriptRoot '*') -Destination $ziel -Force -Exclude 'installieren.ps1','deinstallieren.ps1','mikro-automatik.json','*.log'
-# Mikrofon-Einstellungen nur beim ersten Mal kopieren (spaeter angepasste Werte nicht ueberschreiben)
+# Einstellungen nur beim ersten Mal kopieren (spaeter angepasste Werte nicht ueberschreiben; Name bleibt aus Kompatibilitaet)
 if (-not (Test-Path (Join-Path $ziel 'mikro-automatik.json'))) { Copy-Item (Join-Path $PSScriptRoot 'mikro-automatik.json') $ziel }
+# Nicht mehr benutzt (Publikum-Kamera fest, keine Mikrofon-Automatik seit 22.10.2026)
+foreach ($alt in 'mikro-automatik.ps1', 'mikrofone-testen.cmd') { Remove-Item (Join-Path $ziel $alt) -Force -ErrorAction SilentlyContinue }
 
 # Firewall: Port 8080 (Seite) und 8000 (Companion) im lokalen Netz erlauben
 foreach ($p in 8080, 8000) {

@@ -13,9 +13,9 @@ Schreiben: „Wir machen hier weiter. Lies UEBERGABE.md und setz bei ‚Nächste
 - Steuerung: 5 Szenen (Alles im Blick, Folien Groß, Diskussion, Nur Redner, Pausenbild) + Live-Kachel, Lautstärke 0–100 % (Schritte → r5_vol_db), Quelle (Raum-PC/Laptop/Kabellos), Präsentation ausblenden, Displays.
 - Kamera:
   - Redner-Kamera: Am Sprecherplatz (r_pult 3/0/1), Bei den Displays (r_displays 3/0/2), Ganze Front (r_front 3/0/3); Pfeile/Zoom halten (3/2/x), „Zurück auf Standard“ (r_home 3/2/7, p_home 3/3/7); Schalter „Kamera folgt der sprechenden Person“.
-  - Publikum-Kamera: grafischer Saalplan (5 Reihen, 3 Tischblöcke, 5 Mikrofon-Symbole). 4 Zonen antippen: p_vl/p_vr = Reihe 1–2 links/rechts, p_hl/p_hr = Reihe 3–5 links/rechts, p_all = Ganzer Raum. Schalter „Automatisch – folgt dem Tischmikrofon“ (p_auto_on 3/1/6, p_auto_off 3/1/7). Aktives Mikro pulsiert grün.
+  - Publikum-Kamera: **seit 22.10.2026 fest** (ohne Zoom, ganzer Raum) – keine Steuerung, keine Mikrofon-Automatik mehr; auf der Kamera-Seite nur ein Hinweis. (Früher: Saalplan mit Zonen, Schalter „Automatisch“, mikro-automatik.ps1.)
 - Steuerung (seit 21.10.): unter dem Kopf drei große Teams-Knöpfe Mikro, Kamera, Präsentation zeigen (nur im Meeting; ohne Meeting ein großer Knopf „Teams-Meeting starten“), „Verlassen“ klein im Kopf neben „Raum ausschalten“ (zweimal tippen). Ansichten in einer Reihe, Lautstärke als eine Zeile „− 70 % +“ mit „Ton aus“ (keine Balken mehr), darunter Quelle/Displays.
-- Synchronisiert alle 3 s: obs:scene_active, custom r5_vol_db, r5_live, r5_pauto, r5_pmic, r5_room, r5_t_in/_mute/_video.
+- Synchronisiert alle 3 s: obs:scene_active, custom r5_vol_db, r5_live, r5_room, r5_spk_mute, r5_t_in/_mute/_video/_status/_mode/_share.
 - Animationen per CSS; Regel `prefers-reduced-motion` schaltet sie ab (evtl. entfernen).
 - Schrift: Source Sans 3 (variabel, SIL OFL) als base64 eingebettet, ersetzt Asap (12.10.).
 
@@ -118,11 +118,11 @@ Am 13.10. außerdem:
 
 ## Programm Raumsteuerung.exe (seit 22.10.2026)
 - Ersetzt die drei Aufgaben der Aufgabenplanung: `Raumsteuerung/Raumsteuerung.exe` (C#, .NET Framework 4.8, Quelltext
-  `tools/RaumsteuerungTray/`, Bau mit `build.sh`/Mono) läuft im Infobereich, startet `server.ps1`, `mikro-automatik.ps1`,
+  `tools/RaumsteuerungTray/`, Bau mit `build.sh`/Mono) läuft im Infobereich, startet `server.ps1` und
   `teams-steuerung.ps1` unsichtbar (Job-Objekt: enden mit dem Programm), startet sie bei Abbruch neu (Backoff bis 60 s).
-- Fenster: Status (Companion, OBS, Raum, RM-CR, Webserver, Automatik, Teams-Steuerung, Teams, Netzprofil), Tablet-
-  Adresse; Einstellungen (RM-CR-IP, `teilenBildschirm` als Auswahlliste, Teams-Link, Mikrofon-Kanäle, Autostart) –
-  schreibt `mikro-automatik.json` (+ `.bak`) im bisherigen Format; Werkzeuge (Prüfen = pruefen.ps1, Mikrofone testen,
+- Fenster: Status (Companion, OBS, Raum, RM-CR, Webserver, Teams-Steuerung, Teams, Netzprofil), Tablet-
+  Adresse; Einstellungen (RM-CR-IP, `teilenBildschirm` als Auswahlliste, Teams-Link, Autostart) –
+  schreibt `mikro-automatik.json` (+ `.bak`) im bisherigen Format; Werkzeuge (Prüfen = pruefen.ps1,
   Protokolle, Dienste neu starten). „Aktualisieren“ und „Deinstallieren“ gibt es im Programm bewusst nicht (22.10.,
   Wunsch Nutzer) – neue Version = `installieren.ps1` erneut, entfernen = `deinstallieren.ps1` (beide als Admin).
 - `installieren.ps1`: beendet Programm/alte Aufgaben, kopiert, Firewall, Autostart `HKLM\...\Run` „--tray“, startet
@@ -137,8 +137,7 @@ Im Raum (Raum-PC):
 1. OBS + Szenen-Backup, Companion + `Raum5_Companion.companionconfig` (vorher exportieren), `installieren.ps1`.
    Companion „Run at login“ + eigenes Admin-Passwort. Automatische Anmeldung des Raumkontos (für Teams-Steuerung).
 2. AV-Netz, feste IPs, Netzwerkprofil „Privat“ (sonst erreicht das Tablet Port 8080/8000 nicht) – siehe `SICHERHEIT.md`.
-3. `mikrofone-testen.cmd` mit Mikros an ihren echten Plätzen -> Kanäle + Grundrauschen in `mikro-automatik.json`,
-   danach Aufgabe „Raumsteuerung Mikrofon-Automatik“ neu starten.
+3. Publikum-Kamera fest auf den ganzen Raum ausrichten, in OBS als Quelle eintragen (keine Automatik mehr).
 4. `pruefen.cmd`, dann Checkliste ANLEITUNG Abschnitt 6 und 9 (Teams-Leiste) mit echtem Teams-Meeting.
 5. Wenn Hardware kommt: Geräte-Aktionen in die vorhandenen Buttons legen (ANLEITUNG Abschnitt 8).
 6. Teams-Bild (Teilen) am Raum-PC einrichten, sobald Monitore und Capture-Karte feststehen:

@@ -21,7 +21,6 @@ Tablet ──HTTP 8000──► Companion (HTTP-API)              Buttons drück
                          ├─WebSocket 4455 (localhost, Passwort)──► OBS ──Virtual Camera──► Teams
                          ├─TCP 49280 (RCP, ohne Anmeldung)───────► Yamaha RM-CR (Lautstärke, Mute)
                          │
-mikro-automatik.ps1 ──TCP 49280──► RM-CR (Pegel lesen)   ──HTTP 8000──► Companion (Kamera-Zone)
 teams-steuerung.ps1 ──UI Automation (lokal, kein Netz)──► Teams-Fenster ──HTTP 8000──► Companion (Zustand)
 Teams ──Internet──► Microsoft 365 (Raumkonto)
 ```
@@ -42,7 +41,7 @@ Teams ──Internet──► Microsoft 365 (Raumkonto)
 |---|---|---|
 | Teams | angemeldeter Windows-Benutzer | **Microsoft-Raumkonto** (einziges Cloud-Konto) |
 | teams-steuerung.ps1 | angemeldeter Benutzer (Aufgabe „bei Anmeldung“, Gruppe Benutzer, eingeschränkt) | keins – drückt nur Buttons im offenen Teams-Fenster, kennt keine Passwörter/Tokens |
-| server.ps1, mikro-automatik.ps1 | **SYSTEM** (Aufgaben „beim Start“) | keins |
+| server.ps1, teams-steuerung.ps1 | angemeldeter Benutzer (über Raumsteuerung.exe) | keins |
 | Companion | angemeldeter Benutzer | keins; Weboberfläche ohne Passwort, bis eins gesetzt ist |
 | OBS | angemeldeter Benutzer | keins; WebSocket-Passwort lokal in OBS |
 | RM-CR | – | RCP ohne Login; Weboberfläche des Geräts mit eigenem Login |
@@ -54,11 +53,11 @@ Was es **nicht kann**: Meetings beitreten, zuhören/zusehen, Chats lesen, andere
 
 | # | Risiko | Maßnahme | Status |
 |---|---|---|---|
-| 1 | Companion-Weboberfläche ohne Passwort über Netz erreichbar → Konfiguration manipulierbar | Companion → Settings → **Admin-Passwort** setzen (HTTP-API für Tablet/Automatik bleibt nutzbar – am 13.10. getestet: Weboberfläche „locked“, API, Mikro-Automatik und Teams-Steuerung laufen weiter) | Test-PC: gesetzt (Testpasswort). Raum-PC: eigenes, starkes Passwort |
+| 1 | Companion-Weboberfläche ohne Passwort über Netz erreichbar → Konfiguration manipulierbar | Companion → Settings → **Admin-Passwort** setzen (HTTP-API für Tablet/Automatik bleibt nutzbar – am 13.10. getestet: Weboberfläche „locked“, API und Teams-Steuerung laufen weiter) | Test-PC: gesetzt (Testpasswort). Raum-PC: eigenes, starkes Passwort |
 | 2 | Tablet-Seite und Companion-API ohne Anmeldung → jeder im Netz kann den Raum bedienen | **Eigenes AV-Netz/-WLAN** (TP-Link EAP225 im Ausstattungsplan) nur für Raum-PC, Tablet, AV-Geräte | offen (Hardware) |
 | 3 | Firewall-Regeln 8080/8000 gelten für alle Adressen der Profile Privat/Domäne | Regeln auf das AV-Subnetz beschränken: `Set-NetFirewallRule -DisplayName 'Raumsteuerung Port *' -RemoteAddress <AV-Netz>/24` | offen |
 | 4 | RM-CR per RCP ohne Login steuerbar | RM-CR nur im AV-Netz (3. Netzwerkkarte im Ausstattungsplan), nie im Verwaltungsnetz | offen (Hardware) |
-| 5 | Webserver und Mikro-Automatik laufen als SYSTEM (mehr Rechte als nötig) | Optional: eigener lokaler Dienstbenutzer ohne Adminrechte für beide Aufgaben | optional |
+| 5 | (erledigt 22.10.2026) Dienste liefen als SYSTEM – laufen jetzt als angemeldeter Benutzer über Raumsteuerung.exe | – | erledigt |
 | 6 | teams-steuerung braucht einen angemeldeten Benutzer → automatische Anmeldung des Raumkontos | Raumkonto mit minimalen Rechten, keine Laufwerke/Freigaben, Bildschirmsperre aus Sicht des Raums abwägen | offen |
 | 7 | **Windows-Internetfreigabe (ICS)** auf dem Test-Laptop (Ethernet 192.168.137.1 = ICS-Standard): Laptop verteilt im RM-CR-Netz IP-Adressen (DHCP) und routet ins Internet. Bei Verbindung mit dem Verwaltungsnetz → fremder DHCP-Server | Im Raum **kein ICS**. RM-CR, RM-TT und Raum-PC mit festen Adressen bzw. DHCP-Reservierung im AV-Netz | prüfen |
 | 8 | Dante/RM-Netz (RM-CR ↔ RM-TT) erzeugt Multicast- und PTP-Verkehr | Eigenes VLAN/Switch; bei Managed Switch IGMP-Snooping an, Energy Efficient Ethernet (EEE) aus | offen (Hardware) |
@@ -67,8 +66,7 @@ Was es **nicht kann**: Meetings beitreten, zuhören/zusehen, Chats lesen, andere
 ## Daten und Protokolle
 
 - Keine personenbezogenen Daten. Protokolle unter `C:\Raumsteuerung\*.log` enthalten nur Zeitstempel,
-  Befehle (z. B. „Befehl mute“) und Mikrofonnummern, keine Namen, keine Audiodaten.
-- Die Mikrofon-Automatik liest nur **Pegel** (Lautstärkewerte), keinen Ton.
+  Befehle (z. B. „Befehl mute“), keine Namen, keine Audiodaten.
 - Die Tablet-Seite speichert im Browser nur Bedienzustand (Szene, Lautstärke) und die Companion-Adresse.
 
 ## Checkliste vor dem Echtbetrieb

@@ -1,5 +1,5 @@
 ﻿# Raumsteuerung Sitzungszimmer 5 - Schnellpruefung auf dem Raum-PC (keine Administratorrechte noetig)
-# Zeigt gruen/gelb/rot: Companion, OBS, RM-CR, Mikrofone, Webserver, Automatik, Netzwerk, Firewall, Audio.
+# Zeigt gruen/gelb/rot: Companion, OBS, RM-CR, Mikrofon-Pegel, Webserver, Teams-Steuerung, Netzwerk, Firewall, Audio.
 # Aufruf: pruefen.cmd doppelklicken (oder .\pruefen.ps1). Aendert nichts.
 param([string]$Config = (Join-Path $PSScriptRoot 'mikro-automatik.json'))
 $ErrorActionPreference = 'Continue'
@@ -39,8 +39,8 @@ $c = Get-Http ($companion + '/')
 if ($c -and $c.Code -eq 200) { Zeile OK 'Companion' $companion }
 else { Zeile FEHLER 'Companion' ('nicht erreichbar unter ' + $companion) 'Companion starten (Startmenue), im Companion-Fenster muss "Running" stehen' }
 if ($c) {
-  if ($null -ne (Get-Var 'custom-variable/r5_pauto')) { Zeile OK 'Companion-Konfig.' 'Raum5-Konfiguration ist importiert (r5_pauto vorhanden)' }
-  else { Zeile FEHLER 'Companion-Konfig.' 'Variable r5_pauto fehlt' 'Import / Export -> Raum5_Companion.companionconfig importieren' }
+  if ($null -ne (Get-Var 'custom-variable/r5_room')) { Zeile OK 'Companion-Konfig.' 'Raum5-Konfiguration ist importiert (r5_room vorhanden)' }
+  else { Zeile FEHLER 'Companion-Konfig.' 'Variable r5_room fehlt' 'Import / Export -> Raum5_Companion.companionconfig importieren' }
   $scene = Get-Var 'variable/obs/scene_active'
   if ($scene) { Zeile OK 'OBS' ('verbunden, aktive Szene: ' + $scene) }
   else { Zeile FEHLER 'OBS' 'keine Verbindung von Companion zu OBS' 'OBS starten; Companion -> Connections -> obs: Passwort/Port 4455 pruefen' }
@@ -111,37 +111,20 @@ if ($verbunden) {
       $aktiv = @($max.Keys | Where-Object { $max[$_] -gt 0x20 } | Sort-Object)
       if ($aktiv.Count -eq 0) { Zeile WARN 'Mikrofon-Pegel' 'alle Kanaele still' 'RM-TT im RM-CR registriert (Settings -> Peripheral)? Mikrofone stumm?' }
       else { Zeile OK 'Mikrofon-Pegel' ('Signal auf Kanal ' + (($aktiv | ForEach-Object { '{0} ({1:X2})' -f $_, $max[$_] }) -join ', ')) }
-      if ($cfg) {
-        $zu = @(); foreach ($p in $cfg.mikrofone.PSObject.Properties) { if (@($p.Value).Count) { $zu += ('Mikro {0}=Kanal {1}' -f $p.Name, (@($p.Value) -join '+')) } }
-        Zeile INFO 'Zuordnung (json)' ($zu -join ', ')
-      }
     }
   } catch { Zeile WARN 'Mikrofon-Pegel' ('Lesen fehlgeschlagen: ' + $_.Exception.Message) }
 } elseif ($ping) { Zeile FEHLER 'RM-CR' ('{0} antwortet auf Ping, aber Port {1} ist zu' -f $rmcrIp, $rmcrPort) 'RM-CR neu starten; IP in mikro-automatik.json und Companion "rmcr" pruefen' }
 else { Zeile FEHLER 'RM-CR' ($rmcrIp + ' nicht erreichbar') 'Netzwerkkabel zum RM-CR? IP mit "RM Device Finder" pruefen' }
 $tcp.Close()
 
-# ---------- Programm Raumsteuerung.exe (startet Webserver, Automatik, Teams-Steuerung) ----------
+# ---------- Programm Raumsteuerung.exe (startet Webserver und Teams-Steuerung) ----------
 $exe = Get-Process -Name Raumsteuerung -ErrorAction SilentlyContinue
 if ($exe) { Zeile OK 'Programm' ('Raumsteuerung.exe laeuft (Symbol im Infobereich)') }
 elseif (Test-Path (Join-Path $PSScriptRoot 'Raumsteuerung.exe')) { Zeile FEHLER 'Programm' 'Raumsteuerung.exe laeuft nicht' 'C:\Raumsteuerung\Raumsteuerung.exe starten (startet bei Anmeldung automatisch)' }
-# ---------- Webserver / Automatik ----------
+# ---------- Webserver ----------
 $web = Get-Http 'http://127.0.0.1:8080/'
 if ($web -and $web.Code -eq 200 -and $web.Text -match 'Sitzungszimmer 5') { Zeile OK 'Webserver' 'Tablet-Seite auf Port 8080 erreichbar' }
 else { Zeile FEHLER 'Webserver' 'Port 8080 antwortet nicht' 'Raumsteuerung.exe laeuft? Sonst installieren.ps1 als Administrator ausfuehren' }
-$log = Join-Path $PSScriptRoot 'mikro-automatik.log'
-if (Test-Path $log) {
-  $zeilen = @(Get-Content $log -Tail 200 -Encoding UTF8)
-  $start = $zeilen | Where-Object { $_ -match '  Start ' } | Select-Object -Last 1
-  $fehl = $zeilen | Where-Object { $_ -match 'Fehler|nicht erreichbar' } | Select-Object -Last 1
-  $alter = (New-TimeSpan -Start (Get-Item $log).LastWriteTime -End (Get-Date)).TotalMinutes
-  $txt = if ($start) { 'gestartet ' + $start.Substring(0, 19) } else { 'laeuft' }
-  if ($fehl -and $zeilen.IndexOf($fehl) -gt $zeilen.IndexOf($start)) { Zeile WARN 'Mikrofon-Automatik' ($txt + ', letzte Meldung: ' + $fehl.Substring(21)) 'Protokoll C:\Raumsteuerung\mikro-automatik.log ansehen' }
-  else { Zeile OK 'Mikrofon-Automatik' ($txt + ', Protokoll zuletzt vor ' + [int]$alter + ' min') }
-} else { Zeile WARN 'Mikrofon-Automatik' 'kein Protokoll gefunden' 'Raumsteuerung.exe laeuft? Sonst installieren.ps1 ausfuehren' }
-$auto = if ($c) { Get-Var 'custom-variable/r5_pauto' } else { $null }
-if ($auto) { Zeile INFO 'Publikum-Automatik' $(if ($auto -eq '1') { 'an (Tablet-Schalter)' } else { 'aus (Tablet-Schalter)' }) }
-
 $tlog = Join-Path $PSScriptRoot 'teams-steuerung.log'
 if (Test-Path $tlog) {
   $tz = @(Get-Content $tlog -Tail 50 -Encoding UTF8)

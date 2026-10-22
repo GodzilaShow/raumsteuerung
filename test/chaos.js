@@ -21,7 +21,7 @@ const camStuck = log => {
 };
 
 (async () => {
-  await set(NOFAULT + '&obs:scene_active=Nur Redner&r5_vol_db=-1300&r5_live=1&r5_pauto=1&r5_pmic=0&r5_room=0&r5_t_in=0&r5_t_mode=kamera&r5_t_share=0&r5_t_status=');
+  await set(NOFAULT + '&obs:scene_active=Nur Redner&r5_vol_db=-1300&r5_live=1&r5_room=0&r5_t_in=0&r5_t_mode=kamera&r5_t_share=0&r5_t_status=');
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' }).catch(() => chromium.launch());
   const ctx = await b.newContext({ viewport: { width: 1280, height: 800 }, hasTouch: true });
   const p = await ctx.newPage();
@@ -55,7 +55,7 @@ const camStuck = log => {
   await set('down=0'); await p.waitForTimeout(4000);
 
   console.log('Kamera-Befehle');
-  await p.click('#tabs [data-go=kamera]'); await p.click('[data-cam=r]'); await p.waitForTimeout(300);
+  await p.click('#tabs [data-go=kamera]'); await p.waitForTimeout(300);
   const tap = async (sel, ms) => { const l = p.locator(sel); await l.dispatchEvent('pointerdown'); await p.waitForTimeout(ms); await l.dispatchEvent('pointerup'); };
   await clear(); await set('lagdown=600'); await tap('[data-move=up]', 80); await p.waitForTimeout(2000); await set('lagdown=0');
   check(camStuck((await state()).log).length === 0, 'kurzes Tippen, „down“ kommt verspätet an -> Kamera hält trotzdem an');
@@ -70,7 +70,7 @@ const camStuck = log => {
   await clear();
   const faults = [NOFAULT, NOFAULT, 'down=1', 'hang=1', 'slow=900', 'flaky=0.2', 'lagdown=400', 'slow=300&flaky=0.1'];
   const world = ['r5_t_in=1&r5_t_mute=0&r5_t_video=1', 'r5_t_in=0', 'r5_t_mode=teilen', 'r5_t_mode=kamera', 'r5_t_share=1', 'r5_room=0', 'r5_room=1',
-                 'obs:scene_active=Diskussion', 'r5_pmic=3', 'r5_spk_mute=1', 'r5_t_status=fehler: Teams reagiert nicht', 'r5_t_status=', 'r5_live=0', 'r5_live=1'];
+                 'obs:scene_active=Diskussion', 'r5_spk_mute=1', 'r5_t_status=fehler: Teams reagiert nicht', 'r5_t_status=', 'r5_live=0', 'r5_live=1'];
   let fault = NOFAULT;
   for (let i = 0; i < STEPS; i++) {
     const r = rnd();

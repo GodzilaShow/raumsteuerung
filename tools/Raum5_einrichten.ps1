@@ -57,7 +57,7 @@ WingetInstall 'OBSProject.OBSStudio'
 Schritt "4/5 Bitfocus Companion"
 WingetInstall 'Bitfocus.Companion'
 
-Schritt "5/5 Raumsteuerung installieren (C:\Raumsteuerung, Webserver, Mikrofon-Automatik, Teams-Steuerung, Firewall 8080/8000)"
+Schritt "5/5 Raumsteuerung installieren (C:\Raumsteuerung, Webserver, Teams-Steuerung, Firewall 8080/8000)"
 & (Join-Path $ziel 'Raumsteuerung\installieren.ps1')
 
 Write-Host ""
