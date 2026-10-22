@@ -670,6 +670,19 @@ function Find-Prejoin {
   }
   return $null
 }
+# Wartebereich (Lobby): Teams zeigt nach "Jetzt teilnehmen" z. B. "Jemand wird Sie einlassen, wenn die Besprechung
+# beginnt" (Gast/nicht angemeldet, fremde Organisation, Organisator noch nicht da). Kein Fehler - der Raum wartet.
+function Find-Lobby {
+  $ids = @(Get-Process ms-teams -ErrorAction SilentlyContinue).Id
+  $cTxt = New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text)
+  foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+    try {
+      if ($ids -notcontains $w.Current.ProcessId) { continue }
+      foreach ($t in $w.FindAll($Scope::Descendants, $cTxt)) { if ($t.Current.Name -match '(?i)einlassen|let you in|Wartebereich|lobby') { return $w } }
+    } catch { }
+  }
+  return $null
+}
 function Set-Switch($w, [string]$muster, [bool]$an = $true) {
   # Kamera-/Mikro-Schalter im Beitrittsfenster ein-/ausschalten (Kennungen wechseln, daher per Name + TogglePattern)
   $cBtn = New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
@@ -710,6 +723,11 @@ function Join-Teams {
   }
   $ende = [DateTime]::Now.AddSeconds(40); $w = $null
   while (-not $w -and [DateTime]::Now -lt $ende) { Start-Sleep -Milliseconds 700; $w = Find-Meeting }
+  if (-not $w -and (Find-Lobby)) {
+    # Im Wartebereich: Status "warten", die Hauptschleife meldet "im Meeting", sobald jemand den Raum einlaesst
+    Write-Log 'Beitritt: im Wartebereich - wartet, bis jemand den Raum in Teams einlaesst'
+    [void](Set-Var 'r5_t_status' 'warten: Wartebereich'); $script:wartenSeit = [DateTime]::Now; return $false
+  }
   if (-not $w) { Write-Log 'Beitritt fehlgeschlagen (kein Meetingfenster)'; [void](Set-Var 'r5_t_status' 'fehler: Teams reagiert nicht'); return $false }
   Start-Sleep -Seconds 2
   $script:win = $null
@@ -732,6 +750,7 @@ Write-Log ('Start Teams-Steuerung, Companion ' + $Companion + ', Benutzer ' + $e
 # sonst tritt Teams nach der naechsten Anmeldung/Neustart unerwartet dem Meeting bei
 $alt = Get-Var 'r5_tcmd'
 if ($alt) { [void](Set-Var 'r5_tcmd' ''); Write-Log "Alter Befehl beim Start verworfen: $alt" }
+$script:wartenSeit = $null; $script:lastLobby = [DateTime]::MinValue
 $last = @{}; $lastPush = [DateTime]::MinValue; $nextState = [DateTime]::MinValue; $companionOk = $true; $script:lastClose = [DateTime]::MinValue; $script:lastObs = [DateTime]::MinValue
 while ($true) {
   try {
@@ -745,7 +764,16 @@ while ($true) {
       if ($cmd -and -not (Set-Var 'r5_tcmd' '')) { if (-not $script:warnLeer) { Write-Log "Befehl ${cmd}: r5_tcmd laesst sich nicht leeren - nicht ausgefuehrt"; $script:warnLeer = $true }; $cmd = '' }
       elseif ($cmd) { $script:warnLeer = $false }
       if ($cmd) {
-        if ($cmd -eq 'join') { [void](Join-Teams); $nextState = [DateTime]::MinValue }
+        # Verlassen / Raum aus waehrend der Raum im Wartebereich steht: Wartefenster schliessen (sonst wuerde der
+        # Raum spaeter noch eingelassen, obwohl er aus ist)
+        if ($cmd -eq 'leave' -and -not (Get-TeamsState).In) {
+          $lw = Find-Lobby
+          if ($lw) { try { $lw.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close(); Write-Log 'Wartebereich verlassen (Fenster geschlossen)' } catch { Write-Log ('Wartebereich: Fenster liess sich nicht schliessen (' + $_.Exception.Message + ')') } }
+          if ($script:wartenSeit) { $script:wartenSeit = $null; [void](Set-Var 'r5_t_status' '') }
+          $cmd = ''
+        }
+        if (-not $cmd) { }
+        elseif ($cmd -eq 'join') { [void](Join-Teams); $nextState = [DateTime]::MinValue }
         elseif ($cmd -match '^(mic|video)_(on|off)$') {
           # Zielzustand statt Umschalten (vom Tablet): nur druecken, wenn Teams anders steht -> verlorene oder
           # doppelte Befehle koennen den Zustand nicht verdrehen
@@ -789,7 +817,16 @@ while ($true) {
         Write-Log $(if ($s.In) { 'Teams-Meeting erkannt' } else { 'kein Teams-Meeting' })
         # Meeting zu Ende: alte Fehlermeldung (z. B. "fehler: Präsentation teilen") nicht ins naechste Meeting mitnehmen
         if (-not $s.In -and $script:warIn) { if ((Get-Var 'r5_t_status') -like 'fehler*') { [void](Set-Var 'r5_t_status' '') } }
+        # Aus dem Wartebereich eingelassen -> wie nach dem Beitritt: Kamera-Szene "Nur Redner", Status leer
+        if ($s.In -and $script:wartenSeit) { $script:wartenSeit = $null; Write-Log 'Beitritt: eingelassen'; Set-PeopleScene -Immer; [void](Set-Var 'r5_t_status' '') }
         $script:warIn = $s.In
+      }
+    }
+    # Wartebereich verlassen ohne Einlass (abgelehnt, Fenster geschlossen) oder zu lange (15 min) -> Fehler melden
+    if ($script:wartenSeit -and -not $script:warIn -and ([DateTime]::Now - $script:lastLobby).TotalSeconds -ge 5) {
+      $script:lastLobby = [DateTime]::Now
+      if (-not (Find-Lobby) -or ([DateTime]::Now - $script:wartenSeit).TotalMinutes -ge 15) {
+        $script:wartenSeit = $null; Write-Log 'Beitritt: nicht eingelassen'; [void](Set-Var 'r5_t_status' 'fehler: nicht eingelassen')
       }
     }
     if ($Teilen) { Protect-ShareScreen }
