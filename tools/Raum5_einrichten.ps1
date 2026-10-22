@@ -25,7 +25,17 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 }
 
 Schritt "1/5 Git"
-if (-not (Get-Command git -ErrorAction SilentlyContinue)) { WingetInstall 'Git.Git'; PfadNeu }
+# Git installiert, aber nicht im PATH (passiert nach manchen Installationen) -> dauerhaft fuer alle Benutzer eintragen
+function GitPfad {
+  foreach ($d in "$env:ProgramFiles\Git\cmd", "${env:ProgramFiles(x86)}\Git\cmd", "$env:LOCALAPPDATA\Programs\Git\cmd") {
+    if (-not (Test-Path (Join-Path $d 'git.exe'))) { continue }
+    $p = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+    if (($p -split ';') -notcontains $d) { [Environment]::SetEnvironmentVariable('Path', "$p;$d", 'Machine'); Write-Host "Git in den PATH eingetragen: $d" }
+    PfadNeu; return
+  }
+}
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) { GitPfad }
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) { WingetInstall 'Git.Git'; PfadNeu; GitPfad }
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Write-Host "Git nicht gefunden - PowerShell neu oeffnen und Skript nochmal starten." -ForegroundColor Red; Read-Host "Enter"; exit 1 }
 
 Schritt "2/5 Repository nach $ziel (Branch $branch)"
