@@ -213,33 +213,28 @@ Meeting des Raums per Knopf starten ("Teams-Meeting starten" oben am Tablet; "Ra
      minimiert, holt das Skript es vor dem Drücken wieder hervor (minimiert reagiert Teams erst nach Sekunden).
   i) Das Tablet schickt Zielzustände (mic_on/mic_off/video_on/video_off), das Skript drückt nur, wenn Teams
      anders steht. Die Stream-Deck-Tasten 1/0/4 und 1/0/5 schalten weiterhin um.
-Teams-Bild: Präsentation geteilt + Personen über die Kamera (Standard seit 20.10.2026):
+Teams-Bild: Präsentation geteilt + Personen über die Kamera (Standard; seit 22.10.2026 ohne OBS-Projektor):
   j) Zwei Kanäle wie bei Teams Rooms:
-     - Inhalt: OBS-Szene "Inhalt" (nur die Präsentation auf dem Emsland-Hintergrund) als Vollbild-Projektor auf
-       einem eigenen, unsichtbaren Bildschirm. Teams TEILT diesen Bildschirm ("Nur Inhalt", "Sound einschließen").
-       Text und Folien kommen scharf und groß an (Teilen hat wenige Bilder/s - für Folien richtig).
+     - Inhalt: "Präsentation zeigen" lässt Teams einen ECHTEN Bildschirm teilen - den, auf dem die Präsentation
+       läuft ("Nur Inhalt", "Sound einschließen"). Text und Folien kommen scharf und groß an.
      - Personen: Teams-Kamera = OBS Virtuelle Kamera (Programm: Nur Redner / Diskussion / Pausenbild), flüssig.
      Das Tablet blendet im Modus "teilen" die Ansichten "Alles im Blick"/"Folien groß" aus (r5_t_mode); stehen sie
-     beim Teilen noch auf dem Programm, schaltet das Skript auf "Nur Redner". "Präsentation ausblenden" gilt auch
-     für "Inhalt".
-  k) Unsichtbarer Bildschirm: Laptop/Test = "Virtual Display Driver" (winget VirtualDrivers.Virtual-Display-Driver,
-     danach "VDD Control.exe" als Administrator -> "Install Driver"; Windows: Anzeige "Erweitern", 1920x1080).
-     Raum-PC: alternativ HDMI-Dummy-Stecker (dann in mikro-automatik.json "teilenBildschirm" auf einen Teil
-     des Monitornamens setzen; ohne Treffer nimmt das Skript den letzten Nicht-Hauptbildschirm).
+     beim Teilen noch auf dem Programm, schaltet das Skript auf "Nur Redner".
+  k) Welcher Bildschirm: mikro-automatik.json "teilenBildschirm" = Nummer wie in Windows (Einstellungen ->
+     Anzeige, z. B. "2") oder Teil des Monitornamens. Ohne Eintrag: der Hauptbildschirm. pruefen.cmd listet
+     alle Bildschirme mit Nummer und zeigt, welcher geteilt wird. Ist der eingetragene nicht da (Monitor aus),
+     teilt das Skript nichts und das Tablet sagt "Präsentation nicht geteilt - in Teams von Hand teilen".
   l) "Teams-Meeting starten" tritt nur mit Kamera bei (ca. 20 s), Kamera-Szene immer "Nur Redner".
-     Die Präsentation teilt erst der Knopf "Präsentation zeigen" in der Teams-Leiste (r5_tcmd share_on/share_off,
-     Zustand r5_t_share, ca. 12 s); "Präsentation beenden" stoppt das Teilen. "Kamera an/aus" = Teams-Kamera. "Verlassen"/"Raum ausschalten" beenden zuerst das Teilen (sonst fragt Teams nach).
-  m) Fehlt der OBS-Projektor (z. B. nach OBS-Neustart), öffnet das Skript ihn über Companion-Button 1/3/9
-     (OBS Custom Command OpenVideoMixProjector, Monitor-Nr. in r5_proj_mon) - auch alle 30 s während des Teilens.
-  n) Zurück zur Virtuellen Kamera: in C:\Raumsteuerung\mikro-automatik.json  "teamsBild": "kamera"  eintragen
-     und die Aufgabe "Raumsteuerung Teams-Steuerung" neu starten. Ton aus beim Teilen: "teilenTon": false.
-  o) Die Bildschirme heißen in der Teams-Liste alle gleich; das Skript probiert von hinten und prüft an der
-     Lage der Teams-Leiste "Freigabesteuerungsleiste", ob der richtige Bildschirm geteilt wird.
-  p) Schutz: Solange teams-steuerung.ps1 läuft, kann die Maus nicht auf den Teilen-Bildschirm, dorthin
-     geschobene Fenster kommen innerhalb 1 s auf den Hauptbildschirm zurück, der OBS-Projektor liegt oben.
-     Wartung am Teilen-Bildschirm: Aufgabe "Raumsteuerung Teams-Steuerung" vorher beenden.
-     Anordnung: Der Teilen-Bildschirm muss in den Anzeigeeinstellungen GANZ AUSSEN liegen (z. B. ganz rechts),
-     nicht zwischen zwei echten Monitoren - sonst sperrt die Maus-Sperre den Weg zum anderen Monitor.
+     Die Präsentation teilt erst der Knopf "Präsentation zeigen" (r5_tcmd share_on/share_off,
+     Zustand r5_t_share, ca. 10 s); "Präsentation beenden" stoppt das Teilen. "Kamera an/aus" = Teams-Kamera.
+     "Verlassen"/"Raum ausschalten" beenden zuerst das Teilen (sonst fragt Teams nach).
+  m) Teams geteilt sieht alles, was auf diesem Bildschirm ist (auch Benachrichtigungen, andere Fenster) - die
+     Präsentation dort im Vollbild zeigen. Teams selbst liegt auf dem Sprecherplatz-Monitor (teamsBildschirm).
+  n) Zurück zur Virtuellen Kamera ohne Teilen: in C:\Raumsteuerung\mikro-automatik.json  "teamsBild": "kamera"
+     eintragen und die Aufgabe "Raumsteuerung Teams-Steuerung" neu starten. Ton aus beim Teilen: "teilenTon": false.
+  o) Die Bildschirme heißen in der Teams-Liste alle gleich; das Skript probiert zuerst den zuletzt richtigen
+     Eintrag (teilen-eintrag.txt) und prüft an der Lage der Teams-Leiste "Freigabesteuerungsleiste", ob der
+     richtige Bildschirm geteilt wird.
 Grenzen: Teams kennt keinen auslesbaren Zustand für "Hand heben" - deshalb keine Hand-Taste.
 Organisator übergeben, Wartebereich, andere stummschalten: nur in Teams selbst.
 Nach großen Teams-Updates kann eine Button-Kennung wechseln (microphone-button, video-button,
@@ -262,6 +257,6 @@ Windows einmal einstellen:
   [ ] Benachrichtigungen von Windows und Teams aus (Fokus / "Nicht stören"), sonst erscheinen sie auf den Displays
   [ ] Windows Update: Nutzungszeit z. B. 7-20 Uhr, Neustarts nur außerhalb
   [ ] Teams: Geräte = OBS Virtual Camera / Yamaha RM-CR; "Mein Video spiegeln" aus
-  [ ] Unsichtbarer Teilen-Bildschirm (Virtual Display Driver oder HDMI-Dummy), Anzeige "Erweitern", 1920x1080 (Abschnitt 9 k)
+  [ ] Bildschirm für "Präsentation zeigen" festlegen: pruefen.cmd zeigt die Nummern, "teilenBildschirm" eintragen (Abschnitt 9 k)
 Wartung: OBS bewusst schließen (z. B. zum Bearbeiten) -> der Wächter startet es nach spätestens 30 s neu.
 Dafür vorher Aufgabe "Raumsteuerung Teams-Steuerung" in der Aufgabenplanung beenden.

@@ -23,7 +23,7 @@ Schreiben: „Wir machen hier weiter. Lies UEBERGABE.md und setz bei ‚Nächste
 - Verbindungen: `obs` (OBS Studio, 127.0.0.1:4455, Passwort gesetzt), `rmcr` (Generic TCP 192.168.137.185:49280, Save Response → $(rmcr:tcp_response)).
 - Custom Variables: r5_cmd (RCP-Befehl für Button 1/0/3 „send“), r5_vol_db, r5_live, r5_room, r5_last_use, r5_vol.
 - Buttons Seite 1: 1/0/1 Raum an, 1/0/2 Raum aus, 1/0/3 RCP-Befehl aus r5_cmd senden, 1/1/1–5 Szenen, 1/3/1 Lautstärke anwenden, 1/3/6 Ton reset (On=1, Level −10 dB, r5_vol_db=−1000).
-- Teams-Bild in zwei Kanälen (seit 20.10.2026): Präsentation = OBS-Szene „Inhalt“ als Vollbild-Projektor auf virtuellem Bildschirm (Virtual Display Driver), von Teams geteilt (Knopf „Präsentation zeigen“, Meeting-Start nur mit Kamera „Nur Redner“); Personen = Virtuelle Kamera (Nur Redner/Diskussion/Pausenbild); Companion 1/3/9 öffnet den Projektor (r5_proj_mon). Details ANLEITUNG 9 j–o.
+- Teams-Bild in zwei Kanälen: Präsentation = Teams teilt einen echten Bildschirm (Knopf „Präsentation zeigen“, Bildschirm per `teilenBildschirm`, ohne Angabe der Hauptbildschirm), Personen über die OBS Virtuelle Kamera. Seit 22.10.2026 ohne OBS-Projektor und ohne virtuellen Bildschirm (Virtual Display Driver, Maus-Sperre entfernt – zu fehleranfällig).
 - Trigger: „Raum 5: Auto-Aus nachts“ (Tablet fragt ab 20 Uhr stündlich, nicht im Teams-Meeting; Sicherheitsnetz 23–5 Uhr ohne Meeting und 2 h ohne Bedienung; tagsüber nie), „Raum 5: Live-Status an/aus“ (alle 2–3 s, Bedingung obs Output Active Virtual Camera → r5_live 1/0).
 - Seit 12.10. ist `Raum5_Companion.companionconfig` importiert (alle Tablet-Buttons, 3/1/6–7, r5_pauto, r5_pmic),
   am 13.10. neu importiert mit Teams-Buttons 1/0/4–6 (r5_tcmd, r5_t_*) und Präsentation aus/an 1/2/4–5
@@ -101,14 +101,12 @@ Im Raum (Raum-PC):
 4. `pruefen.cmd`, dann Checkliste ANLEITUNG Abschnitt 6 und 9 (Teams-Leiste) mit echtem Teams-Meeting.
 5. Wenn Hardware kommt: Geräte-Aktionen in die vorhandenen Buttons legen (ANLEITUNG Abschnitt 8).
 6. Teams-Bild (Teilen) am Raum-PC einrichten, sobald Monitore und Capture-Karte feststehen:
-   - Teilen-Bildschirm: Virtual Display Driver (winget VirtualDrivers.Virtual-Display-Driver, dann „VDD Control“ als
-     Admin → Install Driver) oder HDMI-Dummy; Name in `mikro-automatik.json` → `teilenBildschirm` (Standard „MTT“).
-     In den Anzeigeeinstellungen ganz außen anordnen, 1920×1080.
-   - Was „Präsentation zeigen“ zeigt (OBS-Szene „Inhalt“): Standard = Bildschirm ohne Teams (nicht fest „Hauptbildschirm“);
-     Auswahl über die Tablet-Quelle „Raum-PC / Laptop (HDMI) / Kabellos“ (Capture-Karte bzw. Monitoraufnahme), letzte
-     Wahl merken. Noch nicht gebaut – erst mit der echten Hardware.
+   - Bildschirm für „Präsentation zeigen“: `pruefen.cmd` listet die Bildschirme mit Nummer; die Nummer des Bildschirms
+     mit der Präsentation in `mikro-automatik.json` → `teilenBildschirm` eintragen (ohne Eintrag: Hauptbildschirm).
+   - Laptop (HDMI) / Kabellos in Teams zeigen: nur, wenn deren Bild auf einem Raum-PC-Bildschirm landet (Capture-Karte
+     im Vollbild oder Matrix) – mit der echten Hardware entscheiden.
    - Teams-Fenster: Sprecherplatz-Monitor per `teamsBildschirm` (Teil des Monitornamens) festlegen.
-   - Danach `pruefen.cmd` (Zeile „Teilen-Bildschirm“ grün) und Durchlauf Raum starten → Teams-Meeting starten →
+   - Danach `pruefen.cmd` (Zeile „Praesentation teilen“ grün) und Durchlauf Raum starten → Teams-Meeting starten →
      Präsentation zeigen/beenden → Verlassen, Ergebnis per Handy im Meeting prüfen.
 
 ## Hardware-Lücken (für Ausstattungsplan v7)

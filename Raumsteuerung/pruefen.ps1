@@ -56,26 +56,31 @@ if (Test-Path $ccfg) {
   } catch { }
 }
 
-# ---------- Teilen-Bildschirm (Praesentation in Teams teilen) ----------
+# ---------- Bildschirme / Praesentation in Teams teilen ----------
 if (-not ($cfg -and $cfg.teamsBild -eq 'kamera')) {
-  $tName = if ($cfg -and $cfg.teilenBildschirm) { $cfg.teilenBildschirm } else { 'MTT' }
+  $tName = if ($cfg -and $cfg.teilenBildschirm) { [string]$cfg.teilenBildschirm } else { '' }
   Add-Type -Namespace Pruef -Name Anz -MemberDefinition @'
 [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)] public struct DD { public int cb; [MarshalAs(UnmanagedType.ByValTStr, SizeConst=32)] public string Name;
   [MarshalAs(UnmanagedType.ByValTStr, SizeConst=128)] public string Text; public int Flags; [MarshalAs(UnmanagedType.ByValTStr, SizeConst=128)] public string Id;
   [MarshalAs(UnmanagedType.ByValTStr, SizeConst=128)] public string Key; }
 [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern bool EnumDisplayDevices(string dev, int i, ref DD dd, int f);
 '@ -ErrorAction SilentlyContinue
-  $gefunden = $null; $treiber = $null
+  # alle aktiven Bildschirme mit Windows-Nummer und Monitorname auflisten; daraus den, den Teams teilt (teilenBildschirm:
+  # Nummer oder Teil des Namens, ohne Angabe der Hauptbildschirm - wie in teams-steuerung.ps1)
+  $gefunden = $null
   for ($i = 0; $i -lt 16; $i++) {
     $a = New-Object Pruef.Anz+DD; $a.cb = [Runtime.InteropServices.Marshal]::SizeOf($a)
     if (-not [Pruef.Anz]::EnumDisplayDevices([NullString]::Value, $i, [ref]$a, 0)) { break }   # $null kaeme als "" an
-    if ($a.Text -like '*Virtual Display Driver*') { $treiber = $a }
+    if (-not ($a.Flags -band 1)) { continue }   # nicht auf dem Desktop
     $m = New-Object Pruef.Anz+DD; $m.cb = [Runtime.InteropServices.Marshal]::SizeOf($m)
-    if (($a.Flags -band 1) -and [Pruef.Anz]::EnumDisplayDevices($a.Name, 0, [ref]$m, 0) -and ("$($m.Text) $($m.Id)" -like "*$tName*")) { $gefunden = $a.Name }
+    $name = if ([Pruef.Anz]::EnumDisplayDevices($a.Name, 0, [ref]$m, 0)) { "$($m.Text) $($m.Id)" } else { '' }
+    $nr = $a.Name -replace '^.*DISPLAY', ''; $haupt = [bool]($a.Flags -band 4)
+    Zeile INFO "Bildschirm $nr" ("$($m.Text)" + $(if ($haupt) { ' (Hauptbildschirm)' } else { '' }))
+    $treffer = if (-not $tName) { $haupt } elseif ($tName -match '^\d+$') { $nr -eq $tName } else { $name -like "*$tName*" }
+    if ($treffer -and -not $gefunden) { $gefunden = "Bildschirm $nr" }
   }
-  if ($gefunden) { Zeile OK 'Teilen-Bildschirm' "$gefunden ('$tName') ist aktiv" }
-  elseif ($treiber) { Zeile WARN 'Teilen-Bildschirm' 'Virtual Display Driver vorhanden, aber abgeschaltet' 'Windows: Einstellungen -> Anzeige -> "Erweitern"; die Teams-Steuerung versucht das auch selbst (alle 2 min)' }
-  else { Zeile FEHLER 'Teilen-Bildschirm' "kein Bildschirm '$tName' - 'Praesentation zeigen' geht nicht (nur von Hand in Teams)" 'Virtual Display Driver installieren/aktivieren (Administrator) bzw. HDMI-Dummy stecken und teilenBildschirm in mikro-automatik.json eintragen' }
+  if ($gefunden) { Zeile OK 'Praesentation teilen' "$gefunden$(if (-not $tName) { ' (Hauptbildschirm, Standard)' } else { " ('$tName')" })" }
+  else { Zeile FEHLER 'Praesentation teilen' "kein Bildschirm '$tName' - 'Praesentation zeigen' geht nicht (nur von Hand in Teams)" 'Monitor einschalten/anstecken oder teilenBildschirm in mikro-automatik.json anpassen (Nummer aus der Liste oben)' }
 }
 
 # ---------- RM-CR ----------

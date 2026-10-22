@@ -9,9 +9,10 @@ Teams bekommt das Bild in **zwei Kanälen** (wie Teams Rooms):
 
 1. **Personen** = Teams-Kamera = OBS Virtuelle Kamera (OBS-Programm). Szenen: „Nur Redner“ (Standard), „Diskussion“
    (Redner + Publikum), „Pausenbild“.
-2. **Präsentation** = Teams „Teilen“ eines eigenen, unsichtbaren Bildschirms. OBS zeigt dort die Szene **„Inhalt“**
-   (nur die Präsentation auf dem Emsland-Hintergrund) als Vollbild-Projektor; Teams teilt diesen Bildschirm
+2. **Präsentation** = Teams „Teilen“ eines **echten** Bildschirms – den, auf dem die Präsentation läuft
    („Nur Inhalt“, „Sound einschließen“). Folien kommen scharf, die Kamera flüssig.
+   Seit 22.10.2026 **ohne** OBS-Projektor und ohne virtuellen Bildschirm (Virtual Display Driver, Maus-Sperre,
+   Fenster-Schieben entfernt – zu fehleranfällig).
 
 ## So sieht das Tablet im Modus „teilen“ aus
 
@@ -42,35 +43,31 @@ Dann meldet `teams-steuerung.ps1` kein `r5_t_mode = teilen`. Prüfen:
    `teams-steuerung.ps1 -Status` muss „Modus: teilen“ zeigen.
 3. `C:\Raumsteuerung\mikro-automatik.json` darf kein `"teamsBild": "kamera"` enthalten.
 4. `C:\Raumsteuerung\raumsteuerung.html` = aktuelle Version aus dem Branch; danach Seite auf dem Tablet neu laden.
-5. Teilen-Bildschirm einrichten (unten), dann `pruefen.cmd` → Zeile „Teilen-Bildschirm“ grün.
+5. `pruefen.cmd` → Zeile „Praesentation teilen“ grün (zeigt, welcher Bildschirm geteilt wird).
 
 ## Was der PC für „teilen“ braucht
 
-- **Virtual Display Driver:** `winget install --id VirtualDrivers.Virtual-Display-Driver -e`, danach „VDD Control.exe“
-  (im WinGet-Packages-Ordner) **als Administrator** → „Install Driver“. Anzeige „Erweitern“, 1920×1080, in den
-  Anzeigeeinstellungen **ganz außen** anordnen (sonst sperrt die Maus-Sperre den Weg zu anderen Monitoren).
-  Monitorname enthält „MTT“ (= Standard von `teilenBildschirm`). Alternativ HDMI-Dummy → dessen Monitorname in
-  `mikro-automatik.json` → `teilenBildschirm`.
-- **OBS-Szene „Inhalt“** (in `Raum5_OBS_Szenen_Backup.json`), Quelle Monitoraufnahme bzw. Capture-Karte.
-- **Companion-Konfig** aus `tools/companion_config.py`: Button 1/3/9 öffnet den Projektor „Inhalt“ (custom_command
-  `OpenSourceProjector`, Monitor-Nr. `r5_proj_mon`); Variablen `r5_t_mode`, `r5_t_share`, `r5_proj_mon`.
+- **Welcher Bildschirm geteilt wird:** `mikro-automatik.json` → `teilenBildschirm` = Nummer wie in Windows
+  (Einstellungen → Anzeige, z. B. `"2"`) oder Teil des Monitornamens. **Ohne Eintrag: Hauptbildschirm.**
+  `pruefen.cmd` listet alle Bildschirme mit Nummer. Stand 22.10.: am Laptop nur **ein** Monitor → Hauptbildschirm;
+  der Nutzer schließt später einen zweiten an und sagt, welcher geteilt werden soll.
+- Companion-Button 1/3/9 („OBS Projektor“) und Variable `r5_proj_mon` werden nicht mehr benutzt (stören nicht).
 - **`teams-steuerung.ps1`** (läuft als Benutzer): teilt den richtigen Bildschirm (merkt den Teams-Listeneintrag in
-  `teilen-eintrag.txt`), schützt den Teilen-Bildschirm (Maus gesperrt, Fenster zurück, Projektor oben), schaltet einen
-  abgeschalteten Teilen-Bildschirm selbst wieder ein, lässt OBS-Projektoren nie auf echten Monitoren, legt Teams auf
+  `teilen-eintrag.txt`, prüft an der Lage der Teams-Teilen-Leiste), legt Teams auf
   den Sprecherplatz-Monitor (`teamsBildschirm`), klickt bei OBS „Absturz erkannt“ „Im normalen Modus starten“.
-- Fehlt der Teilen-Bildschirm: Tablet zeigt „Präsentation nicht geteilt – am Rednerplatz in Teams Teilen tippen“;
+- Ist der eingetragene Bildschirm nicht da (Monitor aus): Tablet zeigt „Präsentation nicht geteilt – am Rednerplatz in Teams Teilen tippen“;
   Kamera und Mikro laufen weiter.
 
 ## Nicht im Repo (von Hand)
 
 - `C:\Raumsteuerung\teams-link.txt` – Link des **echten** Raum-Meetings.
 - OBS-WebSocket-Passwort in Companion (Verbindung „obs“).
-- Virtual Display Driver (siehe oben).
+- `teilenBildschirm` in `mikro-automatik.json`, sobald der zweite Monitor dran ist.
 
 ## Noch offen (mit der echten Hardware entscheiden)
 
-- Welche Quelle „Präsentation zeigen“ zeigt: Standard = Bildschirm ohne Teams; Auswahl über die Tablet-Quelle
-  Raum-PC / Laptop (HDMI) / Kabellos, letzte Wahl merken – noch nicht gebaut.
+- Laptop (HDMI) / Kabellos in Teams zeigen: geht nur, wenn deren Bild auf einem Raum-PC-Bildschirm landet
+  (Capture-Karte + Vollbild, oder Matrix) – mit der echten Hardware entscheiden.
 - Vorschlag, nicht angewendet: Pausenbild-Kachel dunkelblau wie die echte OBS-Pause, Status-Kachel ohne Kartenrahmen.
 
 ## Erfahrungen vom Test-Laptop
