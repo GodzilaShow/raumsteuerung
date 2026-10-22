@@ -56,5 +56,5 @@ Write-Host " - OBS: Szenensammlung -> Importieren -> $ziel\Raum5_OBS_Szenen_Back
 Write-Host " - Companion: http://127.0.0.1:8000 -> erst Export sichern, dann $ziel\Raum5_Companion.companionconfig importieren"
 Write-Host "   obs-Passwort eintragen, rmcr-IP pruefen, 'Run at login', Admin-Passwort"
 Write-Host " - Netzwerkprofil 'Privat', danach C:\Raumsteuerung\pruefen.cmd"
-Write-Host " - Einmal ab- und wieder anmelden (Teams-Steuerung)"
+Write-Host " - Raumsteuerung laeuft jetzt im Infobereich (Symbol unten rechts) - dort Status und Einstellungen"
 Read-Host "Enter druecken zum Schliessen"

@@ -121,10 +121,14 @@ if ($verbunden) {
 else { Zeile FEHLER 'RM-CR' ($rmcrIp + ' nicht erreichbar') 'Netzwerkkabel zum RM-CR? IP mit "RM Device Finder" pruefen' }
 $tcp.Close()
 
+# ---------- Programm Raumsteuerung.exe (startet Webserver, Automatik, Teams-Steuerung) ----------
+$exe = Get-Process -Name Raumsteuerung -ErrorAction SilentlyContinue
+if ($exe) { Zeile OK 'Programm' ('Raumsteuerung.exe laeuft (Symbol im Infobereich)') }
+elseif (Test-Path (Join-Path $PSScriptRoot 'Raumsteuerung.exe')) { Zeile FEHLER 'Programm' 'Raumsteuerung.exe laeuft nicht' 'C:\Raumsteuerung\Raumsteuerung.exe starten (startet bei Anmeldung automatisch)' }
 # ---------- Webserver / Automatik ----------
 $web = Get-Http 'http://127.0.0.1:8080/'
 if ($web -and $web.Code -eq 200 -and $web.Text -match 'Sitzungszimmer 5') { Zeile OK 'Webserver' 'Tablet-Seite auf Port 8080 erreichbar' }
-else { Zeile FEHLER 'Webserver' 'Port 8080 antwortet nicht' 'installieren.ps1 als Administrator ausfuehren oder PC neu starten' }
+else { Zeile FEHLER 'Webserver' 'Port 8080 antwortet nicht' 'Raumsteuerung.exe laeuft? Sonst installieren.ps1 als Administrator ausfuehren' }
 $log = Join-Path $PSScriptRoot 'mikro-automatik.log'
 if (Test-Path $log) {
   $zeilen = @(Get-Content $log -Tail 200 -Encoding UTF8)
@@ -134,7 +138,7 @@ if (Test-Path $log) {
   $txt = if ($start) { 'gestartet ' + $start.Substring(0, 19) } else { 'laeuft' }
   if ($fehl -and $zeilen.IndexOf($fehl) -gt $zeilen.IndexOf($start)) { Zeile WARN 'Mikrofon-Automatik' ($txt + ', letzte Meldung: ' + $fehl.Substring(21)) 'Protokoll C:\Raumsteuerung\mikro-automatik.log ansehen' }
   else { Zeile OK 'Mikrofon-Automatik' ($txt + ', Protokoll zuletzt vor ' + [int]$alter + ' min') }
-} else { Zeile WARN 'Mikrofon-Automatik' 'kein Protokoll gefunden' 'Aufgabe "Raumsteuerung Mikrofon-Automatik" laeuft nicht? installieren.ps1 ausfuehren' }
+} else { Zeile WARN 'Mikrofon-Automatik' 'kein Protokoll gefunden' 'Raumsteuerung.exe laeuft? Sonst installieren.ps1 ausfuehren' }
 $auto = if ($c) { Get-Var 'custom-variable/r5_pauto' } else { $null }
 if ($auto) { Zeile INFO 'Publikum-Automatik' $(if ($auto -eq '1') { 'an (Tablet-Schalter)' } else { 'aus (Tablet-Schalter)' }) }
 
@@ -145,7 +149,7 @@ if (Test-Path $tlog) {
   $tin = if ($c) { Get-Var 'custom-variable/r5_t_in' } else { $null }
   $txt = $(if ($tstart) { 'gestartet ' + $tstart.Substring(0, 19) } else { 'laeuft' }) + $(if ($tin -eq '1') { ', Teams-Meeting offen' } else { ', kein Meeting' })
   Zeile OK 'Teams-Steuerung' $txt
-} else { Zeile WARN 'Teams-Steuerung' 'kein Protokoll - Tablet kann Teams nicht bedienen' 'installieren.ps1 ausfuehren und Benutzer ab-/anmelden (Aufgabe startet bei Anmeldung)' }
+} else { Zeile WARN 'Teams-Steuerung' 'kein Protokoll - Tablet kann Teams nicht bedienen' 'Raumsteuerung.exe starten (startet bei Anmeldung automatisch)' }
 
 # ---------- Netzwerk / Firewall ----------
 $netz = @{}

@@ -3,6 +3,12 @@
 Tablet-Seite (`Raumsteuerung/raumsteuerung.html`, Vanilla JS) → Bitfocus Companion (HTTP-API) → OBS + Yamaha RM-CR.
 Einrichtung auf dem Raum-PC: siehe `ANLEITUNG.txt`. Projektstand: `UEBERGABE.md`. Sicherheit/Netzwerk: `SICHERHEIT.md`.
 
+## Programm Raumsteuerung.exe
+
+`Raumsteuerung/Raumsteuerung.exe` (Symbol im Infobereich) startet Webserver, Mikrofon-Automatik und Teams-Steuerung
+unsichtbar, zeigt den Zustand und bietet Einstellungen/Werkzeuge. Quelltext `tools/RaumsteuerungTray/` (C#, .NET Framework
+4.8 – in Windows enthalten). Bauen: `tools/RaumsteuerungTray/build.sh` (Mono `mcs`), danach die exe mit committen.
+
 ## Companion-Konfiguration
 
 `Raum5_Companion.companionconfig` wird erzeugt aus dem Export vom 05.10. (`tools/Raum5_Companion_Export_2026-10-05.companionconfig`):

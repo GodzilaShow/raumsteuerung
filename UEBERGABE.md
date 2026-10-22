@@ -116,6 +116,19 @@ Am 13.10. außerdem:
   automatische Anmeldung, eigenes Dauer-Meeting mit Wartebereich umgehen = Alle), Teams-Autostart, Companion-Admin-
   Passwort, echte Passwörter statt Testpasswörter.
 
+## Programm Raumsteuerung.exe (seit 22.10.2026)
+- Ersetzt die drei Aufgaben der Aufgabenplanung: `Raumsteuerung/Raumsteuerung.exe` (C#, .NET Framework 4.8, Quelltext
+  `tools/RaumsteuerungTray/`, Bau mit `build.sh`/Mono) läuft im Infobereich, startet `server.ps1`, `mikro-automatik.ps1`,
+  `teams-steuerung.ps1` unsichtbar (Job-Objekt: enden mit dem Programm), startet sie bei Abbruch neu (Backoff bis 60 s).
+- Fenster: Status (Companion, OBS, Raum, RM-CR, Webserver, Automatik, Teams-Steuerung, Teams, Netzprofil), Tablet-
+  Adresse; Einstellungen (RM-CR-IP, `teilenBildschirm` als Auswahlliste, Teams-Link, Mikrofon-Kanäle, Autostart) –
+  schreibt `mikro-automatik.json` (+ `.bak`) im bisherigen Format; Werkzeuge (Prüfen = pruefen.ps1, Mikrofone testen,
+  Protokolle, Dienste neu starten, Aktualisieren = `git pull` in `C:\Raum5` + Kopieren, tauscht auch die exe).
+- `installieren.ps1`: beendet Programm/alte Aufgaben, kopiert, Firewall, Autostart `HKLM\...\Run` „--tray“, startet
+  die exe als normaler Benutzer (über explorer.exe). Findet die exe noch alte Aufgaben, startet sie nichts doppelt
+  (Status „über Aufgabenplanung“).
+- Unter Windows noch nicht getestet (nur Mono/Xvfb: Fenster, alle Seiten, JSON-Rundlauf).
+
 ## Nächster Schritt
 Im Raum (Raum-PC):
 1. OBS + Szenen-Backup, Companion + `Raum5_Companion.companionconfig` (vorher exportieren), `installieren.ps1`.

@@ -5,10 +5,11 @@ Inhalt des Pakets
 -----------------
 Raum5_Companion.companionconfig   Alle Companion-Buttons, Variablen, Verbindungen (OBS + RM-CR)
 Raumsteuerung\                    Tablet-Seite + kleiner Webserver
+  Raumsteuerung.exe               Das Programm (Symbol im Infobereich): startet die Dienste, Status, Einstellungen
   raumsteuerung.html              Die Tablet-Seite
   server.ps1                      Webserver (Port 8080)
   installieren.ps1                Richtet alles ein (als Administrator)
-  deinstallieren.ps1              Entfernt Webserver, Mikrofon-Automatik und Firewall-Regeln
+  deinstallieren.ps1              Entfernt Programm-Autostart und Firewall-Regeln
   mikro-automatik.ps1             Publikum-Kamera folgt dem Tischmikrofon (läuft im Hintergrund)
   mikro-automatik.json            Einstellungen dazu (Mikrofon -> Kanal, Schwellen, Zeiten)
   mikrofone-testen.cmd            Doppelklick: Pegel aller Kanäle live (Zuordnung herausfinden)
@@ -61,9 +62,15 @@ Raum5_OBS_Szenen_Backup.json      OBS-Szenen (Stand 05.10., Platzhalter statt ec
 - Das Skript:
   * kopiert alles nach C:\Raumsteuerung
   * öffnet Port 8080 und 8000 in der Firewall (nur Domäne/Privat)
-  * startet den Webserver automatisch bei jedem Systemstart
-  * startet die Mikrofon-Automatik automatisch bei jedem Systemstart
+  * richtet Raumsteuerung.exe als Autostart bei jeder Anmeldung ein (alle Benutzer) und startet es
+  * entfernt die früheren Aufgaben in der Aufgabenplanung (bis 22.10.2026)
   * zeigt am Ende die Adresse für das Tablet an, z. B. http://192.168.1.50:8080
+- Raumsteuerung.exe (Symbol unten rechts im Infobereich, Punkt grün/gelb/rot) startet unsichtbar:
+  Webserver (Port 8080), Mikrofon-Automatik und Teams-Steuerung - und startet sie neu, falls sie abbrechen.
+  Klick auf das Symbol: Status aller Teile, Tablet-Adresse, Einstellungen (RM-CR-IP, Bildschirm für
+  "Präsentation zeigen", Teams-Link, Mikrofon-Kanäle), Werkzeuge (Prüfen, Mikrofone testen, Protokolle,
+  Dienste neu starten, Aktualisieren von GitHub über C:\Raum5). X schließt nur das Fenster.
+  Beenden nur über Rechtsklick -> Beenden (dann gehen Tablet und Automatik nicht mehr).
 - Die Seite findet Companion automatisch (gleicher PC, Port 8000).
 - Wichtig: Der Raum-PC braucht eine feste IP-Adresse (oder DHCP-Reservierung).
 
@@ -135,8 +142,8 @@ a) Zuordnung herausfinden
      (liefert ein RM-TT zwei Kanäle: "1": [1, 2]). Nicht vorhandene Mikrofone: [].
    - Schwellen anpassen: "schwelleHex" = Sprache sicher darüber (Standard 6C),
      "schwelleAusHex" etwas niedriger (Standard 68).
-   - Danach die Aufgabe neu starten: Aufgabenplanung -> "Raumsteuerung Mikrofon-Automatik"
-     -> Beenden, Ausführen (oder PC neu starten).
+   - Einfacher: Raumsteuerung -> Einstellungen -> "Tischmikrofon n -> Kanal" und Speichern
+     (startet die Automatik selbst neu). Von Hand in der JSON: danach Werkzeuge -> Dienste neu starten.
    - Alternative zum Testen: Meter "RM:NeInAutomixGain" (zeigt, wem der Automixer das Wort gibt).
 
 b) Companion (ist in Raum5_Companion.companionconfig schon enthalten)
@@ -154,7 +161,7 @@ c) Prüfen
    - Protokoll: C:\Raumsteuerung\mikro-automatik.log (wer spricht, welcher Button gedrückt wurde).
    - Ohne Kamera gefahrlos testen: in Admin-PowerShell
        C:\Raumsteuerung\mikro-automatik.ps1 -Trocken
-     (zeigt nur an, was es tun würde; vorher die Aufgabe beenden).
+     (zeigt nur an, was es tun würde; vorher Raumsteuerung beenden: Rechtsklick auf das Symbol -> Beenden).
    - Tablet, Kamera-Seite: das sprechende Mikrofon leuchtet grün.
 
 
@@ -189,12 +196,10 @@ So funktioniert es: teams-steuerung.ps1 liest und drückt die Buttons im Teams-M
   - Companion-Buttons 1/0/4 (Mikro), 1/0/5 (Bild), 1/0/6 (Verlassen) setzen r5_tcmd = mute/video/leave.
   - Das Skript meldet r5_t_in (Meeting offen), r5_t_mute (stumm), r5_t_video (Kamera an) zurück.
 Einrichtung:
-  a) installieren.ps1 legt die Aufgabe "Raumsteuerung Teams-Steuerung" an. Sie startet bei jeder
-     Windows-Anmeldung im Benutzerkonto (nicht als SYSTEM - sie braucht den Desktop).
-     Raum-PC: automatische Anmeldung des Raum-Kontos einrichten, sonst läuft sie erst nach Anmeldung.
-     Sie läuft unsichtbar (conhost --headless), kein Fenster in der Taskleiste. Nicht über den Task-Manager
-     beenden - sonst geht die Teams-Leiste am Tablet nicht mehr (Neustart: Aufgabe ausführen oder neu anmelden).
-  b) Nach der Installation einmal ab- und wieder anmelden.
+  a) Raumsteuerung.exe startet die Teams-Steuerung unsichtbar im angemeldeten Benutzerkonto (sie braucht den
+     Desktop). Raum-PC: automatische Anmeldung des Raum-Kontos einrichten, sonst läuft sie erst nach Anmeldung.
+     Neustart: Raumsteuerung -> Werkzeuge -> Dienste neu starten.
+  b) Nach installieren.ps1 läuft sie sofort (kein Ab-/Anmelden nötig).
   c) Test: Teams-Meeting starten -> Tablet zeigt die Leiste. "Mikro" tippen -> Teams schaltet stumm.
      Ohne Tablet: C:\Raumsteuerung\teams-steuerung.ps1 -Status   bzw.  -Befehl mute
   d) Protokoll: C:\Raumsteuerung\teams-steuerung.log
@@ -231,7 +236,7 @@ Teams-Bild: Präsentation geteilt + Personen über die Kamera (Standard; seit 22
   m) Teams geteilt sieht alles, was auf diesem Bildschirm ist (auch Benachrichtigungen, andere Fenster) - die
      Präsentation dort im Vollbild zeigen. Teams selbst liegt auf dem Sprecherplatz-Monitor (teamsBildschirm).
   n) Zurück zur Virtuellen Kamera ohne Teilen: in C:\Raumsteuerung\mikro-automatik.json  "teamsBild": "kamera"
-     eintragen und die Aufgabe "Raumsteuerung Teams-Steuerung" neu starten. Ton aus beim Teilen: "teilenTon": false.
+     eintragen und Raumsteuerung -> Werkzeuge -> Dienste neu starten. Ton aus beim Teilen: "teilenTon": false.
   o) Die Bildschirme heißen in der Teams-Liste alle gleich; das Skript probiert zuerst den zuletzt richtigen
      Eintrag (teilen-eintrag.txt) und prüft an der Lage der Teams-Leiste "Freigabesteuerungsleiste", ob der
      richtige Bildschirm geteilt wird.
@@ -244,8 +249,8 @@ hangup-button) - dann in teams-steuerung.ps1 ($IDS) anpassen.
 -------------------------------------------------------------------------------
 Ziel: Nach dem Einschalten des PCs läuft alles von selbst, am Tablet nur "Raum starten".
 Startet automatisch:
-  - Webserver, Mikrofon-Automatik   Aufgaben beim Systemstart (installieren.ps1)
-  - Teams-Steuerung + OBS-Wächter   Aufgabe bei Anmeldung (installieren.ps1); startet OBS im Infobereich
+  - Raumsteuerung.exe               bei Anmeldung (installieren.ps1); startet Webserver, Mikrofon-Automatik,
+                                    Teams-Steuerung + OBS-Wächter (startet OBS im Infobereich
                                     (--minimize-to-tray --disable-shutdown-check) und nach einem Absturz neu,
                                     bei eingeschaltetem Raum gleich mit Virtual Camera
   - Companion                       Companion-Fenster: "Run at login" anhaken
@@ -257,6 +262,6 @@ Windows einmal einstellen:
   [ ] Benachrichtigungen von Windows und Teams aus (Fokus / "Nicht stören"), sonst erscheinen sie auf den Displays
   [ ] Windows Update: Nutzungszeit z. B. 7-20 Uhr, Neustarts nur außerhalb
   [ ] Teams: Geräte = OBS Virtual Camera / Yamaha RM-CR; "Mein Video spiegeln" aus
-  [ ] Bildschirm für "Präsentation zeigen" festlegen: pruefen.cmd zeigt die Nummern, "teilenBildschirm" eintragen (Abschnitt 9 k)
+  [ ] Bildschirm für "Präsentation zeigen" festlegen: Raumsteuerung -> Einstellungen (Auswahlliste der Bildschirme)
 Wartung: OBS bewusst schließen (z. B. zum Bearbeiten) -> der Wächter startet es nach spätestens 30 s neu.
-Dafür vorher Aufgabe "Raumsteuerung Teams-Steuerung" in der Aufgabenplanung beenden.
+Dafür vorher Raumsteuerung beenden (Rechtsklick auf das Symbol -> Beenden), danach wieder starten.
