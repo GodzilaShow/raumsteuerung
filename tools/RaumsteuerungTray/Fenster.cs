@@ -120,7 +120,7 @@ namespace Raumsteuerung
             CreateHandle();
             Theme.Titelleiste(this);
             Application.AddMessageFilter(this);
-            if (!Dienste.AlteAufgaben) foreach (var d in Dienste.Alle) d.Starten();
+            foreach (var d in Dienste.Alle) if (!d.Extern) d.Starten();
             dienstTimer.Tick += (s, e) => Dienste.Pruefen(); dienstTimer.Start();
             statusTimer.Tick += (s, e) => StatusHolen(); statusTimer.Start();
             StatusHolen();

@@ -391,12 +391,15 @@ namespace Raumsteuerung
     class SchirmNummer : Form
     {
         readonly string nr, name, rolle;
+        readonly float k = 1;   // Windows-Skalierung (125 %, 150 % …): Schrift in pt wächst mit, Maße in Pixeln nicht von selbst
+        int P(float px) { return (int)(px * k); }
         public SchirmNummer(Screen s, string nr, string name, string rolle)
         {
             this.nr = nr; this.name = name; this.rolle = rolle;
             FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true; StartPosition = FormStartPosition.Manual;
             BackColor = Theme.Blau; DoubleBuffered = true;
-            var b = s.Bounds; Size = new Size(Math.Min(520, b.Width), Math.Min(360, b.Height));
+            try { using (var g = CreateGraphics()) k = g.DpiX / 96f; } catch { }
+            var b = s.Bounds; Size = new Size(Math.Min(P(520), b.Width), Math.Min(P(360), b.Height));
             Location = new Point(b.X + (b.Width - Width) / 2, b.Y + (b.Height - Height) / 2);
             Click += (x, e) => Close();
         }
@@ -405,9 +408,9 @@ namespace Raumsteuerung
         {
             var g = e.Graphics; Theme.Gut(g);
             var f = TextFormatFlags.HorizontalCenter | TextFormatFlags.SingleLine;
-            TextRenderer.DrawText(g, nr, Theme.Schrift(110f, FontStyle.Bold, true), new Rectangle(0, 10, Width, 210), Color.White, f | TextFormatFlags.VerticalCenter);
-            TextRenderer.DrawText(g, name, Theme.Schrift(16f), new Rectangle(0, 228, Width, 36), Color.White, f);
-            TextRenderer.DrawText(g, rolle, Theme.Schrift(20f, FontStyle.Bold), new Rectangle(0, 270, Width, 44), Color.White, f);
+            TextRenderer.DrawText(g, nr, Theme.Schrift(110f, FontStyle.Bold, true), new Rectangle(0, P(10), Width, P(210)), Color.White, f | TextFormatFlags.VerticalCenter);
+            TextRenderer.DrawText(g, name, Theme.Schrift(16f), new Rectangle(0, P(228), Width, P(36)), Color.White, f);
+            TextRenderer.DrawText(g, rolle, Theme.Schrift(20f, FontStyle.Bold), new Rectangle(0, P(270), Width, P(44)), Color.White, f);
         }
     }
 }

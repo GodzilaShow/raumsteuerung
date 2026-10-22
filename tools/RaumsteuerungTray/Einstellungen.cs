@@ -33,6 +33,7 @@ namespace Raumsteuerung
             set { if (string.IsNullOrWhiteSpace(value)) Json.Remove("teamsBildschirm"); else Json["teamsBildschirm"] = value.Trim(); }
         }
         public string TeamsLink = "";
+        public string Fehler;   // Datei da, aber nicht lesbar -> nicht speichern (sonst wären alle übrigen Werte weg)
 
         string Text(string k, string std) { object v; return Json.TryGetValue(k, out v) && v != null ? Convert.ToString(v, CultureInfo.InvariantCulture) : std; }
 
@@ -47,13 +48,14 @@ namespace Raumsteuerung
                     if (o != null) e.Json = o;
                 }
             }
-            catch (Exception ex) { Program.Log("mikro-automatik.json nicht lesbar: " + ex.Message); }
+            catch (Exception ex) { e.Fehler = ex.Message; Program.Log("mikro-automatik.json nicht lesbar: " + ex.Message); }
             try { if (File.Exists(e.LinkPfad)) e.TeamsLink = (File.ReadAllLines(e.LinkPfad, Encoding.UTF8).FirstOrDefault(s => s.Trim() != "") ?? "").Trim(); } catch { }
             return e;
         }
 
         public void Speichern()
         {
+            if (Fehler != null) throw new InvalidOperationException("mikro-automatik.json ist nicht lesbar (" + Fehler + ") – bitte im Editor prüfen oder die .bak-Datei zurückkopieren. Nichts überschrieben.");
             // vorher sichern: die Skripte lesen dieselbe Datei
             if (File.Exists(JsonPfad)) File.Copy(JsonPfad, JsonPfad + ".bak", true);
             File.WriteAllText(JsonPfad, Schreiben(Json, 0) + Environment.NewLine, new UTF8Encoding(false));

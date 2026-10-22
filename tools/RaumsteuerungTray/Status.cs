@@ -91,9 +91,14 @@ namespace Raumsteuerung
 
         static Zeile DienstZeile(Dienst d, bool ok, string text)
         {
-            if (d.Extern) return new Zeile(d.Name, ok ? Ampel.Gelb : Ampel.Rot, text + " (über Aufgabenplanung)", "installieren.ps1 als Administrator ausführen, um auf das Programm umzustellen");
+            if (d.Extern) return new Zeile(d.Name, ok ? Ampel.Gelb : Ampel.Rot, text + " (außerhalb des Programms gestartet)",
+                d.Port > 0 ? "Alte Aufgabe in der Aufgabenplanung oder ein anderes Programm auf Port " + d.Port + " – installieren.ps1 als Administrator ausführen bzw. das Programm beenden"
+                           : "Alte Aufgabe in der Aufgabenplanung – installieren.ps1 als Administrator ausführen");
             if (d.Aus) return new Zeile(d.Name, Ampel.Gelb, "angehalten");
-            return new Zeile(d.Name, ok && d.Laeuft ? Ampel.Gruen : Ampel.Rot, d.Laeuft ? text : d.Zustand);
+            if (d.Laeuft) return new Zeile(d.Name, ok ? Ampel.Gruen : Ampel.Rot, text);
+            // Fehlermeldung (oft lang) in die Hilfezeile, rechts nur kurz
+            int i = d.Zustand.IndexOf(": ");
+            return i > 0 ? new Zeile(d.Name, Ampel.Rot, d.Zustand.Substring(0, i), d.Zustand.Substring(i + 2)) : new Zeile(d.Name, Ampel.Rot, d.Zustand);
         }
 
         static Zeile LogZeile(Dienst d, string log)

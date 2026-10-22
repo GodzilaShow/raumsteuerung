@@ -46,7 +46,8 @@ namespace Raumsteuerung
 
     class Dienst
     {
-        public readonly string Name, Skript;
+        public readonly string Name, Skript, Aufgabe;   // Aufgabe = Name der früheren Aufgabe in der Aufgabenplanung
+        public readonly int Port;                       // > 0: belegter Port heißt "läuft schon woanders"
         public Process Proc;
         public string Zustand = "startet …";
         public bool Extern;            // läuft noch über die alte Aufgabenplanung -> nicht doppelt starten
@@ -55,7 +56,10 @@ namespace Raumsteuerung
         int fehlstarts;
         DateTime gestartet;
 
-        public Dienst(string name, string skript) { Name = name; Skript = skript; }
+        public Dienst(string name, string skript, string aufgabe, int port = 0) { Name = name; Skript = skript; Aufgabe = aufgabe; Port = port; }
+
+        // Läuft dieser Dienst schon außerhalb des Programms (alte Aufgabe oder Port belegt)?
+        public bool Fremd() { return Dienste.AufgabeVorhanden(Aufgabe) || (Port > 0 && Dienste.PortBelegt(Port)); }
 
         public bool Laeuft { get { try { return Proc != null && !Proc.HasExited; } catch { return false; } } }
 
@@ -100,34 +104,38 @@ namespace Raumsteuerung
 
     static class Dienste
     {
-        public static readonly Dienst Webserver = new Dienst("Webserver", "server.ps1");
-        public static readonly Dienst Teams = new Dienst("Teams-Steuerung", "teams-steuerung.ps1");
+        public static readonly Dienst Webserver = new Dienst("Webserver", "server.ps1", "Raumsteuerung Webserver", 8080);
+        public static readonly Dienst Teams = new Dienst("Teams-Steuerung", "teams-steuerung.ps1", "Raumsteuerung Teams-Steuerung");
         public static readonly Dienst[] Alle = { Webserver, Teams };   // Mikrofon-Automatik entfällt (Publikum-Kamera fest, 22.10.2026)
-        public static bool AlteAufgaben;
-
-        // Vor dem ersten Start: laufen die Skripte noch über die Aufgabenplanung (vor der Umstellung mit installieren.ps1)?
+        // Vor dem ersten Start, je Dienst: läuft er noch über die Aufgabenplanung (vor der Umstellung mit installieren.ps1)
+        // oder ist sein Port belegt? Dann nicht doppelt starten. Früher galt das für alle Dienste zugleich – ein fremdes
+        // Programm auf Port 8080 hielt so auch die Teams-Steuerung für immer an.
         public static void Erkennen()
         {
-            AlteAufgaben = AufgabeVorhanden("Raumsteuerung Webserver") || AufgabeVorhanden("Raumsteuerung Mikrofon-Automatik")
-                           || AufgabeVorhanden("Raumsteuerung Teams-Steuerung") || PortBelegt(8080);
-            if (!AlteAufgaben) return;
-            foreach (var d in Alle) { d.Extern = true; d.Zustand = "läuft über die Aufgabenplanung"; }
-            Program.Log("Alte Aufgaben gefunden - Dienste werden nicht doppelt gestartet (installieren.ps1 stellt um)");
+            foreach (var d in Alle)
+                if (d.Fremd()) { d.Extern = true; d.Zustand = "läuft außerhalb des Programms"; Program.Log(d.Name + " läuft schon (Aufgabenplanung oder Port belegt) - nicht doppelt gestartet"); }
         }
 
-        // Nach dem Abschalten der alten Aufgaben selbst übernehmen
-        public static void Uebernehmen()
+        // Externe Dienste jede Minute nachsehen; ist die Aufgabe weg und der Port frei, selbst übernehmen
+        static DateTime naechsteSuche = DateTime.Now.AddMinutes(1);
+        static volatile bool sucht;
+        public static void Pruefen()
         {
-            AlteAufgaben = false;
-            foreach (var p in FremdeSkriptProzesse()) { try { p.Kill(); } catch { } }
-            foreach (var d in Alle) { d.Extern = false; d.Starten(); }
+            foreach (var d in Alle) d.Pruefen();
+            if (sucht || DateTime.Now < naechsteSuche || !Alle.Any(d => d.Extern)) return;
+            sucht = true; naechsteSuche = DateTime.Now.AddMinutes(1);
+            var fremde = Alle.Where(d => d.Extern).ToList();
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try { foreach (var d in fremde) if (!d.Fremd()) { Program.Log(d.Name + " läuft nicht mehr außerhalb - übernehme"); d.Extern = false; } }
+                finally { sucht = false; }
+            });
         }
 
-        public static void Pruefen() { foreach (var d in Alle) d.Pruefen(); }
         public static void AlleNeuStarten() { foreach (var d in Alle) if (!d.Extern) d.NeuStarten(); }
         public static void AlleStoppen() { foreach (var d in Alle) d.Stoppen(); }
 
-        static bool AufgabeVorhanden(string name)
+        public static bool AufgabeVorhanden(string name)
         {
             try
             {
@@ -141,28 +149,6 @@ namespace Raumsteuerung
         public static bool PortBelegt(int port)
         {
             try { return IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners().Any(e => e.Port == port); } catch { return false; }
-        }
-
-        // PowerShell-Prozesse dieses Benutzers mit einem der Skripte, die nicht von uns stammen
-        static IEnumerable<Process> FremdeSkriptProzesse()
-        {
-            var eigene = new HashSet<int>(Alle.Where(d => d.Proc != null).Select(d => { try { return d.Proc.Id; } catch { return -1; } }));
-            var liste = new List<Process>();
-            try
-            {
-                using (var s = new System.Management.ManagementObjectSearcher("SELECT ProcessId, CommandLine FROM Win32_Process WHERE Name='powershell.exe'"))
-                    foreach (System.Management.ManagementObject o in s.Get())
-                    {
-                        string cl = (o["CommandLine"] as string) ?? ""; int pid = Convert.ToInt32(o["ProcessId"]);
-                        if (eigene.Contains(pid)) continue;
-                        if (!Alle.Any(d => cl.IndexOf(d.Skript, StringComparison.OrdinalIgnoreCase) >= 0)) continue;
-                        if (cl.IndexOf("-Status", StringComparison.OrdinalIgnoreCase) >= 0 || cl.IndexOf("-Befehl", StringComparison.OrdinalIgnoreCase) >= 0
-                            || cl.IndexOf("-Zuordnung", StringComparison.OrdinalIgnoreCase) >= 0) continue;
-                        try { liste.Add(Process.GetProcessById(pid)); } catch { }
-                    }
-            }
-            catch { }
-            return liste;
         }
     }
 }
