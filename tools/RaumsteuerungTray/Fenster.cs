@@ -73,7 +73,7 @@ namespace Raumsteuerung
         readonly Gruppe tablet = new Gruppe("Tablet");
         readonly TextBox ausgabe = new TextBox();
         Gruppe ausgabeKarte;
-        Feld rmcrIp, link; Auswahl bildschirm; Schalter autostart;
+        Feld rmcrIp, link; Auswahl bildschirm, teamsSchirm; Schalter autostart;
         Eintrag autostartZeile;
         Einstellungen cfg = Einstellungen.Laden();
         Ampel letzte = Ampel.Grau;
@@ -158,9 +158,13 @@ namespace Raumsteuerung
             verb.Zeile(new Eintrag("Audio-Prozessor RM-CR", "IP-Adresse im AV-Netz", rmcrIp, 220));
             link = new Feld("https://teams.microsoft.com/…");
             verb.Zeile(new Eintrag("Teams-Meeting", "Fester Link des Raums", link, 340) { Linie = true });
-            var praes = p.Dazu(new Gruppe("Präsentation zeigen"));
+            var schirme = p.Dazu(new Gruppe("Bildschirme"));
             bildschirm = new Auswahl { Width = 320 };
-            praes.Zeile(new Eintrag("Bildschirm", "Diesen Bildschirm teilt Teams", bildschirm, 320));
+            schirme.Zeile(new Eintrag("Präsentation zeigen", "Diesen Bildschirm teilt Teams", bildschirm, 320));
+            teamsSchirm = new Auswahl { Width = 320 };
+            schirme.Zeile(new Eintrag("Teams-Fenster", "Hierhin legt die Steuerung das Meeting", teamsSchirm, 320) { Linie = true });
+            var zeigen = new Knopf("Nummern zeigen"); zeigen.Click += (s, e) => NummernZeigen();
+            schirme.Zeile(new Eintrag("Welcher ist welcher?", "Zeigt 5 Sekunden lang Nummer und Aufgabe auf jedem Bildschirm", zeigen) { Linie = true });
             var start = p.Dazu(new Gruppe("Start"));
             autostart = new Schalter();
             autostartZeile = new Eintrag("Mit Windows starten", "Startet bei der Anmeldung im Infobereich", autostart);
@@ -282,18 +286,56 @@ namespace Raumsteuerung
         {
             cfg = Einstellungen.Laden();
             rmcrIp.Text = cfg.RmcrIp; link.Text = cfg.TeamsLink;
-            bildschirm.Eintraege.Clear();
-            bildschirm.Eintraege.Add(new KeyValuePair<string, string>("", "Hauptbildschirm (automatisch)"));
-            foreach (var s in Screen.AllScreens.OrderBy(s => s.DeviceName))
-            {
-                string nr = new string(s.DeviceName.Where(char.IsDigit).ToArray());
-                bildschirm.Eintraege.Add(new KeyValuePair<string, string>(nr, "Bildschirm " + nr + " – " + s.Bounds.Width + " × " + s.Bounds.Height + (s.Primary ? " (Haupt)" : "")));
-            }
-            var akt = cfg.TeilenBildschirm;
-            if (!bildschirm.Eintraege.Any(w => w.Key == akt)) bildschirm.Eintraege.Add(new KeyValuePair<string, string>(akt, "„" + akt + "“ – nicht angeschlossen?"));
-            bildschirm.Wert = akt;
+            SchirmListe(bildschirm, cfg.TeilenBildschirm, new KeyValuePair<string, string>("", "Hauptbildschirm (automatisch)"));
+            SchirmListe(teamsSchirm, cfg.TeamsBildschirm, new KeyValuePair<string, string>("", "Automatisch (erster Neben-Bildschirm)"),
+                new KeyValuePair<string, string>("aus", "Nicht verschieben"));
             if (Einstellungen.AutostartAlle) { autostart.An = true; autostart.Enabled = false; autostartZeile.Unter = "Für alle Benutzer eingerichtet (installieren.ps1)"; autostartZeile.Invalidate(); }
             else autostart.An = Einstellungen.AutostartIch;
+        }
+
+        static string Nummer(Screen s) { return new string(s.DeviceName.Where(char.IsDigit).ToArray()); }
+
+        static void SchirmListe(Auswahl a, string akt, params KeyValuePair<string, string>[] vorne)
+        {
+            a.Eintraege.Clear(); a.Eintraege.AddRange(vorne);
+            foreach (var s in Screen.AllScreens.OrderBy(s => s.DeviceName))
+                a.Eintraege.Add(new KeyValuePair<string, string>(Nummer(s), "Bildschirm " + Nummer(s) + " – " + s.Bounds.Width + " × " + s.Bounds.Height + (s.Primary ? " (Haupt)" : "")));
+            if (!a.Eintraege.Any(w => w.Key == akt)) a.Eintraege.Add(new KeyValuePair<string, string>(akt, "„" + akt + "“ – nicht angeschlossen?"));
+            a.Wert = akt;
+        }
+
+        // Welcher Bildschirm hat welche Aufgabe – nach der Auswahl oben (auch ungespeichert), wie die Teams-Steuerung sie auflöst
+        static bool Passt(Screen s, string wahl) { return wahl == Nummer(s); }
+        Screen TeilenSchirm() { return bildschirm.Wert == "" ? Screen.PrimaryScreen : Screen.AllScreens.FirstOrDefault(s => Passt(s, bildschirm.Wert)); }
+        Screen TeamsZiel()
+        {
+            if (teamsSchirm.Wert == "aus") return null;
+            var t = teamsSchirm.Wert == "" ? null : Screen.AllScreens.FirstOrDefault(s => Passt(s, teamsSchirm.Wert));
+            if (t != null) return t;
+            var teilen = TeilenSchirm();
+            return Screen.AllScreens.OrderBy(s => s.DeviceName).FirstOrDefault(s => !s.Primary && (teilen == null || s.DeviceName != teilen.DeviceName));
+        }
+
+        readonly List<Form> nummern = new List<Form>();
+        System.Windows.Forms.Timer nummernAus;
+        void NummernZeigen()
+        {
+            foreach (var f in nummern) f.Close(); nummern.Clear();
+            Screen teilen = TeilenSchirm(), teams = TeamsZiel();
+            foreach (var s in Screen.AllScreens)
+            {
+                var rollen = new List<string>();
+                if (teilen != null && s.DeviceName == teilen.DeviceName) rollen.Add("Präsentation");
+                if (teams != null && s.DeviceName == teams.DeviceName) rollen.Add("Teams-Fenster");
+                var f = new SchirmNummer(s, Nummer(s), (s.Primary ? "Hauptbildschirm" : "Bildschirm " + Nummer(s)), rollen.Count > 0 ? string.Join(" + ", rollen) : "keine Aufgabe");
+                nummern.Add(f); f.Show();
+            }
+            if (nummernAus == null)
+            {
+                nummernAus = new System.Windows.Forms.Timer { Interval = 5000 };
+                nummernAus.Tick += (s, e) => { nummernAus.Stop(); foreach (var f in nummern) f.Close(); nummern.Clear(); };
+            }
+            nummernAus.Stop(); nummernAus.Start();   // erneut geklickt -> wieder volle 5 s
         }
 
         void Speichern()
@@ -305,7 +347,11 @@ namespace Raumsteuerung
                 if (link.Text.Trim() != "" && !link.Text.Trim().StartsWith("https://", StringComparison.OrdinalIgnoreCase)) throw new FormatException("Teams-Link muss mit https:// beginnen");
                 var neu = Einstellungen.Laden();
                 neu.RmcrIp = rmcrIp.Text.Trim();
+                Screen ts = TeilenSchirm(), tt = teamsSchirm.Wert == "" || teamsSchirm.Wert == "aus" ? null : Screen.AllScreens.FirstOrDefault(x => Passt(x, teamsSchirm.Wert));
+                if (ts != null && tt != null && ts.DeviceName == tt.DeviceName)
+                    throw new FormatException("Teams-Fenster und Präsentation liegen auf demselben Bildschirm – dann sähe das Publikum das Meeting statt der Folien. Bitte zwei verschiedene wählen.");
                 neu.TeilenBildschirm = bildschirm.Wert;
+                neu.TeamsBildschirm = teamsSchirm.Wert;
                 neu.TeamsLink = link.Text.Trim();
                 neu.Speichern(); cfg = neu;
                 // Skripte lesen die Einstellungen beim Start

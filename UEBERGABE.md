@@ -121,7 +121,7 @@ Am 13.10. außerdem:
   `tools/RaumsteuerungTray/`, Bau mit `build.sh`/Mono) läuft im Infobereich, startet `server.ps1` und
   `teams-steuerung.ps1` unsichtbar (Job-Objekt: enden mit dem Programm), startet sie bei Abbruch neu (Backoff bis 60 s).
 - Fenster: Status (Companion, OBS, Raum, RM-CR, Webserver, Teams-Steuerung, Teams, Netzprofil), Tablet-
-  Adresse; Einstellungen (RM-CR-IP, `teilenBildschirm` als Auswahlliste, Teams-Link, Autostart) –
+  Adresse; Einstellungen (RM-CR-IP, Bildschirme: `teilenBildschirm` und `teamsBildschirm` als Auswahlliste + „Nummern zeigen“ (Overlay je Bildschirm, ab 1.5), Teams-Link, Autostart) –
   schreibt `mikro-automatik.json` (+ `.bak`) im bisherigen Format; Werkzeuge (Prüfen = pruefen.ps1,
   Protokolle, Dienste neu starten). „Aktualisieren“ und „Deinstallieren“ gibt es im Programm bewusst nicht (22.10.,
   Wunsch Nutzer) – neue Version = `installieren.ps1` erneut, entfernen = `deinstallieren.ps1` (beide als Admin).
@@ -145,7 +145,9 @@ Im Raum (Raum-PC):
      mit der Präsentation in `mikro-automatik.json` → `teilenBildschirm` eintragen (ohne Eintrag: Hauptbildschirm).
    - Laptop (HDMI) / Kabellos in Teams zeigen: nur, wenn deren Bild auf einem Raum-PC-Bildschirm landet (Capture-Karte
      im Vollbild oder Matrix) – mit der echten Hardware entscheiden.
-   - Teams-Fenster: Sprecherplatz-Monitor per `teamsBildschirm` (Teil des Monitornamens) festlegen.
+   - Teams-Fenster: Sprecherplatz-Monitor per `teamsBildschirm` festlegen (exe → Einstellungen → Bildschirme; Nummer,
+     Teil des Monitornamens oder `aus`). Große Teams-Fenster auf dem Präsentations-Bildschirm werden seit 1.5 auch
+     dorthin verschoben (nur nicht während des Teilens). `pruefen.cmd` hat dafür die Zeile „Teams-Fenster“.
    - Danach `pruefen.cmd` (Zeile „Praesentation teilen“ grün) und Durchlauf Raum starten → Teams-Meeting starten →
      Präsentation zeigen/beenden → Verlassen, Ergebnis per Handy im Meeting prüfen.
 

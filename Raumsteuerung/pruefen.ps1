@@ -67,7 +67,7 @@ if (-not ($cfg -and $cfg.teamsBild -eq 'kamera')) {
 '@ -ErrorAction SilentlyContinue
   # alle aktiven Bildschirme mit Windows-Nummer und Monitorname auflisten; daraus den, den Teams teilt (teilenBildschirm:
   # Nummer oder Teil des Namens, ohne Angabe der Hauptbildschirm - wie in teams-steuerung.ps1)
-  $gefunden = $null
+  $gefunden = $null; $schirme = @()
   for ($i = 0; $i -lt 16; $i++) {
     $a = New-Object Pruef.Anz+DD; $a.cb = [Runtime.InteropServices.Marshal]::SizeOf($a)
     if (-not [Pruef.Anz]::EnumDisplayDevices([NullString]::Value, $i, [ref]$a, 0)) { break }   # $null kaeme als "" an
@@ -78,9 +78,23 @@ if (-not ($cfg -and $cfg.teamsBild -eq 'kamera')) {
     Zeile INFO "Bildschirm $nr" ("$($m.Text)" + $(if ($haupt) { ' (Hauptbildschirm)' } else { '' }))
     $treffer = if (-not $tName) { $haupt } elseif ($tName -match '^\d+$') { $nr -eq $tName } else { $name -like "*$tName*" }
     if ($treffer -and -not $gefunden) { $gefunden = "Bildschirm $nr" }
+    $schirme += [pscustomobject]@{ Nr = $nr; Name = $name; Haupt = $haupt }
   }
   if ($gefunden) { Zeile OK 'Praesentation teilen' "$gefunden$(if (-not $tName) { ' (Hauptbildschirm, Standard)' } else { " ('$tName')" })" }
   else { Zeile FEHLER 'Praesentation teilen' "kein Bildschirm '$tName' - 'Praesentation zeigen' geht nicht (nur von Hand in Teams)" 'Monitor einschalten/anstecken oder teilenBildschirm in mikro-automatik.json anpassen (Nummer aus der Liste oben)' }
+  # Teams-Fenster (teamsBildschirm): Nummer, Teil des Namens, 'aus'; sonst erster Neben-Bildschirm, der nicht geteilt wird
+  $mName = if ($cfg -and $cfg.teamsBildschirm) { ([string]$cfg.teamsBildschirm).Trim() } else { '' }
+  if ($mName -eq 'aus') { Zeile INFO 'Teams-Fenster' 'wird nicht verschoben (teamsBildschirm = aus)' }
+  else {
+    $ziel = $null
+    if ($mName) { $ziel = $schirme | Where-Object { if ($mName -match '^\d+$') { $_.Nr -eq $mName } else { $_.Name -like "*$mName*" } } | Select-Object -First 1 }
+    $auto = -not $ziel
+    if ($auto) { $ziel = $schirme | Where-Object { -not $_.Haupt -and "Bildschirm $($_.Nr)" -ne $gefunden } | Select-Object -First 1 }
+    if (-not $ziel) { Zeile WARN 'Teams-Fenster' 'kein freier Neben-Bildschirm - Teams bleibt, wo es ist' 'Sprecherplatz-Monitor anstecken oder in Raumsteuerung.exe -> Einstellungen -> Bildschirme waehlen' }
+    elseif ($auto -and $mName) { Zeile WARN 'Teams-Fenster' "'$mName' nicht gefunden - nehme Bildschirm $($ziel.Nr)" 'Monitor anstecken oder in Raumsteuerung.exe -> Einstellungen -> Bildschirme neu waehlen' }
+    elseif ("Bildschirm $($ziel.Nr)" -eq $gefunden) { Zeile FEHLER 'Teams-Fenster' "Bildschirm $($ziel.Nr) = Praesentations-Bildschirm" 'Zwei verschiedene Bildschirme waehlen (Raumsteuerung.exe -> Einstellungen -> Bildschirme)' }
+    else { Zeile OK 'Teams-Fenster' "Bildschirm $($ziel.Nr)$(if ($auto) { ' (automatisch)' } else { " ('$mName')" })" }
+  }
 }
 
 # ---------- RM-CR ----------

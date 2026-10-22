@@ -91,7 +91,7 @@ $TeilenTon = -not ($cfg -and $cfg.teilenTon -eq $false)
 $TeilenName = if ($cfg -and $cfg.teilenBildschirm) { [string]$cfg.teilenBildschirm } else { '' }
 #   teamsBildschirm: Teil des Monitornamens, auf dem Teams immer liegen soll (Sprecherplatz-Monitor). Ohne Angabe:
 #             der erste Bildschirm, der weder Haupt- noch Teilen-Bildschirm ist; gibt es keinen, bleibt Teams, wo es ist.
-$TeamsName = if ($cfg -and $cfg.teamsBildschirm) { $cfg.teamsBildschirm } else { '' }
+$TeamsName = if ($cfg -and $cfg.teamsBildschirm) { ([string]$cfg.teamsBildschirm).Trim() } else { '' }
 $IDS = @{ mute = 'microphone-button'; video = 'video-button'; leave = 'hangup-button' }
 # Beschriftung des Buttons, wenn der Zustand AUS ist (Mikro stumm / Kamera aus): "Mikrofon wieder aktivieren",
 # "Kamera aktivieren"; englisch "Unmute", "Turn camera on". An = "... stummschalten" / "Kamera ausschalten".
@@ -228,8 +228,16 @@ function In-Bounds($rect, $b) {
   return ($x -ge $b.X -and $x -lt $b.X + $b.Width -and $y -ge $b.Y -and $y -lt $b.Y + $b.Height)
 }
 function Get-TeamsScreen {
+  # teamsBildschirm (Einstellungen der Raumsteuerung.exe): Windows-Nummer, Teil des Monitornamens, "aus" = Fenster nie verschieben;
+  # leer oder nicht angeschlossen -> erster Neben-Bildschirm, der nicht geteilt wird
+  if ($TeamsName -eq 'aus') { return $null }
   $alle = @(Get-Screens); $teilen = Get-ShareScreen
-  if ($TeamsName) { foreach ($x in $alle) { if ([Fenster]::Monitor($x.DeviceName) -like "*$TeamsName*") { return $x.Bounds } } }
+  if ($TeamsName) {
+    foreach ($x in $alle) {
+      $treffer = if ($TeamsName -match '^\d+$') { $x.DeviceName -match "DISPLAY$TeamsName$" } else { [Fenster]::Monitor($x.DeviceName) -like "*$TeamsName*" }
+      if ($treffer) { return $x.Bounds }
+    }
+  }
   foreach ($x in $alle) { if (-not $x.Primary -and -not ($teilen -and $x.Bounds -eq $teilen.Bounds)) { return $x.Bounds } }
   return $null
 }
@@ -237,7 +245,9 @@ function Place-Teams {
   # Teams-Fenster (Meeting, Hauptfenster) auf den Sprecherplatz-Monitor, maximiert. Minimierte Fenster (z. B. beim
   # Teilen) und die Teilen-Leiste/-Rahmen auf dem Teilen-Bildschirm bleiben, wie sie sind.
   $ziel = Get-TeamsScreen; if (-not $ziel) { return }
-  $teilen = Get-ShareScreen
+  # Auf dem Teilen-Bildschirm nur waehrend des Teilens nichts anfassen (Teilen-Rahmen/Mini-Fenster); sonst gehoert
+  # ein grosses Teams-Fenster dort nicht hin (das Publikum saehe das Meeting statt der Folien)
+  $teilen = if (Find-ShareBar) { Get-ShareScreen } else { $null }
   $ids = @(Get-Process ms-teams -ErrorAction SilentlyContinue).Id
   foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
     try {

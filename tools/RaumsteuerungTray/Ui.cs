@@ -374,4 +374,28 @@ namespace Raumsteuerung
         public Abschnitt(string t) { Text = t; Height = 26; BackColor = Theme.Grund; }
         protected override void OnPaint(PaintEventArgs e) { e.Graphics.Clear(BackColor); TextRenderer.DrawText(e.Graphics, Text, Theme.Schrift(9.5f, FontStyle.Bold), new Point(4, 4), Theme.Leise); }
     }
+
+    // Großes Schild mitten auf einem Bildschirm: Nummer, Name, Aufgabe ("Nummern zeigen" in den Einstellungen)
+    class SchirmNummer : Form
+    {
+        readonly string nr, name, rolle;
+        public SchirmNummer(Screen s, string nr, string name, string rolle)
+        {
+            this.nr = nr; this.name = name; this.rolle = rolle;
+            FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true; StartPosition = FormStartPosition.Manual;
+            BackColor = Theme.Blau; DoubleBuffered = true;
+            var b = s.Bounds; Size = new Size(Math.Min(520, b.Width), Math.Min(360, b.Height));
+            Location = new Point(b.X + (b.Width - Width) / 2, b.Y + (b.Height - Height) / 2);
+            Click += (x, e) => Close();
+        }
+        protected override bool ShowWithoutActivation { get { return true; } }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics; Theme.Gut(g);
+            var f = TextFormatFlags.HorizontalCenter | TextFormatFlags.SingleLine;
+            TextRenderer.DrawText(g, nr, Theme.Schrift(110f, FontStyle.Bold, true), new Rectangle(0, 10, Width, 210), Color.White, f | TextFormatFlags.VerticalCenter);
+            TextRenderer.DrawText(g, name, Theme.Schrift(16f), new Rectangle(0, 228, Width, 36), Color.White, f);
+            TextRenderer.DrawText(g, rolle, Theme.Schrift(20f, FontStyle.Bold), new Rectangle(0, 270, Width, 44), Color.White, f);
+        }
+    }
 }

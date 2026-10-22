@@ -135,6 +135,14 @@ Jeweils die Geräte-Aktion in den Button dazulegen (Tablet muss nicht geändert 
                              über den Präsentations-Rahmen; dazu später Matrix/Displays)
   Displays (ViewSonic, LAN)  1/2/6 an, 1/2/7 aus, 1/3/7 "Displays neu starten"
                              und in 1/0/1 (Raum an) / 1/0/2 (Raum aus)
+                             Befehle (LFD-Protokoll laut ViewSonic CDE9830; beim CDE98G3 am Gerät testen):
+                             Companion-Modul "Generic TCP/UDP", TCP Port 5000, je Display eine Verbindung,
+                             Text + Zeilenende CR (\r). Antwort 401+ = ok, 401- = abgelehnt.
+                               Bild schwarz (Hintergrundlicht aus)  801s(000   wieder an  801s(001
+                               Standby                              801s!000   an         801s!001
+                               Eingang HDMI1 / HDMI2                801s"004   / 801s"014
+                             "01" = Display-ID, "99" = alle. Einschalten aus Standby über LAN geht nur mit
+                             passender Energie-Einstellung am Display, sonst Wake-on-LAN (UDP 9).
   Redner-Kamera              3/0/1-3 Presets, 3/2/1-6 Bewegung (Taste DRÜCKEN = fahren,
                              LOSLASSEN = stoppen), 3/2/7 Grundstellung, 1/3/3-4 Tracking
 Danach den Test aus Abschnitt 6 wiederholen.
@@ -189,6 +197,11 @@ Teams-Bild: Präsentation geteilt + Personen über die Kamera (Standard; seit 22
      Anzeige, z. B. "2") oder Teil des Monitornamens. Ohne Eintrag: der Hauptbildschirm. pruefen.cmd listet
      alle Bildschirme mit Nummer und zeigt, welcher geteilt wird. Ist der eingetragene nicht da (Monitor aus),
      teilt das Skript nichts und das Tablet sagt "Präsentation nicht geteilt - in Teams von Hand teilen".
+     Einfacher: Raumsteuerung -> Einstellungen -> Bildschirme. Dort "Präsentation zeigen" und "Teams-Fenster"
+     wählen; "Nummern zeigen" blendet auf jedem Bildschirm 5 s lang Nummer und Aufgabe ein.
+     Teams-Fenster ("teamsBildschirm"): Nummer, Teil des Monitornamens oder "aus" (nie verschieben). Ohne Eintrag
+     der erste Neben-Bildschirm, der nicht geteilt wird. Das Skript legt große Teams-Fenster alle 5 s dorthin,
+     auch vom Präsentations-Bildschirm weg (außer während des Teilens).
   l) "Teams-Meeting starten" tritt nur mit Kamera bei (ca. 20 s), Kamera-Szene immer "Nur Redner".
      Die Präsentation teilt erst der Knopf "Präsentation zeigen" (r5_tcmd share_on/share_off,
      Zustand r5_t_share, ca. 10 s); "Präsentation beenden" stoppt das Teilen. "Kamera an/aus" = Teams-Kamera.
@@ -222,6 +235,7 @@ Windows einmal einstellen:
   [ ] Benachrichtigungen von Windows und Teams aus (Fokus / "Nicht stören"), sonst erscheinen sie auf den Displays
   [ ] Windows Update: Nutzungszeit z. B. 7-20 Uhr, Neustarts nur außerhalb
   [ ] Teams: Geräte = OBS Virtual Camera / Yamaha RM-CR; "Mein Video spiegeln" aus
-  [ ] Bildschirm für "Präsentation zeigen" festlegen: Raumsteuerung -> Einstellungen (Auswahlliste der Bildschirme)
+  [ ] Bildschirme festlegen: Raumsteuerung -> Einstellungen -> Bildschirme ("Präsentation zeigen", "Teams-Fenster";
+      "Nummern zeigen" zum Zuordnen), danach pruefen.cmd: Zeilen "Praesentation teilen" und "Teams-Fenster" grün
 Wartung: OBS bewusst schließen (z. B. zum Bearbeiten) -> der Wächter startet es nach spätestens 30 s neu.
 Dafür vorher Raumsteuerung beenden (Rechtsklick auf das Symbol -> Beenden), danach wieder starten.

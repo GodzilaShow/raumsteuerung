@@ -25,6 +25,13 @@ namespace Raumsteuerung
             get { return Text("teilenBildschirm", ""); }
             set { if (string.IsNullOrWhiteSpace(value)) Json.Remove("teilenBildschirm"); else Json["teilenBildschirm"] = value.Trim(); }
         }
+        // Bildschirm für das Teams-Fenster (Sprecherplatz): Windows-Nummer, Teil des Namens, "aus" = nicht verschieben,
+        // leer = automatisch (erster Neben-Bildschirm, der nicht geteilt wird)
+        public string TeamsBildschirm
+        {
+            get { return Text("teamsBildschirm", ""); }
+            set { if (string.IsNullOrWhiteSpace(value)) Json.Remove("teamsBildschirm"); else Json["teamsBildschirm"] = value.Trim(); }
+        }
         public string TeamsLink = "";
 
         string Text(string k, string std) { object v; return Json.TryGetValue(k, out v) && v != null ? Convert.ToString(v, CultureInfo.InvariantCulture) : std; }
