@@ -477,8 +477,11 @@ function Close-AfterMeeting {
     try {
       if ($ids -notcontains $w.Current.ProcessId) { continue }
       $btns = @($w.FindAll($Scope::Descendants, $cBtn))
-      if (-not ($btns | Where-Object { $_.Current.Name -match '(?i)erneut.*beitreten|rejoin' })) { continue }
       if ($btns | Where-Object { $_.Current.AutomationId -eq 'hangup-button' }) { continue }   # noch im Meeting
+      # Teams fragt nach manchen Meetings stattdessen nach der Anrufqualitaet ("Hatte Probleme" / "Gut") -> "Schliessen"
+      $cqf = $btns | Where-Object { $_.Current.AutomationId -eq 'cqf-dismiss-button' } | Select-Object -First 1
+      if ($cqf) { $cqf.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Write-Log 'Nach dem Meeting: Qualitaets-Abfrage geschlossen'; continue }
+      if (-not ($btns | Where-Object { $_.Current.Name -match '(?i)erneut.*beitreten|rejoin' })) { continue }
       $weg = $btns | Where-Object { $_.Current.Name -match '(?i)^(verwerfen|dismiss)$' } | Select-Object -First 1
       if ($weg) { $weg.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
       else { $w.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close() }
@@ -669,7 +672,9 @@ while ($true) {
       if (([DateTime]::Now - $script:lastObs).TotalSeconds -ge 30) {
         $script:lastObs = [DateTime]::Now; Ensure-Obs
       }
-      if (([DateTime]::Now - $script:lastClose).TotalSeconds -ge 5) { $script:lastClose = [DateTime]::Now; Close-AfterMeeting }
+      # Nur ausserhalb des Meetings: im Meeting gibt es kein Abschlussfenster, die Suche ueber alle Buttons kostete
+      # Teams dort nur CPU (nach eigenem "Verlassen" schliesst Invoke-Teams das Fenster selbst)
+      if (-not $s.In -and ([DateTime]::Now - $script:lastClose).TotalSeconds -ge 5) { $script:lastClose = [DateTime]::Now; Close-AfterMeeting }
       if ($s.In -ne $script:warIn) {
         Write-Log $(if ($s.In) { 'Teams-Meeting erkannt' } else { 'kein Teams-Meeting' })
         # Meeting zu Ende: alte Fehlermeldung (z. B. "fehler: Präsentation teilen") nicht ins naechste Meeting mitnehmen

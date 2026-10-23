@@ -160,6 +160,13 @@ Am 13.10. außerdem:
     Meeting innerhalb 5 min doch noch („Beitritt: doch noch im Meeting“), wird der Status geleert und „Nur Redner“ gesetzt.
     **Noch nicht live geprüft** (Standby-Fall nicht nachstellbar) – beim nächsten Auftreten Log ansehen.
   - Fehler der Hauptschleife werden mit Befehl und Zeilennummer geloggt.
+  - Last (gemessen, % eines Kerns): Skript ~2–3 %, Teams im Meeting ~27 % ohne / ~30 % mit Skript (UI-Automation-
+    Abfragen), ohne Meeting/Teams zu ~0. `Close-AfterMeeting` läuft nur noch außerhalb des Meetings (vorher alle 5 s alle
+    Buttons aller Teams-Fenster, im Meeting nutzlos). Schließt jetzt auch die Qualitäts-Abfrage nach dem Meeting
+    („Hatte Probleme“/„Gut“, `cqf-dismiss-button`) – gesehen nach Verlassen direkt in Teams; Schließen selbst noch nicht
+    live gesehen (Abfrage kommt nur zufällig).
+  - Teams ganz geschlossen: „Teams-Meeting starten“ startet Teams über den Link (Beitritt in 12 s); Teams im Meeting
+    beendet -> nach ~9 s `r5_t_in = 0`. Beides live geprüft.
   - Live getestet: Beitritt (3 s), Kamera an/aus (auch schnell hintereinander und beim Teilen), Teilen an/aus, Verlassen.
 - Git auf dem PC: kein `user.name`/`user.email` gesetzt -> Commits mit
   `git -c user.name=Claude -c user.email=noreply@anthropic.com commit …`; Push über den Credential Manager klappt.
