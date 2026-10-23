@@ -16,6 +16,9 @@ Antworte mir auf Russisch, kurz. Code, Kommentare und Commits sind auf Deutsch.
 - Tablet-Seite: `http://127.0.0.1:8080/` (Webserver `server.ps1`).
 
 ## Ablauf (jedes Mal, wenn ich "teste" oder "update" sage)
+„teste, Raum ist frei“ heißt: niemand ist im Raum – dann alles ohne Rückfrage, auch Raum an (1/0/1) für den
+Pausenbild-Test, falls er aus ist; danach wieder in den vorgefundenen Zustand (ggf. Raum aus 1/0/2).
+
 1. Aktualisieren und installieren. Vorher `git status`: lokale Änderungen erst committen, nie verwerfen
    (kein `reset --hard`, kein `checkout --`, kein `clean`).
    ```powershell
@@ -53,6 +56,8 @@ Antworte mir auf Russisch, kurz. Code, Kommentare und Commits sind auf Deutsch.
   Nach einer Änderung an `tools\RaumsteuerungTray\*.cs`: `Version` in Program.cs erhöhen, bauen mit
   `powershell -NoProfile -ExecutionPolicy Bypass -File tools\RaumsteuerungTray\build.ps1`, die neue exe mit committen,
   dann installieren. Der Windows-Compiler kann nur C# 5 (kein `$"..."`, kein `?.`, kein `out var`, keine `=>`-Methoden).
+- Fehlt `tools\RaumsteuerungTray\build.ps1` (nach dem `pull`) oder steht `backup/` nicht in `.gitignore`: zuerst
+  anlegen (build.ps1 nach dem Vorbild von build.sh) und committen.
 - Schlägt `push` wegen Anmeldung fehl: nicht erneut versuchen, mir melden (Commit bleibt lokal).
 
 ## Freie Hand
