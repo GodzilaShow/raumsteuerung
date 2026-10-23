@@ -198,7 +198,9 @@ Im Raum (Raum-PC):
 2. AV-Netz, feste IPs, Netzwerkprofil „Privat“ (sonst erreicht das Tablet Port 8080/8000 nicht) – siehe `SICHERHEIT.md`.
 3. Publikum-Kamera fest auf den ganzen Raum ausrichten, in OBS als Quelle eintragen (keine Automatik mehr).
 4. `pruefen.cmd`, dann Checkliste ANLEITUNG Abschnitt 6 und 9 (Teams-Leiste) mit echtem Teams-Meeting.
-5. Wenn Hardware kommt: Geräte-Aktionen in die vorhandenen Buttons legen (ANLEITUNG Abschnitt 8).
+5. Wenn Hardware kommt: Displays, Matrix und Redner-Kamera sind seit 23.10. in Companion eingetragen (Verbindungen
+   `disp1`/`disp2`, `matrix`, `kamera_r`, ausgeschaltet) – nur IP eintragen, Schalter an, Kamera-Positionen 1–3 mit
+   3/0/5–7 speichern (ANLEITUNG Abschnitt 8). Offen: Tracking der Redner-Kamera (herstellerabhängig), Display-Eingang.
 6. Teams-Bild (Teilen) am Raum-PC einrichten, sobald Monitore und Capture-Karte feststehen:
    - Bildschirm für „Präsentation zeigen“: `pruefen.cmd` listet die Bildschirme mit Nummer; die Nummer des Bildschirms
      mit der Präsentation in `mikro-automatik.json` → `teilenBildschirm` eintragen (ohne Eintrag: Hauptbildschirm).
@@ -212,3 +214,15 @@ Im Raum (Raum-PC):
 
 ## Hardware-Lücken (für Ausstattungsplan v7)
 Tablet (Galaxy Tab A9+, ~209 €) + Halterung; HDMI-Matrix mit LAN (TESmart HMA404-E23, Companion-Modul vorhanden); 3. AOC-HDMI für Tisch-Laptop; WLAN-AP fürs AV-Netz (TP-Link EAP225 ~57 €); 3. Netzwerkkarte für RM-CR-Steuerung; LAN zu den ViewSonic-Displays. Publikum-Kamera mittig über den Displays montieren (FoMaKo 60° reicht nicht für ganze Reihen → Zonen).
+
+Recherche 23.10.2026 (Preise = Momentaufnahme, vor Bestellung prüfen; Vergleichstabellen mit Shops, Plus/Minus und
+Quellen als Word-Datei auf dem Desktop des Test-PCs: „Беспроводной показ - сравнение.docx“, Russisch):
+- **Kabellos zeigen** (Windows, Mac, Android ohne App, HDMI → Matrix-Eingang 3): Empfehlung Barco ClickShare C-5 Gen2
+  (R9861605EU, ~840–940 €, AirPlay/Google Cast/Miracast, Button optional); Mitte Yealink RoomCast (~570 €, AirPlay vor
+  Kauf bestätigen lassen); günstig EZCast Pro Box II (~350 € brutto, ohne Abo). Nicht: Airtame (Jahreslizenz).
+  Achtung: AirPlay/Google Cast nur im selben Netz wie der Empfänger (AV-WLAN mit IT klären); online in Teams nur mit
+  Capture-Karte.
+- **Publikum-Kamera** (fest, ganzer Raum, ≤ 500 €, USB → OBS): Empfehlung Yealink UVC30 **Room** (120°, 4K, ~224 €);
+  Alternativen IPEVO Totem 120 (~194 €), AVer CAM130 (90/120°, nur US-Preise), Jabra PanaCast 180° (nur B-Ware ~399 €).
+  Brio 4K (90°) vermutlich zu schmal. Aktive USB-Verlängerung einplanen, Auto-Framing aus. Vorher Raumbreite und
+  Abstand Kamera → erste Reihe messen (120° diagonal ≈ Bildbreite 3 × Abstand).
