@@ -176,6 +176,12 @@ Am 13.10. außerdem:
   + Kopie der DB). **Wichtig:** Companion-Import übernimmt bei gleichnamigen Verbindungen deren *bestehende*
   Einstellungen (IP, Passwort) – Verbindungseinstellungen also in Companion selbst ändern, nicht per Import.
   Offen im Raum: IPs eintragen, einschalten, Display-ID/Energie-Einstellung prüfen, Modell CDE98G3 testen.
+- HDMI-Matrix TESmart (HMA404-E23 geplant, 4×4) in Companion vorbereitet: Verbindung `matrix` (Generic TCP, Port 5000,
+  CRLF, **aus, ohne IP**), Buttons 1/2/1–3 schalten **alle Ausgänge** auf Eingang 1 Raum-PC / 2 Laptop / 3 Kabellos
+  (`MT00SW0100NT` …, Protokoll wie Companion-Modul `tesmart-hdmimatrix` 2.0.0 – Modul selbst nicht nötig).
+  Erzeugt mit `tools/matrix-companion.py` (Eingänge/Ausgänge per Parameter), getestet gegen `test/mock-tesmart.py`.
+  Offen im Raum: Verkabelung (welcher Eingang/Ausgang), IP; ob ein Ausgang zur Capture-Karte geht und anders
+  geschaltet werden muss. „Raum an“ setzt die Quelle nicht zurück (Tablet merkt sich `S.src` lokal, liest `r5_src` nicht).
 - Git auf dem PC: kein `user.name`/`user.email` gesetzt -> Commits mit
   `git -c user.name=Claude -c user.email=noreply@anthropic.com commit …`; Push über den Credential Manager klappt.
 

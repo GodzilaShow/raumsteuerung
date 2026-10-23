@@ -130,7 +130,18 @@ Sie erscheint in den Ansichten "Diskussion" und "Alles im Blick". In OBS nur die
 ----------------------------------------------------------------
 Die Buttons gibt es schon; sie setzen bisher nur die Zustandsvariable.
 Jeweils die Geräte-Aktion in den Button dazulegen (Tablet muss nicht geändert werden):
-  HDMI-Matrix (TESmart)      1/2/1 Raum-PC, 1/2/2 Laptop, 1/2/3 Kabellos
+  HDMI-Matrix (TESmart)      1/2/1 Raum-PC, 1/2/2 Laptop, 1/2/3 Kabellos - SEIT 23.10.2026 EINGETRAGEN:
+                             Companion -> Connections -> "matrix" (Generic TCP/UDP, Port 5000) -> Target IP eintragen,
+                             Schalter an. Befehl je Button "MT00SW<Eingang><Ausgang>NT" + CRLF, Ausgang 00 = alle:
+                               1/2/1 MT00SW0100NT (Eingang 1 = Raum-PC), 1/2/2 MT00SW0200NT (2 = Laptop),
+                               1/2/3 MT00SW0300NT (3 = Kabellos)
+                             Antwort der Matrix (Stand aller Ausgänge) in $(matrix:tcp_response), z. B.
+                             "LINK:O1I2;O2I2;O3I2;O4I2;END" = alle Ausgänge zeigen Eingang 2.
+                             Andere Verkabelung (z. B. Laptop an Eingang 4, nur Ausgänge 1+2 umschalten): neu erzeugen mit
+                               python -I tools/matrix-companion.py Raum5_Companion.companionconfig Raum5_Companion.companionconfig
+                                      --laptop 4 --ausgaenge 1,2
+                             (danach importieren; die IP in Companion bleibt dabei erhalten). Test ohne Matrix:
+                             python -I test/mock-tesmart.py --port 5003, "matrix" auf 127.0.0.1:5003 stellen.
   Pausenbild (Tablet)        1/2/4 an, 1/2/5 aus: Raumsteuerung.exe legt pause.png im Vollbild über den
                              Präsentations-Bildschirm (Teams teilt ihn -> online ebenfalls Pause). Eigenes Bild:
                              C:\Raumsteuerung\pause.png ersetzen (bleibt bei Updates). Am PC: Doppelklick blendet aus.
