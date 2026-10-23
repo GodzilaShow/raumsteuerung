@@ -182,6 +182,12 @@ Am 13.10. außerdem:
   Erzeugt mit `tools/matrix-companion.py` (Eingänge/Ausgänge per Parameter), getestet gegen `test/mock-tesmart.py`.
   Offen im Raum: Verkabelung (welcher Eingang/Ausgang), IP; ob ein Ausgang zur Capture-Karte geht und anders
   geschaltet werden muss. „Raum an“ setzt die Quelle nicht zurück (Tablet merkt sich `S.src` lokal, liest `r5_src` nicht).
+- Redner-Kamera in Companion vorbereitet (Modell noch offen): Verbindung `kamera_r` (Generic TCP 5678, reines VISCA in
+  Hex, **aus, ohne IP**). 3/0/1–3 Position 1–3 anfahren, 3/2/1–6 fahren/zoomen mit Stopp beim Loslassen („up“),
+  3/2/7 Home, **neu 3/0/5–7 „Position 1/2/3 speichern“** (nur Companion, zum Einrichten im Raum). Erzeugt mit
+  `tools/kamera-companion.py`, getestet gegen `test/mock-visca.py` – auch Ende-zu-Ende vom Tablet (Pfeil 1 s halten →
+  rechts, Loslassen → Stopp nach 1,0 s). Offen: Tracking (herstellerabhängig), Sony-VISCA-over-IP bräuchte das
+  Modul sony-visca.
 - Git auf dem PC: kein `user.name`/`user.email` gesetzt -> Commits mit
   `git -c user.name=Claude -c user.email=noreply@anthropic.com commit …`; Push über den Credential Manager klappt.
 
