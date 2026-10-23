@@ -16,7 +16,8 @@ Antworte mir auf Russisch, kurz. Code, Kommentare und Commits sind auf Deutsch.
 - Tablet-Seite: `http://127.0.0.1:8080/` (Webserver `server.ps1`).
 
 ## Ablauf (jedes Mal, wenn ich "teste" oder "update" sage)
-1. Aktualisieren und installieren:
+1. Aktualisieren und installieren. Vorher `git status`: lokale Änderungen erst committen, nie verwerfen
+   (kein `reset --hard`, kein `checkout --`, kein `clean`).
    ```powershell
    cd C:\Raum5
    & "C:\Program Files\Git\cmd\git.exe" pull origin claude/modest-mayer-tbnbre
@@ -29,8 +30,10 @@ Antworte mir auf Russisch, kurz. Code, Kommentare und Commits sind auf Deutsch.
 4. Funktionstests über die Companion-API (Zustand vorher merken und danach wiederherstellen):
    - Variablen lesen: `Invoke-RestMethod http://127.0.0.1:8000/api/custom-variable/<name>/value`
      für r5_room, r5_blank, r5_disp, r5_t_in, r5_t_mute, r5_t_video, r5_t_share, r5_t_mode, r5_t_status.
-   - Pausenbild: `Invoke-RestMethod -Method Post http://127.0.0.1:8000/api/location/1/2/4/press` (nur wenn r5_room = 1),
-     2 s warten, Screenshot aller Bildschirme machen (PowerShell + System.Drawing, `CopyFromScreen`), prüfen, ob
+   - Pausenbild: `Invoke-RestMethod -Method Post http://127.0.0.1:8000/api/location/1/2/4/press` (nur wenn r5_room = 1 und der Raum frei ist – siehe „Grenzen“ unten; sonst Test
+     überspringen und in der Tabelle als „übersprungen“ melden),
+     2 s warten, Screenshot aller Bildschirme nach `C:\Raum5\backup\screens\` (PowerShell + System.Drawing,
+     `CopyFromScreen`; `backup/` steht in `.gitignore`), prüfen, ob
      pause.png auf dem Präsentations-Bildschirm liegt und "Pausenbild an" im raumsteuerung.log steht;
      dann `1/2/5/press` und prüfen, dass es weg ist.
    - Tablet-Seite: `Invoke-WebRequest http://127.0.0.1:8080/` muss 200 liefern.
@@ -46,9 +49,11 @@ Antworte mir auf Russisch, kurz. Code, Kommentare und Commits sind auf Deutsch.
   & "C:\Program Files\Git\cmd\git.exe" push origin claude/modest-mayer-tbnbre
   ```
   Vorher immer erst `pull`. `.ps1`-Dateien bleiben UTF-8 mit BOM und CRLF.
-- `Raumsteuerung.exe` wird aus `tools\RaumsteuerungTray\*.cs` gebaut. Lokal mit dem .NET-Framework-Compiler:
-  `C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe` (Parameter wie in `tools\RaumsteuerungTray\build.sh`);
-  bei jeder Änderung `Version` in Program.cs erhöhen.
+- `installieren.ps1` installiert die FERTIGE `Raumsteuerung\Raumsteuerung.exe` aus dem Repo (baut nicht selbst).
+  Nach einer Änderung an `tools\RaumsteuerungTray\*.cs`: `Version` in Program.cs erhöhen, bauen mit
+  `powershell -NoProfile -ExecutionPolicy Bypass -File tools\RaumsteuerungTray\build.ps1`, die neue exe mit committen,
+  dann installieren. Der Windows-Compiler kann nur C# 5 (kein `$"..."`, kein `?.`, kein `out var`, keine `=>`-Methoden).
+- Schlägt `push` wegen Anmeldung fehl: nicht erneut versuchen, mir melden (Commit bleibt lokal).
 
 ## Freie Hand
 Du darfst alles selbst machen, ohne zu fragen: installieren, testen, Companion-Buttons drücken, Raum an/aus,
@@ -56,9 +61,11 @@ Teams-Test-Meeting (Link in `C:\Raumsteuerung\teams-link.txt`) beitreten/verlass
 Pausenbild, Displays, Companion-Konfiguration und OBS anpassen, Fehler im Code beheben, bauen, committen, pushen.
 Arbeite selbstständig weiter, bis alles grün ist; frag nur, wenn du wirklich nicht weiterkommst.
 
-Nur drei Dinge:
+Nur diese Grenzen:
 - Läuft gerade ein echtes Meeting mit Menschen im Raum (`r5_t_in = 1` und ich habe nicht gesagt, dass es ein Test ist):
   keine Teams-Befehle und nicht Raum aus – warten oder mich fragen.
+- Ist `r5_room = 1` und ich habe nicht gesagt, dass der Raum frei ist (auch ohne Teams kann eine Sitzung laufen):
+  vorher fragen, bevor du Raum aus, Pausenbild oder Displays schaltest.
 - Vor dem Ändern der Companion-Konfiguration einen Export als Sicherung in `C:\Raum5\backup\` ablegen.
 - Kein `git push --force`, keine History umschreiben. Am Ende den Raum so hinterlassen, wie du ihn vorgefunden hast,
   und mir kurz berichten, was du getestet, geändert und gepusht hast.
