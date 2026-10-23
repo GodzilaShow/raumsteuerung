@@ -50,9 +50,15 @@ Antworte mir auf Russisch, kurz. Code, Kommentare und Commits sind auf Deutsch.
   `C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe` (Parameter wie in `tools\RaumsteuerungTray\build.sh`);
   bei jeder Änderung `Version` in Program.cs erhöhen.
 
-## Nicht ohne Rückfrage
-- Companion-Konfiguration ändern/importieren, OBS-Szenen ändern, Teams-Meetings beitreten/verlassen, Mikro/Kamera
-  in einem laufenden Meeting schalten (`r5_t_in = 1` -> keine Teams-Befehle!), Raum aus (1/0/2) drücken,
-  Firewall/Netzwerk/Autostart ändern, Dateien außerhalb von `C:\Raum5` und `C:\Raumsteuerung` anfassen,
-  `git push --force` oder History umschreiben.
-- Den Zustand, den du für einen Test änderst (z. B. Pausenbild), stellst du danach wieder her.
+## Freie Hand
+Du darfst alles selbst machen, ohne zu fragen: installieren, testen, Companion-Buttons drücken, Raum an/aus,
+Teams-Test-Meeting (Link in `C:\Raumsteuerung\teams-link.txt`) beitreten/verlassen, Mikro/Kamera/Teilen schalten,
+Pausenbild, Displays, Companion-Konfiguration und OBS anpassen, Fehler im Code beheben, bauen, committen, pushen.
+Arbeite selbstständig weiter, bis alles grün ist; frag nur, wenn du wirklich nicht weiterkommst.
+
+Nur drei Dinge:
+- Läuft gerade ein echtes Meeting mit Menschen im Raum (`r5_t_in = 1` und ich habe nicht gesagt, dass es ein Test ist):
+  keine Teams-Befehle und nicht Raum aus – warten oder mich fragen.
+- Vor dem Ändern der Companion-Konfiguration einen Export als Sicherung in `C:\Raum5\backup\` ablegen.
+- Kein `git push --force`, keine History umschreiben. Am Ende den Raum so hinterlassen, wie du ihn vorgefunden hast,
+  und mir kurz berichten, was du getestet, geändert und gepusht hast.
