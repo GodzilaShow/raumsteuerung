@@ -781,6 +781,7 @@ function poll() {
     var tin = r[4] === null ? T.inMeeting : isOn(r[4]);
     if (r[4] !== null && !isOn(r[4])) T.offAt = 0;           // Verlassen bestätigt
     if (tin && T.offAt && now - T.offAt < 60000) tin = false;  // Meeting wird nach „Raum aus“ gerade verlassen
+    if (!tin && T.inMeeting && !T.offAt && now - touched.share < 20000) tin = true;   // Teilen schaltet um: Teams kurz „weg“
     if (tin !== T.inMeeting) { T.inMeeting = tin; if (tin) T.joinAt = 0; changed = true; }
     if (r[9] !== null && String(r[9]).trim() !== T.mode) { T.mode = String(r[9]).trim(); changed = true; }
     if (r[10] !== null && now - touched.share > 15000 && !T.offAt) { var sh = isOn(r[10]); if (sh !== T.share) { T.share = sh; changed = true; } }   // Teilen dauert bis ~15 s

@@ -163,6 +163,9 @@ const clear = () => fetch(API + '/_test/clear');
   check(cut.length === 0, 'Steuerung im Meeting: nichts abgeschnitten ' + (cut.length ? JSON.stringify(cut) : ''));
   await clear(); await p.click('#tShare'); await p.waitForTimeout(300);
   check((await state()).vars.r5_tcmd === 'share_on' && (await p.textContent('#tShare')).includes('beenden'), '„Präsentation zeigen“ -> r5_tcmd = share_on, Knopf „Präsentation beenden“');
+  await set('r5_t_in=0'); await p.waitForTimeout(3500);   // Teams baut beim Teilen um, Meeting-Leiste kurz weg
+  check(await p.isVisible('#teamsBar') && (await p.textContent('#tShare')).includes('beenden'), 'Teilen schaltet um, Teams kurz „nicht im Meeting“ -> Leiste bleibt (kein Hin und Her)');
+  await set('r5_t_in=1'); await p.waitForTimeout(3500);
   await clear(); await p.click('#tShare'); await p.waitForTimeout(300);
   check((await state()).vars.r5_tcmd === 'share_off', '„Präsentation beenden“ -> r5_tcmd = share_off');
   await set('r5_t_status=fehler: kein Teilen-Bildschirm'); await p.waitForTimeout(3500);

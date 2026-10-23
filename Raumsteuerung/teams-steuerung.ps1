@@ -408,7 +408,7 @@ function Invoke-Teams([string]$cmd) {
     # "Verlassen" ist manchmal ein Menue-Knopf mit Rueckfrage -> aufklappen und dort "Verlassen" bestaetigen
     $b.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand(); Start-Sleep -Milliseconds 800
   }
-  if ($cmd -eq 'leave') { Confirm-Leave $w }
+  if ($cmd -eq 'leave') { $script:leaveZeit = [DateTime]::Now; Confirm-Leave $w }
   # warten, bis Teams umgeschaltet hat (Beschriftung wechselt), damit der gemeldete Zustand stimmt
   if ($cmd -ne 'leave') {
     $ende = [DateTime]::Now.AddSeconds(3)
@@ -565,7 +565,7 @@ Write-Log ('Start Teams-Steuerung, Companion ' + $Companion + ', Benutzer ' + $e
 # sonst tritt Teams nach der naechsten Anmeldung/Neustart unerwartet dem Meeting bei
 $alt = Get-Var 'r5_tcmd'
 if ($alt) { [void](Set-Var 'r5_tcmd' ''); Write-Log "Alter Befehl beim Start verworfen: $alt" }
-$script:wartenSeit = $null; $script:lastLobby = [DateTime]::MinValue
+$script:wartenSeit = $null; $script:lastLobby = [DateTime]::MinValue; $script:leaveZeit = [DateTime]::MinValue; $script:wegSeit = $null
 $last = @{}; $lastPush = [DateTime]::MinValue; $nextState = [DateTime]::MinValue; $companionOk = $true; $script:lastClose = [DateTime]::MinValue; $script:lastObs = [DateTime]::MinValue
 while ($true) {
   try {
@@ -622,6 +622,15 @@ while ($true) {
         Start-Sleep -Milliseconds 250; continue
       }
       $script:menueSeit = $null
+      # Beim Umschalten des Teilens (und wenn Teams sein Fenster umbaut) ist die Meeting-Leiste ein paar Sekunden
+      # weg -> kurz "kein Meeting". Nicht sofort melden, sonst springt das Tablet hin und her: erst nach 8 s am Stueck
+      # (oder sofort nach eigenem "Verlassen"). Waehrend die Teilen-Leiste da ist, laeuft das Meeting sicher.
+      if (-not $s.In -and $script:warIn -and ([DateTime]::Now - $script:leaveZeit).TotalSeconds -gt 20) {
+        if (Find-ShareBar) { $script:wegSeit = $null; Start-Sleep -Milliseconds 250; continue }
+        if (-not $script:wegSeit) { $script:wegSeit = [DateTime]::Now }
+        if (([DateTime]::Now - $script:wegSeit).TotalSeconds -lt 8) { Start-Sleep -Milliseconds 250; continue }
+      }
+      $script:wegSeit = $null
       $neu = @{ r5_t_in = [int]$s.In; r5_t_mute = [int]$s.Mute; r5_t_video = [int]$s.Video; r5_t_share = [int]$s.Share; r5_t_mode = $(if ($Teilen) { 'teilen' } else { 'kamera' }) }
       $alle = ([DateTime]::Now - $lastPush).TotalSeconds -ge 30
       foreach ($k in $neu.Keys) {
