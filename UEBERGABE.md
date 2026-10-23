@@ -216,7 +216,7 @@ Im Raum (Raum-PC):
 Tablet (Galaxy Tab A9+, ~209 €) + Halterung; HDMI-Matrix mit LAN (TESmart HMA404-E23, Companion-Modul vorhanden); 3. AOC-HDMI für Tisch-Laptop; WLAN-AP fürs AV-Netz (TP-Link EAP225 ~57 €); 3. Netzwerkkarte für RM-CR-Steuerung; LAN zu den ViewSonic-Displays. Publikum-Kamera mittig über den Displays montieren (FoMaKo 60° reicht nicht für ganze Reihen → Zonen).
 
 Recherche 23.10.2026 (Preise = Momentaufnahme, vor Bestellung prüfen; Vergleichstabellen mit Shops, Plus/Minus und
-Quellen als Word-Datei auf dem Desktop des Test-PCs: „Беспроводной показ - сравнение.docx“, Russisch):
+Quellen als Word-Datei `docs/Recherche-Kabellos-Publikumkamera-2026-10-23.docx`, Russisch):
 - **Kabellos zeigen** (Windows, Mac, Android ohne App, HDMI → Matrix-Eingang 3): Empfehlung Barco ClickShare C-5 Gen2
   (R9861605EU, ~840–940 €, AirPlay/Google Cast/Miracast, Button optional); Mitte Yealink RoomCast (~570 €, AirPlay vor
   Kauf bestätigen lassen); günstig EZCast Pro Box II (~350 € brutto, ohne Abo). Nicht: Airtame (Jahreslizenz).
