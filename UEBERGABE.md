@@ -168,6 +168,14 @@ Am 13.10. außerdem:
   - Teams ganz geschlossen: „Teams-Meeting starten“ startet Teams über den Link (Beitritt in 12 s); Teams im Meeting
     beendet -> nach ~9 s `r5_t_in = 0`. Beides live geprüft.
   - Live getestet: Beitritt (3 s), Kamera an/aus (auch schnell hintereinander und beim Teilen), Teilen an/aus, Verlassen.
+- Displays (ViewSonic, LAN) in Companion vorbereitet: Verbindungen `disp1`/`disp2` (Generic TCP, Port 5000, CR,
+  **aus, ohne IP**) + Befehle in 1/0/1, 1/0/2, 1/2/6, 1/2/7, 1/3/7 (Details ANLEITUNG Abschnitt 8). Erzeugt mit
+  `tools/displays-companion.py` (wiederholbar), getestet gegen `test/mock-viewsonic.py` (alle Befehle 401+,
+  Warte-Schritte 8 s/10 s ok, Displays nicht erreichbar -> übrige Aktionen laufen normal).
+  Im Live-Companion des Test-PCs per Import eingespielt (Sicherung vorher: `backup/companion-vor-displays-20261023.companionconfig`
+  + Kopie der DB). **Wichtig:** Companion-Import übernimmt bei gleichnamigen Verbindungen deren *bestehende*
+  Einstellungen (IP, Passwort) – Verbindungseinstellungen also in Companion selbst ändern, nicht per Import.
+  Offen im Raum: IPs eintragen, einschalten, Display-ID/Energie-Einstellung prüfen, Modell CDE98G3 testen.
 - Git auf dem PC: kein `user.name`/`user.email` gesetzt -> Commits mit
   `git -c user.name=Claude -c user.email=noreply@anthropic.com commit …`; Push über den Credential Manager klappt.
 

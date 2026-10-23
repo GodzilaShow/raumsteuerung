@@ -137,8 +137,17 @@ Jeweils die Geräte-Aktion in den Button dazulegen (Tablet muss nicht geändert 
                              Gilt nur für Bilder vom Raum-PC (Laptop über Matrix: dann Matrix auf PC schalten).
                              Zusätzlich legt OBS die Szene "Präsentation pausiert" über den
                              Präsentations-Rahmen der Kamera-Ansichten.
-  Displays (ViewSonic, LAN)  1/2/6 an, 1/2/7 aus, 1/3/7 "Displays neu starten"
-                             und in 1/0/1 (Raum an) / 1/0/2 (Raum aus)
+  Displays (ViewSonic, LAN)  SEIT 23.10.2026 EINGETRAGEN - nur noch IP setzen und einschalten:
+                             Companion -> Connections -> "disp1" / "disp2" (Generic TCP/UDP, Port 5000) -> Target IP
+                             eintragen, Schalter an (sind ab Werk aus, weil die IPs noch fehlen). Am Display: LAN-
+                             Steuerung an, Display-ID 1. Antwort des Displays steht in $(disp1:tcp_response) (401+).
+                             Drittes Display: tools/displays-companion.py erweitern (LABELS) und neu erzeugen.
+                               1/0/1 Raum an, 1/2/6 Displays an:  801s!001 + 801s(001, nach 8 s 801s(001 noch einmal
+                               1/0/2 Raum aus:                    801s!000 (Standby)
+                               1/2/7 Displays aus (Tablet):       801s(000 (nur Bild schwarz, sofort wieder an)
+                               1/3/7 Displays neu starten:        Standby, 10 s warten, dann wie "an"
+                             Test ohne Displays: python -I test/mock-viewsonic.py --ports 5001 5002, disp1/disp2
+                             auf 127.0.0.1:5001/5002 stellen, Buttons drücken, Log der Nachbildung ansehen.
                              Befehle (LFD-Protokoll laut ViewSonic CDE9830; beim CDE98G3 am Gerät testen):
                              Companion-Modul "Generic TCP/UDP", TCP Port 5000, je Display eine Verbindung,
                              Text + Zeilenende CR (\r). Antwort 401+ = ok, 401- = abgelehnt.
