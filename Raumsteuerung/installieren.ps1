@@ -3,11 +3,13 @@
 # Kopiert alles nach C:\Raumsteuerung, oeffnet die Firewall und startet Raumsteuerung.exe bei jeder Anmeldung.
 # Das Programm (Symbol im Infobereich) startet Webserver und Teams-Steuerung unsichtbar -
 # die frueheren Aufgaben in der Aufgabenplanung werden entfernt.
+# -OhneWarten: am Ende nicht auf Enter warten (fuer automatisches Aktualisieren, z. B. durch Claude Code)
+param([switch]$OhneWarten)
 $ErrorActionPreference = 'Stop'
 # Ohne Administratorrechte neu starten (sonst scheitern Firewall und Autostart fuer alle Benutzer)
 $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $admin) {
-  Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+  Start-Process powershell.exe -Verb RunAs -ArgumentList ("-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" + $(if ($OhneWarten) { ' -OhneWarten' } else { '' }))
   exit
 }
 $ziel = 'C:\Raumsteuerung'
@@ -56,4 +58,4 @@ Write-Host ""
 Write-Host "Fertig. Raumsteuerung laeuft (Symbol im Infobereich unten rechts)." -ForegroundColor Green
 Write-Host "Auf dem Tablet eine dieser Adressen oeffnen (die aus dem Tablet-Netz):" -ForegroundColor Green
 foreach ($i in $ips) { Write-Host ("   http://{0}:8080    ({1})" -f $i.IPAddress, $i.InterfaceAlias) -ForegroundColor Green }
-Read-Host "Enter druecken zum Schliessen"
+if (-not $OhneWarten) { Read-Host "Enter druecken zum Schliessen" }
