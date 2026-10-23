@@ -131,8 +131,12 @@ Sie erscheint in den Ansichten "Diskussion" und "Alles im Blick". In OBS nur die
 Die Buttons gibt es schon; sie setzen bisher nur die Zustandsvariable.
 Jeweils die Geräte-Aktion in den Button dazulegen (Tablet muss nicht geändert werden):
   HDMI-Matrix (TESmart)      1/2/1 Raum-PC, 1/2/2 Laptop, 1/2/3 Kabellos
-  Präsentation ausblenden    1/2/4 aus, 1/2/5 an  (blendet schon jetzt in OBS die Szene "Präsentation pausiert"
-                             über den Präsentations-Rahmen; dazu später Matrix/Displays)
+  Pausenbild (Tablet)        1/2/4 an, 1/2/5 aus: Raumsteuerung.exe legt pause.png im Vollbild über den
+                             Präsentations-Bildschirm (Teams teilt ihn -> online ebenfalls Pause). Eigenes Bild:
+                             C:\Raumsteuerung\pause.png ersetzen (bleibt bei Updates). Am PC: Doppelklick blendet aus.
+                             Gilt nur für Bilder vom Raum-PC (Laptop über Matrix: dann Matrix auf PC schalten).
+                             Zusätzlich legt OBS die Szene "Präsentation pausiert" über den
+                             Präsentations-Rahmen der Kamera-Ansichten.
   Displays (ViewSonic, LAN)  1/2/6 an, 1/2/7 aus, 1/3/7 "Displays neu starten"
                              und in 1/0/1 (Raum an) / 1/0/2 (Raum aus)
                              Befehle (LFD-Protokoll laut ViewSonic CDE9830; beim CDE98G3 am Gerät testen):

@@ -17,7 +17,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Raum5\Raumsteuerung\inst
 
 ## Tablet-Seite (raumsteuerung.html)
 - Screens: Start (mit „So starten Sie ein Teams-Meeting“ in 4 Schritten), Steuerung, Kamera, Hilfe. Navigation nur über Tabs unten.
-- Steuerung: 5 Szenen (Alles im Blick, Folien Groß, Diskussion, Nur Redner, Pausenbild) + Live-Kachel, Lautstärke 0–100 % (Schritte → r5_vol_db), Quelle (Raum-PC/Laptop/Kabellos), Präsentation ausblenden, Displays.
+- Steuerung: 5 Szenen (Alles im Blick, Folien Groß, Diskussion, Nur Redner, Pausenbild) + Live-Kachel, Lautstärke 0–100 % (Schritte → r5_vol_db), Quelle (Raum-PC/Laptop/Kabellos), Pausenbild (ab 23.10.: `pause.png` im Vollbild von Raumsteuerung.exe auf dem Präsentations-Bildschirm, gesteuert über `r5_blank`), Displays.
 - Kamera:
   - Redner-Kamera: Am Sprecherplatz (r_pult 3/0/1), Bei den Displays (r_displays 3/0/2), Ganze Front (r_front 3/0/3); Pfeile/Zoom halten (3/2/x), „Zurück auf Standard“ (r_home 3/2/7, p_home 3/3/7); Schalter „Kamera folgt der sprechenden Person“.
   - Publikum-Kamera: **seit 22.10.2026 fest** (ohne Zoom, ganzer Raum) – keine Steuerung, keine Mikrofon-Automatik mehr; auf der Kamera-Seite nur ein Hinweis. (Früher: Saalplan mit Zonen, Schalter „Automatisch“, mikro-automatik.ps1.)

@@ -413,4 +413,38 @@ namespace Raumsteuerung
             TextRenderer.DrawText(g, rolle, Theme.Schrift(20f, FontStyle.Bold), new Rectangle(0, P(270), Width, P(44)), Color.White, f);
         }
     }
+
+    // Pausenbild im Vollbild, immer oben, nimmt keinen Fokus und erscheint nicht in der Taskleiste / Alt+Tab
+    class Pausenbild : Form
+    {
+        [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint f);
+        readonly Image bild;
+        public Pausenbild(string datei)
+        {
+            FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true; StartPosition = FormStartPosition.Manual;
+            BackColor = Color.White; DoubleBuffered = true;
+            // in den Speicher laden: pause.png bleibt austauschbar, auch während das Bild gezeigt wird
+            try { using (var ms = new System.IO.MemoryStream(System.IO.File.ReadAllBytes(datei))) using (var b = Image.FromStream(ms)) bild = new Bitmap(b); }
+            catch (Exception ex) { Program.Log("pause.png nicht lesbar: " + ex.Message); }
+        }
+        protected override bool ShowWithoutActivation { get { return true; } }
+        protected override CreateParams CreateParams
+        {
+            get { var c = base.CreateParams; c.ExStyle |= 0x80 | 0x08000000; return c; }   // WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE
+        }
+        public void NachVorn() { try { SetWindowPos(Handle, new IntPtr(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010); } catch { } }   // HWND_TOPMOST, NOSIZE|NOMOVE|NOACTIVATE
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics; g.Clear(BackColor); Theme.Gut(g);
+            if (bild != null)
+            {
+                // ganz zeigen, Seitenverhältnis behalten (Ränder weiß)
+                float f = Math.Min((float)Width / bild.Width, (float)Height / bild.Height);
+                int w = (int)(bild.Width * f), h = (int)(bild.Height * f);
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.DrawImage(bild, (Width - w) / 2, (Height - h) / 2, w, h);
+            }
+            else TextRenderer.DrawText(g, "Kurze Pause", Theme.Schrift(48f, FontStyle.Bold, true), ClientRectangle, Theme.Text, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+        }
+    }
 }

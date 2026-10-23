@@ -69,7 +69,7 @@ const clear = () => fetch(API + '/_test/clear');
   await p.click('[data-src=cast]');
   check(!(await p.textContent('#srcHint')).includes('[CODE]'), 'Hinweis „Kabellos“ ohne [CODE]');
   await p.click('#dispBtn');
-  check(await p.$eval('#blankBtn', e => e.disabled), '„Präsentation ausblenden“ gesperrt, wenn Displays aus');
+  check(await p.$eval('#blankBtn', e => e.disabled), '„Pausenbild zeigen“ gesperrt, wenn Displays aus');
   await p.click('#dispBtn');
 
   console.log('Kamera');
@@ -161,6 +161,11 @@ const clear = () => fetch(API + '/_test/clear');
   check(await p.isVisible('header #tLeave') && !(await p.isVisible('#tJoin')), '„Verlassen“ klein im Kopf');
   const cut = await p.$$eval('#s-main .panel, #s-main .scene, #s-main .btn, #s-main .tbtn', els => els.filter(e => e.offsetParent && (e.scrollHeight > e.clientHeight + 2 || e.scrollWidth > e.clientWidth + 2)).map(e => (e.id || e.className) + ' ' + e.textContent.trim().slice(0, 20)));
   check(cut.length === 0, 'Steuerung im Meeting: nichts abgeschnitten ' + (cut.length ? JSON.stringify(cut) : ''));
+  if (await p.$eval('#blankBtn', e => e.disabled)) { await p.click('#dispBtn'); await p.waitForTimeout(300); }
+  await clear(); await p.click('#blankBtn'); await p.waitForTimeout(500);
+  check((await state()).log.includes('1/2/4 press') && (await p.textContent('#blankBtn')) === 'Pausenbild beenden', '„Pausenbild zeigen“ -> 1/2/4, Knopf „Pausenbild beenden“');
+  await p.waitForTimeout(4500); await set('r5_blank=0'); await p.waitForTimeout(3500);
+  check((await p.textContent('#blankBtn')) === 'Pausenbild zeigen', 'Pausenbild woanders beendet (r5_blank = 0) -> Tablet folgt');
   await clear(); await p.click('#tShare'); await p.waitForTimeout(300);
   check((await state()).vars.r5_tcmd === 'share_on' && (await p.textContent('#tShare')).includes('beenden'), '„Präsentation zeigen“ -> r5_tcmd = share_on, Knopf „Präsentation beenden“');
   await set('r5_t_in=0'); await p.waitForTimeout(3500);   // Teams baut beim Teilen um, Meeting-Leiste kurz weg

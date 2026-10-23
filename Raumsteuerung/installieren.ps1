@@ -29,9 +29,11 @@ Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" |
 Start-Sleep -Seconds 1
 
 New-Item -ItemType Directory -Force -Path $ziel | Out-Null
-Copy-Item -Path (Join-Path $PSScriptRoot '*') -Destination $ziel -Force -Exclude 'installieren.ps1','deinstallieren.ps1','mikro-automatik.json','*.log'
+Copy-Item -Path (Join-Path $PSScriptRoot '*') -Destination $ziel -Force -Exclude 'installieren.ps1','deinstallieren.ps1','mikro-automatik.json','pause.png','*.log'
 # Einstellungen nur beim ersten Mal kopieren (spaeter angepasste Werte nicht ueberschreiben; Name bleibt aus Kompatibilitaet)
 if (-not (Test-Path (Join-Path $ziel 'mikro-automatik.json'))) { Copy-Item (Join-Path $PSScriptRoot 'mikro-automatik.json') $ziel }
+# Pausenbild ebenso: ein eigenes pause.png in C:\Raumsteuerung bleibt erhalten
+if (-not (Test-Path (Join-Path $ziel 'pause.png'))) { Copy-Item (Join-Path $PSScriptRoot 'pause.png') $ziel }
 # Nicht mehr benutzt (Publikum-Kamera fest, keine Mikrofon-Automatik seit 22.10.2026)
 foreach ($alt in 'mikro-automatik.ps1', 'mikrofone-testen.cmd') { Remove-Item (Join-Path $ziel $alt) -Force -ErrorAction SilentlyContinue }
 

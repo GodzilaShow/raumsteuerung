@@ -82,6 +82,10 @@ namespace Raumsteuerung
         int statusLaeuft;   // 1 = eine Statusabfrage läuft noch -> keine zweite starten
         readonly System.Windows.Forms.Timer dienstTimer = new System.Windows.Forms.Timer { Interval = 2000 };
         readonly System.Windows.Forms.Timer statusTimer = new System.Windows.Forms.Timer { Interval = 5000 };
+        // Pausenbild: Tablet "Präsentation ausblenden" (Companion r5_blank = 1) -> pause.png im Vollbild auf dem
+        // Präsentations-Bildschirm. Teams teilt diesen Bildschirm -> auch online ist Pause zu sehen.
+        readonly System.Windows.Forms.Timer pauseTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+        int pauseLaeuft; Pausenbild pause; bool pauseWeg;
 
         public int Seite { set { navi.Aktiv = Math.Max(0, Math.Min(value, seiten.Length - 1)); } }
 
@@ -123,6 +127,7 @@ namespace Raumsteuerung
             foreach (var d in Dienste.Alle) if (!d.Extern) d.Starten();
             dienstTimer.Tick += (s, e) => Dienste.Pruefen(); dienstTimer.Start();
             statusTimer.Tick += (s, e) => StatusHolen(); statusTimer.Start();
+            pauseTimer.Tick += (s, e) => PauseHolen(); pauseTimer.Start();
             StatusHolen();
         }
 
@@ -342,6 +347,33 @@ namespace Raumsteuerung
                 nummernAus.Tick += (s, e) => { nummernAus.Stop(); foreach (var f in nummern) f.Close(); nummern.Clear(); };
             }
             nummernAus.Stop(); nummernAus.Start();   // erneut geklickt -> wieder volle 4 s
+        }
+
+        void PauseHolen()
+        {
+            if (Interlocked.Exchange(ref pauseLaeuft, 1) == 1) return;
+            Task.Run(() =>
+            {
+                try
+                {
+                    string b = Status.Var("r5_blank"), r = b == "1" ? Status.Var("r5_room") : "";
+                    if (b == null || r == null) return;   // Companion nicht erreichbar: so lassen, wie es ist
+                    bool an = b == "1" && r == "1";
+                    try { BeginInvoke((Action)(() => PauseZeigen(an))); } catch { }
+                }
+                finally { Interlocked.Exchange(ref pauseLaeuft, 0); }
+            });
+        }
+
+        void PauseZeigen(bool an)
+        {
+            if (!an) { pauseWeg = false; if (pause != null && pause.Visible) { pause.Hide(); Program.Log("Pausenbild aus"); } return; }
+            if (pauseWeg) return;   // am PC per Doppelklick weggenommen - bis zum nächsten "Präsentation zeigen"
+            var ziel = cfg.TeilenBildschirm == "" ? Screen.PrimaryScreen : Screen.AllScreens.FirstOrDefault(s => Passt(s, cfg.TeilenBildschirm)) ?? Screen.PrimaryScreen;
+            if (pause == null) { pause = new Pausenbild(Path.Combine(Program.Ordner, "pause.png")); pause.DoubleClick += (s, e) => { pauseWeg = true; pause.Hide(); Program.Log("Pausenbild am PC weggeklickt"); }; }
+            if (pause.Bounds != ziel.Bounds) pause.Bounds = ziel.Bounds;
+            if (!pause.Visible) { pause.Show(); Program.Log("Pausenbild an (Bildschirm " + Nummer(ziel) + ")"); }
+            pause.NachVorn();   // bleibt über Präsentation/Teams, auch wenn ein anderes Fenster "immer oben" wollte
         }
 
         void Speichern()

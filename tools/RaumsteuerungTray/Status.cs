@@ -36,7 +36,7 @@ namespace Raumsteuerung
             catch { return null; }
         }
 
-        static string Var(string name) { var v = Get(Companion + "/api/custom-variable/" + name + "/value"); return v == null ? null : v.Trim(); }
+        public static string Var(string name) { var v = Get(Companion + "/api/custom-variable/" + name + "/value"); return v == null ? null : v.Trim(); }
 
         public static List<Zeile> Erheben(Einstellungen cfg)
         {
