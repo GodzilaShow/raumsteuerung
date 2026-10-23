@@ -135,6 +135,8 @@ Jeweils die Geräte-Aktion in den Button dazulegen (Tablet muss nicht geändert 
                              Schalter an. Befehl je Button "MT00SW<Eingang><Ausgang>NT" + CRLF, Ausgang 00 = alle:
                                1/2/1 MT00SW0100NT (Eingang 1 = Raum-PC), 1/2/2 MT00SW0200NT (2 = Laptop),
                                1/2/3 MT00SW0300NT (3 = Kabellos)
+                             "Raum an" (1/0/1) schaltet ebenfalls auf Raum-PC und setzt r5_src = pc; das Tablet
+                             liest r5_src (zeigt also auch eine Quelle, die am Stream Deck gewählt wurde).
                              Antwort der Matrix (Stand aller Ausgänge) in $(matrix:tcp_response), z. B.
                              "LINK:O1I2;O2I2;O3I2;O4I2;END" = alle Ausgänge zeigen Eingang 2.
                              Andere Verkabelung (z. B. Laptop an Eingang 4, nur Ausgänge 1+2 umschalten): neu erzeugen mit

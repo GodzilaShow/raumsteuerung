@@ -182,6 +182,11 @@ Am 13.10. außerdem:
   Erzeugt mit `tools/matrix-companion.py` (Eingänge/Ausgänge per Parameter), getestet gegen `test/mock-tesmart.py`.
   Offen im Raum: Verkabelung (welcher Eingang/Ausgang), IP; ob ein Ausgang zur Capture-Karte geht und anders
   geschaltet werden muss. „Raum an“ setzt die Quelle nicht zurück (Tablet merkt sich `S.src` lokal, liest `r5_src` nicht).
+- „Raum an“ (1/0/1) setzt die Quelle auf Raum-PC (Matrix Eingang 1, `r5_src = pc`) – sonst bliebe morgens der Laptop
+  von gestern (kein Bild). Die Aktionen stehen **vor** dem 8-s-Warten der Displays (Aktionen nach `wait` laufen in
+  Companion verzögert und hätten eine in den ersten 8 s gewählte Quelle zurückgesetzt). Das Tablet liest `r5_src` jetzt
+  mit (`srcVariable`), zeigt also auch Quellenwechsel vom Stream Deck. Tests: Mock 6/6, Tablet 88/88, Chaos 19/19,
+  Konfig 49/49, live im Companion geprüft.
 - Nach dem Meeting schaltet `teams-steuerung.ps1` die Kamera-Szene auf „Pausenbild“ (1/1/5), egal wie das Meeting
   endet (erst nach 8 s „kein Meeting“ am Stück, also nicht beim Umschalten des Teilens; nicht beim Skriptstart). Getestet:
   Verlassen am Tablet und direkt in Teams.

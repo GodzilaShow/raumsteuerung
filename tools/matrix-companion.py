@@ -4,6 +4,7 @@
 Legt eine Verbindung "Generic TCP/UDP" an (TCP 5000, Zeilenende CRLF) und haengt den Umschaltbefehl an die
 vorhandenen Quellen-Buttons (Tablet unveraendert):
   1/2/1 Raum-PC   1/2/2 Laptop   1/2/3 Kabellos   ->  "MT00SW<Eingang><Ausgang>NT"
+  1/0/1 Raum an   ebenfalls auf Raum-PC + r5_src = pc (Tablet zeigt dann "Raum-PC")
 Protokoll wie im Companion-Modul "tesmart-hdmimatrix" (v2.0.0): Eingang/Ausgang zweistellig, Ausgang 00 = alle
 Ausgaenge. Antwort/Status der Matrix: "LINK:O1I1;O2I1;...;END" (Abfrage MT00RD0000NT).
 Erneut ausfuehren ist unschaedlich (alte Matrix-Aktionen werden vorher entfernt).
@@ -58,6 +59,20 @@ def main():
         for o in ausg:
             down.append({'type': 'action', 'id': neue_id(), 'connectionId': cid, 'definitionId': 'send',
                          'options': {'id_send': opt(f'MT00SW{eingang:02d}{o}NT'), 'id_end': opt('\r\n')}, 'children': {}})
+
+    # "Raum an" (1/0/1): Quelle auf Raum-PC (sonst zeigt der Raum morgens den Laptop von gestern = kein Bild);
+    # r5_src = pc, damit das Tablet die richtige Quelle anzeigt
+    down = d['pages']['1']['controls']['0']['1']['steps']['0']['action_sets']['down']
+    down[:] = [x for x in down if x.get('connectionId') != cid and not (
+        x.get('definitionId') == 'custom_variable_set_value' and x['options'].get('name', {}).get('value') == 'r5_src')]
+    # VOR das erste "warten" (Displays: 8 s): Aktionen nach einem Warten laufen in Companion verzoegert und wuerden eine
+    # in dieser Zeit am Tablet gewaehlte Quelle wieder auf Raum-PC zuruecksetzen
+    pos = next((i for i, x in enumerate(down) if x.get('connectionId') == 'internal' and x.get('definitionId') == 'wait'), len(down))
+    neu = [{'type': 'action', 'id': neue_id(), 'connectionId': 'internal', 'definitionId': 'custom_variable_set_value',
+            'options': {'name': opt('r5_src'), 'create': opt(False), 'value': opt('pc')}, 'children': {}}]
+    neu += [{'type': 'action', 'id': neue_id(), 'connectionId': cid, 'definitionId': 'send',
+             'options': {'id_send': opt(f'MT00SW{a.pc:02d}{o}NT'), 'id_end': opt('\r\n')}, 'children': {}} for o in ausg]
+    down[pos:pos] = neu
 
     with gzip.open(a.aus, 'wt', encoding='utf-8') as f:
         json.dump(d, f, ensure_ascii=False)

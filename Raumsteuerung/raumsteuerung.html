@@ -385,6 +385,7 @@ var CONFIG = {
   autoFullscreen: true,                        // Tablet: beim ersten Antippen Vollbild (am PC mit Maus nicht)
   volVariable: 'r5_vol_db',
   blankVariable: 'r5_blank',                   // 1 = Pausenbild auf dem Präsentations-Bildschirm (Raumsteuerung.exe zeigt pause.png)
+  srcVariable: 'r5_src',                       // Quelle der Matrix: pc | laptop | cast („Raum an“ setzt pc)
   spkVariable: 'r5_spk_mute',                 // 1 = Lautsprecher stumm (RM-CR NeOut On = 0), Pegel bleibt                    // Companion Custom Variable für den Pegel (0,01 dB)
   // Pegel je Stufe 0..10 in 0,01 dB (RM-CR NeOut Kanal 0+1 = Lautsprecher). 10 = 0 dB, nie lauter.
   volSteps: [-32768, -4000, -3200, -2600, -2100, -1700, -1300, -1000, -700, -350, 0],
@@ -437,7 +438,7 @@ function save() { try { localStorage.setItem('raum5', JSON.stringify(S)); } catc
 
 /* ---- Companion ---- */
 var connTimer, MSG_NOCONN = 'Keine Verbindung zum Raum-PC. Bitte IT-Service ' + CONFIG.serviceNumber + ' anrufen.';
-var touched = { scene: 0, vol: 0, room: 0, teams: 0, spk: 0, share: 0, blank: 0 };
+var touched = { scene: 0, vol: 0, room: 0, teams: 0, spk: 0, share: 0, blank: 0, src: 0 };
 var T = { inMeeting: false, muted: false, video: true, status: '', joinAt: 0, mode: '', share: false };   // joinAt: wann Beitritt angestoßen   // Teams-Zustand (nicht gespeichert)
 function sendFailed() {
   var c = $('#conn'); c.textContent = MSG_NOCONN; c.classList.add('show');
@@ -570,6 +571,7 @@ var ACTIONS = {
   // steht schon) – sonst sähe es aus, als liefe der Raum
   start: function () {
     call('raum_an').then(function (ok) { if (!ok && S.screen !== 'start') go('start'); });
+    S.src = 'pc'; touched.src = Date.now();   // „Raum an“ schaltet die Matrix auf den Raum-PC (nicht der Laptop von gestern)
     touched.room = Date.now(); stopIdle(); nextAsk = Date.now() + CONFIG.askEveryMinutes * 60000; go('main');
   },
   tJoin: function () {
@@ -616,7 +618,7 @@ document.addEventListener('click', function (e) {
   if (t.dataset.go) go(t.dataset.go);
   else if (t.dataset.act && ACTIONS[t.dataset.act]) { ACTIONS[t.dataset.act](); save(); render(); }
   else if (t.dataset.scene) { S.scene = t.dataset.scene; touched.scene = Date.now(); call('scene_' + t.dataset.scene); save(); render(); }
-  else if (t.dataset.src) { S.src = t.dataset.src; call('src_' + t.dataset.src); save(); render(); }
+  else if (t.dataset.src) { S.src = t.dataset.src; touched.src = Date.now(); call('src_' + t.dataset.src); save(); render(); }
   else if (t.dataset.preset) {
     var p = t.dataset.preset; S.rPreset = p;
     call(p); save(); render();
@@ -747,7 +749,8 @@ function poll() {
     getText(V + CONFIG.spkVariable + '/value'),
     getText(V + CONFIG.teamsVariables.mode + '/value'),
     getText(V + CONFIG.teamsVariables.share + '/value'),
-    getText(V + CONFIG.blankVariable + '/value')
+    getText(V + CONFIG.blankVariable + '/value'),
+    getText(V + CONFIG.srcVariable + '/value')
   ]).then(function (r) {
     polling = false;
     var scene = r[0], vol = r[1], live = r[2], room = r[3], changed = false, grace = 4000, now = Date.now();
@@ -769,6 +772,9 @@ function poll() {
     // einzelne verlorene Antworten (Raum-PC kurz ausgelastet) ändern nichts: letzten bekannten Wert behalten
     if (live !== null) liveState = isOn(live);
     if (r[11] !== null && now - touched.blank > grace) { var bl = isOn(r[11]); if (bl !== !!S.blank) { S.blank = bl; changed = true; } }   // Pausenbild (auch vom Stream Deck)
+    // Quelle (auch vom Stream Deck / anderem Tablet / „Raum an“); nur bekannte Werte übernehmen
+    var src = r[12] === null ? '' : String(r[12]).trim();
+    if (/^(pc|laptop|cast)$/.test(src) && now - touched.src > grace && src !== S.src) { S.src = src; changed = true; }
     if (r[8] !== null && now - touched.spk > grace) { var sm = isOn(r[8]); if (sm !== !!S.spkMute) { S.spkMute = sm; changed = true; } }
     // Raum wurde woanders (Stream Deck, Auto-Aus in Companion) ein- oder ausgeschaltet -> Tablet folgt.
     // Nur auf echte Wechsel reagieren, damit eine nie gesetzte Variable nichts kaputt macht.
