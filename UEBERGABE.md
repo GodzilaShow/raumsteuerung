@@ -1,4 +1,4 @@
-# Übergabe: Raumsteuerung Sitzungszimmer 5 (KH II) – Stand 13.10.2026
+# Übergabe: Raumsteuerung Sitzungszimmer 5 (KH II) – Stand 23.10.2026
 
 Neuer Chat: Repo https://github.com/godzilashow/raumsteuerung, Branch `claude/website-testing-fixes-ahd51r`.
 Schreiben: „Wir machen hier weiter. Lies UEBERGABE.md und setz bei ‚Nächster Schritt‘ an. Antworte auf Russisch."
@@ -137,7 +137,32 @@ Am 13.10. außerdem:
   (Status „über Aufgabenplanung“).
 - Oberfläche wie Systemeinstellungen (Seitenleiste, gruppierte Listen, eigene Knöpfe/Schalter/Felder in `Ui.cs`,
   Segoe UI Variable + Segoe Fluent Icons unter Windows 11, Titelleiste in Grundfarbe).
-- Unter Windows noch nicht getestet (nur Mono/Xvfb: Fenster, alle Seiten, JSON-Rundlauf).
+- Unter Windows getestet (23.10., DESKTOP-9GQP24U, Version 1.7): Start, Statusfenster, Pausenbild. Bau unter Windows
+  mit `tools/RaumsteuerungTray/build.ps1` (csc aus .NET Framework, nur C# 5), unter Linux weiter `build.sh`/Mono.
+
+## Stand 23.10.2026 (lokaler Test auf DESKTOP-9GQP24U, Claude Code am PC)
+- Ablauf für lokale Tests: `docs/PROMPT-LOKAL-TEST.md` (Prompt für Claude Code am PC; „teste, Raum ist frei“ =
+  ohne Rückfrage testen, danach Raum wie vorgefunden). `installieren.ps1 -OhneWarten` wartet am Ende nicht auf Enter.
+  Screenshots/Sicherungen nach `C:\Raum5\backup\` (in `.gitignore`).
+- Raumsteuerung.exe 1.7: Pausenbild (`pause.png` im Vollbild auf dem Präsentations-Bildschirm, über `r5_blank`,
+  Companion 1/2/4 an, 1/2/5 aus) – live geprüft: Log „Pausenbild an (Bildschirm 1)“ / „Pausenbild aus“, Screenshot ok.
+- `pruefen.ps1` auf dem Test-PC: 1 Fehler, 3 Hinweise – alle erwartet (fehlende Hardware): RM-CR nicht im Netz,
+  nur ein Monitor (kein Sprecherplatz-Monitor für Teams), WLAN „Öffentlich“, kein RM-CR-USB-Audio
+  (Windows hat dann **gar kein Mikrofon** -> Teams sperrt „Mikro an“).
+- `teams-steuerung.ps1` (Commit 2dfd768), Ursachen aus dem Log vom 23.10. früh:
+  - 05:46 „GetCurrentPattern … Nicht unterstütztes Muster“: Ließ sich ein Teams-Button nicht drücken (gesperrt, z. B.
+    Mikro ohne Mikrofon), versuchte der Code immer „Aufklappen“ (nur für „Verlassen“ sinnvoll). Jetzt: Aufklappen nur
+    bei „Verlassen“, sonst bis 4 Versuche und klare Logzeile („… lässt sich nicht drücken (Grund) – Mikrofon in
+    Windows/Teams vorhanden?“). Live nachgestellt (mic_on ohne Mikrofon).
+  - 05:05/05:22 „Beitritt fehlgeschlagen (kein Meetingfenster)“: nach Standby verschluckt Teams den Klick auf
+    „Jetzt teilnehmen“, Meeting kam erst 05:23:22; danach stand im Meeting weiter „fehler: Teams reagiert nicht“.
+    Jetzt: erneut drücken, wenn der Beitrittsbildschirm nach 10 s noch steht, Wartezeit 75 s statt 40 s; kommt das
+    Meeting innerhalb 5 min doch noch („Beitritt: doch noch im Meeting“), wird der Status geleert und „Nur Redner“ gesetzt.
+    **Noch nicht live geprüft** (Standby-Fall nicht nachstellbar) – beim nächsten Auftreten Log ansehen.
+  - Fehler der Hauptschleife werden mit Befehl und Zeilennummer geloggt.
+  - Live getestet: Beitritt (3 s), Kamera an/aus (auch schnell hintereinander und beim Teilen), Teilen an/aus, Verlassen.
+- Git auf dem PC: kein `user.name`/`user.email` gesetzt -> Commits mit
+  `git -c user.name=Claude -c user.email=noreply@anthropic.com commit …`; Push über den Credential Manager klappt.
 
 ## Nächster Schritt
 Im Raum (Raum-PC):
