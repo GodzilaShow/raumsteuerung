@@ -182,6 +182,13 @@ Am 13.10. außerdem:
   Erzeugt mit `tools/matrix-companion.py` (Eingänge/Ausgänge per Parameter), getestet gegen `test/mock-tesmart.py`.
   Offen im Raum: Verkabelung (welcher Eingang/Ausgang), IP; ob ein Ausgang zur Capture-Karte geht und anders
   geschaltet werden muss. „Raum an“ setzt die Quelle nicht zurück (Tablet merkt sich `S.src` lokal, liest `r5_src` nicht).
+- Nach dem Meeting schaltet `teams-steuerung.ps1` die Kamera-Szene auf „Pausenbild“ (1/1/5), egal wie das Meeting
+  endet (erst nach 8 s „kein Meeting“ am Stück, also nicht beim Umschalten des Teilens; nicht beim Skriptstart). Getestet:
+  Verlassen am Tablet und direkt in Teams.
+- Beobachtung: bei jeder Neuinstallation (Raumsteuerung.exe beendet) wird auch OBS beendet und von der Teams-Steuerung
+  neu gestartet („OBS: Absturz-Abfrage“). Ursache im Code: `Dienste.cs` legt die Kindprozesse in ein Job-Objekt mit
+  KILL_ON_JOB_CLOSE, und OBS wird von `teams-steuerung.ps1` gestartet -> gehört mit zum Job. Im Betrieb nur relevant,
+  wenn die exe abstürzt/neu startet (Virtual Cam kurz weg). Noch nicht behoben.
 - Redner-Kamera in Companion vorbereitet (Modell noch offen): Verbindung `kamera_r` (Generic TCP 5678, reines VISCA in
   Hex, **aus, ohne IP**). 3/0/1–3 Position 1–3 anfahren, 3/2/1–6 fahren/zoomen mit Stopp beim Loslassen („up“),
   3/2/7 Home, **neu 3/0/5–7 „Position 1/2/3 speichern“** (nur Companion, zum Einrichten im Raum). Erzeugt mit

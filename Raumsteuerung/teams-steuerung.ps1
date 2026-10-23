@@ -303,6 +303,16 @@ function Set-PeopleScene([switch]$Immer) {
   }
   Write-Log 'Teilen: Kamera-Szene nicht umgeschaltet (Companion antwortet nicht)'
 }
+function Set-PauseScene {
+  for ($i = 0; $i -lt 4; $i++) {
+    try {
+      $sc = (Invoke-Companion 'GET' '/api/variable/obs/scene_active/value').Trim()
+      if ($sc -eq 'Pausenbild') { return }
+      [void](Invoke-Companion 'POST' '/api/location/1/1/5/press'); Write-Log "Meeting zu Ende: Kamera-Szene '$sc' -> 'Pausenbild'"; return
+    } catch { Start-Sleep -Milliseconds 700 }
+  }
+  Write-Log 'Meeting zu Ende: Kamera-Szene nicht umgeschaltet (Companion antwortet nicht)'
+}
 function Stop-Share {
   $w = Find-Meeting; if (-not $w) { return $false }
   $b = $w.FindFirst($Scope::Descendants, (Cond 'share-button'))
@@ -679,6 +689,9 @@ while ($true) {
         Write-Log $(if ($s.In) { 'Teams-Meeting erkannt' } else { 'kein Teams-Meeting' })
         # Meeting zu Ende: alte Fehlermeldung (z. B. "fehler: Präsentation teilen") nicht ins naechste Meeting mitnehmen
         if (-not $s.In -and $script:warIn) { if ((Get-Var 'r5_t_status') -like 'fehler*') { [void](Set-Var 'r5_t_status' '') } }
+        # Meeting zu Ende (verlassen oder von anderen beendet): Kamera-Szene auf "Pausenbild" (Wunsch 23.10.2026),
+        # damit nach dem Meeting nicht weiter der Redner gezeigt wird
+        if (-not $s.In -and $script:warIn) { Set-PauseScene }
         # Aus dem Wartebereich eingelassen -> wie nach dem Beitritt: Kamera-Szene "Nur Redner", Status leer
         if ($s.In -and $script:wartenSeit) { $script:wartenSeit = $null; Write-Log 'Beitritt: eingelassen'; Set-PeopleScene -Immer; [void](Set-Var 'r5_t_status' '') }
         # Beitritt als fehlgeschlagen gemeldet, Meeting kam aber innerhalb von 5 min doch noch

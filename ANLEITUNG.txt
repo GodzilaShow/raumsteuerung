@@ -239,6 +239,7 @@ Teams-Bild: Präsentation geteilt + Personen über die Kamera (Standard; seit 22
      der erste Neben-Bildschirm, der nicht geteilt wird. Das Skript legt große Teams-Fenster alle 5 s dorthin,
      auch vom Präsentations-Bildschirm weg (außer während des Teilens).
   l) "Teams-Meeting starten" tritt nur mit Kamera bei (ca. 20 s), Kamera-Szene immer "Nur Redner".
+     Nach dem Meeting (Verlassen am Tablet, in Teams oder von anderen beendet) Kamera-Szene "Pausenbild".
      Die Präsentation teilt erst der Knopf "Präsentation zeigen" (r5_tcmd share_on/share_off,
      Zustand r5_t_share, ca. 10 s); "Präsentation beenden" stoppt das Teilen. "Kamera an/aus" = Teams-Kamera.
      "Verlassen"/"Raum ausschalten" beenden zuerst das Teilen (sonst fragt Teams nach).
