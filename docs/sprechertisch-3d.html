@@ -48,6 +48,7 @@ input[type=range] { flex: 1; accent-color: var(--accent); min-width: 140px; }
 .btn:hover { border-color: var(--accent); }
 .btn:disabled { opacity: .45; cursor: default; border-color: var(--line); }
 .btn.warn { border-color: #c2410c; color: #c2410c; }
+#lock[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .sel-name { font-size: 17px; font-weight: 600; }
 .sel-note { color: var(--muted); }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13px; }
@@ -89,6 +90,7 @@ td small.w { color: var(--warn); }
     <button data-view="raum" aria-pressed="false">Ganzer Raum</button>
     <button data-view="fenster" aria-pressed="false">Aus dem Fenster</button>
   </div>
+  <button class="btn" id="lock" aria-pressed="false" title="Geräte sperren (Taste L)">Sperren</button>
 </header>
 <main class="app">
   <div class="stage" id="stage"><div class="hint" id="hint"></div></div>
@@ -560,7 +562,7 @@ function renderSel() {
   if (!selObj) { box.innerHTML = '<h2>Auswahl</h2><p class="sel-note">Gerät antippen, um es auszuwählen. Ziehen verschiebt es, <kbd>R</kbd> dreht es.</p>'; return; }
   const d = objs[selObj].def, p = state.pos[selObj], deg = Math.round(p.r * 180 / Math.PI);
   const ebene = { top: 'auf der Platte', under: 'unter der Platte', floor: 'auf dem Boden', wall: 'an der Wand (nur entlang der Wand)', ceil: 'an der Decke', tabletop: 'auf dem Tisch einer Reihe' }[d.level];
-  const canRot = !['wall', 'ceil'].includes(d.level);
+  const canRot = !locked && !['wall', 'ceil'].includes(d.level);
   box.innerHTML = `<h2>Auswahl</h2><div class="sel-name">${d.name}</div><p class="sel-note">${d.note}</p>
   <dl class="kv"><dt>Maße</dt><dd>${d.size}</dd><dt>Lage</dt><dd>${ebene}</dd><dt>Position</dt><dd>x ${Math.round(p.x)} · z ${Math.round(p.z)} cm</dd>${canRot ? `<dt>Drehung</dt><dd>${deg}°</dd>` : ''}</dl>
   <div class="row">${canRot ? '<button class="btn" data-rot="-15">↺ 15°</button><button class="btn" data-rot="15">↻ 15°</button>' : ''}<button class="btn" id="deselect">Fertig</button></div>`;
@@ -578,7 +580,7 @@ function select(id) {
   renderSel();
 }
 function rotateSel(deg) {
-  if (!selObj || ['wall', 'ceil'].includes(objs[selObj].def.level)) return; pushHist(snap()); state.pos[selObj].r += deg * Math.PI / 180; placeAll(); buildCables(); helper?.update(); renderSel(); renderTable(); save();
+  if (!selObj || locked || ['wall', 'ceil'].includes(objs[selObj].def.level)) return; pushHist(snap()); state.pos[selObj].r += deg * Math.PI / 180; placeAll(); buildCables(); helper?.update(); renderSel(); renderTable(); save();
 }
 /* Rückgängig: bis zu 50 Schritte */
 const hist = [];
@@ -624,7 +626,13 @@ $('reset').addEventListener('click', e => {
 });
 
 /* ---------- Ansichten und Steuerung ---------- */
-let mode = 'orbit', yaw = 0, pitch = 0;
+let mode = 'orbit', yaw = 0, pitch = 0, locked = !!state.lock;
+function setLock(v) {
+  locked = v; state.lock = v; save();
+  const b = $('lock'); b.setAttribute('aria-pressed', v); b.textContent = v ? 'Gesperrt' : 'Sperren';
+  renderSel();
+}
+$('lock').addEventListener('click', () => setLock(!locked));
 const VIEWS = {
   over: () => { mode = 'orbit'; camera.position.set(170, 210, 240); controls.target.set(0, 60, -10); },
   sit: () => { mode = 'fp'; camera.position.set(0, deskH + 43, 70); yaw = 0; pitch = -0.38; },
@@ -659,6 +667,11 @@ renderer.domElement.addEventListener('pointerdown', e => {
   setNdc(e); moved = false;
   const hits = ray.intersectObjects([...pickables.filter(m => objs[m.userData.oid].group.visible), ...cableGroup.children], false);
   const h = hits[0];
+  if (locked && h && h.object.userData.oid) {
+    select(h.object.userData.oid);
+    if (mode === 'fp') { look = { x: e.clientX, y: e.clientY }; renderer.domElement.setPointerCapture(e.pointerId); }
+    return;
+  }
   if (h && h.object.userData.oid) {
     const id = h.object.userData.oid, d = objs[id].def, y = objs[id].group.position.y;
     const plane = new THREE.Plane(V(0, 1, 0), -y), pt = new THREE.Vector3();
@@ -695,6 +708,7 @@ addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   if (k === 'r' && selObj) { rotateSel(e.shiftKey ? -15 : 15); return; }
   if (k === 'escape') select(null);
+  if (k === 'l') { setLock(!locked); return; }
   if (k.length === 1 && 'wasdqe'.includes(k) && !e.ctrlKey && !e.metaKey) { keys.add(k); e.preventDefault(); }
 });
 addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
@@ -724,5 +738,5 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-buildDesk(); applyRoom(); applyLabels(); refresh(true); renderSel(); updUndo(); resize(); setView('over'); loop();
+buildDesk(); applyRoom(); applyLabels(); refresh(true); setLock(locked); updUndo(); resize(); setView('over'); loop();
 </script>
