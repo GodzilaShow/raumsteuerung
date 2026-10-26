@@ -238,3 +238,13 @@ Quellen als Word-Datei `docs/Recherche-Kabellos-Publikumkamera-2026-10-23.docx`,
   Alternativen IPEVO Totem 120 (~194 €), AVer CAM130 (90/120°, nur US-Preise), Jabra PanaCast 180° (nur B-Ware ~399 €).
   Brio 4K (90°) vermutlich zu schmal. Aktive USB-Verlängerung einplanen, Auto-Framing aus. Vorher Raumbreite und
   Abstand Kamera → erste Reihe messen (120° diagonal ≈ Bildbreite 3 × Abstand).
+
+## Tablet-Kiosk (26.10.2026)
+- Android-App `android-kiosk/` (Java, ohne Bibliotheken): WebView auf `http://192.168.137.1:8080`, als Device Owner fester
+  Kiosk (Lock Task, Startbildschirm, Autostart, kein Sperrbildschirm/Statusleiste). Ausgang: 5× oben links + Admin-PIN;
+  PIN vergessen: Raumsteuerung.exe → Werkzeuge → „Tablet freigeben“ (schreibt `kiosk-freigabe.json`, Tablet fragt alle 10 s).
+- Build: GitHub Actions `.github/workflows/kiosk-apk.yml` → Release `kiosk-latest` (`raumkiosk.apk`), Fehler → Release
+  `kiosk-build-fehler` mit Log. Schlüssel `android-kiosk/kiosk.keystore` (bewusst im Repo, Signatur-Prüfsumme bleibt gleich).
+- Einrichtung: `kiosk-einrichten.html` (QR-Code für Werksreset + 6× Tippen) oder adb `dpm set-device-owner`.
+  Webserver liefert dafür `raumkiosk.apk` und `kiosk-freigabe.json` aus (sonst weiterhin keine JSON-Dateien).
+- Noch nicht auf echtem Tablet getestet (Build, Signatur und QR-Inhalt geprüft).
