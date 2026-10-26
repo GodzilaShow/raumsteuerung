@@ -1,6 +1,6 @@
 # Raumsteuerung Sitzungszimmer 5 – Sicherheit und Netzwerk
 
-Stand 13.10.2026. Für IT und Projektleitung: wer mit wem spricht, über welche Ports, mit welchen Rechten,
+Stand 13.10.2026, Netz-Teil an `docs/NETZPLAN.md` (26.10.) angepasst. Für IT und Projektleitung: wer mit wem spricht, über welche Ports, mit welchen Rechten,
 welche Risiken bestehen und was vor dem Echtbetrieb zu tun ist.
 
 ## Kurzfassung
@@ -54,9 +54,9 @@ Was es **nicht kann**: Meetings beitreten, zuhören/zusehen, Chats lesen, andere
 | # | Risiko | Maßnahme | Status |
 |---|---|---|---|
 | 1 | Companion-Weboberfläche ohne Passwort über Netz erreichbar → Konfiguration manipulierbar | Companion → Settings → **Admin-Passwort** setzen (HTTP-API für Tablet/Automatik bleibt nutzbar – am 13.10. getestet: Weboberfläche „locked“, API und Teams-Steuerung laufen weiter) | Test-PC: gesetzt (Testpasswort). Raum-PC: eigenes, starkes Passwort |
-| 2 | Tablet-Seite und Companion-API ohne Anmeldung → jeder im Netz kann den Raum bedienen | **Eigenes AV-Netz/-WLAN** (TP-Link EAP225 im Ausstattungsplan) nur für Raum-PC, Tablet, AV-Geräte | offen (Hardware) |
-| 3 | Firewall-Regeln 8080/8000 gelten für alle Adressen der Profile Privat/Domäne | Regeln auf das AV-Subnetz beschränken: `Set-NetFirewallRule -DisplayName 'Raumsteuerung Port *' -RemoteAddress <AV-Netz>/24` | offen |
-| 4 | RM-CR per RCP ohne Login steuerbar | RM-CR nur im AV-Netz (3. Netzwerkkarte im Ausstattungsplan), nie im Verwaltungsnetz | offen (Hardware) |
+| 2 | Tablet-Seite und Companion-API ohne Anmeldung → jeder im Netz kann den Raum bedienen | **Eigenes AV-Netz** 192.168.55.0/24 nur für Raum-PC (Karte 2), Tablet (am Kabel, kein WLAN-AP) und AV-Geräte – `docs/NETZPLAN.md` | offen (Hardware) |
+| 3 | Firewall-Regeln 8080/8000 gelten für alle Adressen der Profile Privat/Domäne | Regeln auf das AV-Subnetz beschränken: `Set-NetFirewallRule -DisplayName 'Raumsteuerung Port *' -Profile Any -RemoteAddress 192.168.55.0/24`. Achtung: heute auch aus dem Landkreis-Netz (Profil Domain) erreichbar | offen |
+| 4 | RM-CR per RCP ohne Login steuerbar | RM-CR nur im AV-Netz (Ether1, keine 3. Netzwerkkarte nötig – `docs/NETZPLAN.md`), nie im Verwaltungsnetz | offen (Hardware) |
 | 5 | (erledigt 22.10.2026) Dienste liefen als SYSTEM – laufen jetzt als angemeldeter Benutzer über Raumsteuerung.exe | – | erledigt |
 | 6 | teams-steuerung braucht einen angemeldeten Benutzer → automatische Anmeldung des Raumkontos | Raumkonto mit minimalen Rechten, keine Laufwerke/Freigaben, Bildschirmsperre aus Sicht des Raums abwägen | offen |
 | 7 | **Windows-Internetfreigabe (ICS)** auf dem Test-Laptop (Ethernet 192.168.137.1 = ICS-Standard): Laptop verteilt im RM-CR-Netz IP-Adressen (DHCP) und routet ins Internet. Bei Verbindung mit dem Verwaltungsnetz → fremder DHCP-Server | Im Raum **kein ICS**. RM-CR, RM-TT und Raum-PC mit festen Adressen bzw. DHCP-Reservierung im AV-Netz | prüfen |
