@@ -189,6 +189,9 @@ namespace Raumsteuerung
             w.Zeile(new Eintrag("Anlage prüfen", "Companion, OBS, RM-CR, Netzwerk, Firewall, Audio", k("Prüfen", false, (s, e) => Pruefen())));
             w.Zeile(new Eintrag("Dienste neu starten", "Webserver, Teams-Steuerung",
                 k("Neu starten", false, (s, e) => { Dienste.AlleNeuStarten(); ausgabeKarte.Visible = true; Schreib("Dienste neu gestartet."); werkzeugSeite.PerformLayout(); })) { Linie = true });
+            var kiosk = p.Dazu(new Gruppe("Tablet (Kiosk-App)"));
+            kiosk.Zeile(new Eintrag("Tablet einrichten", "QR-Code zum Scannen beim Einrichten des Tablets", k("QR-Code", false, (s, e) => Oeffnen("http://127.0.0.1:8080/kiosk-einrichten.html"))));
+            kiosk.Zeile(new Eintrag("Tablet freigeben", "PIN vergessen: öffnet am Tablet das Admin-Menü (innerhalb 10 s)", k("Freigeben", false, (s, e) => TabletFreigeben())) { Linie = true });
             var logs = p.Dazu(new Gruppe("Protokolle"));
             bool erste = true;
             foreach (var l in new[] { new[] { "Teams-Steuerung", "teams-steuerung.log" }, new[] { "Raumsteuerung", "raumsteuerung.log" } })
@@ -432,6 +435,22 @@ namespace Raumsteuerung
                 return (o + (e.Trim() != "" ? "\n" + e : "") + ende).TrimEnd();
             }
             catch (Exception ex) { return exe + ": " + ex.Message; }
+        }
+
+        // Kiosk-App fragt alle 10 s kiosk-freigabe.json ab; eine neue ID öffnet dort das Admin-Menü ohne PIN.
+        void TabletFreigeben()
+        {
+            string datei = Path.Combine(Program.Ordner, "kiosk-freigabe.json");
+            try
+            {
+                File.WriteAllText(datei, "{\"id\":\"" + Guid.NewGuid().ToString("N") + "\"}");
+                Program.Log("Tablet freigegeben");
+                ausgabeKarte.Visible = true; Schreib("Tablet freigegeben: innerhalb von 10 Sekunden öffnet sich dort das Admin-Menü (gilt 2 Minuten)."); werkzeugSeite.PerformLayout();
+                var t = new System.Windows.Forms.Timer { Interval = 120000 };
+                t.Tick += (s, e) => { t.Stop(); t.Dispose(); try { File.Delete(datei); } catch { } };
+                t.Start();
+            }
+            catch (Exception ex) { MessageBox.Show(this, ex.Message, Text); }
         }
 
         static void Oeffnen(string url) { try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); } catch { } }

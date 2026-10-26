@@ -1,4 +1,4 @@
-# Übergabe: Raumsteuerung Sitzungszimmer 5 (KH II) – Stand 13.10.2026
+# Übergabe: Raumsteuerung Sitzungszimmer 5 (KH II) – Stand 23.10.2026
 
 Neuer Chat: Repo https://github.com/godzilashow/raumsteuerung, Branch `claude/website-testing-fixes-ahd51r`.
 Schreiben: „Wir machen hier weiter. Lies UEBERGABE.md und setz bei ‚Nächster Schritt‘ an. Antworte auf Russisch."
@@ -137,7 +137,71 @@ Am 13.10. außerdem:
   (Status „über Aufgabenplanung“).
 - Oberfläche wie Systemeinstellungen (Seitenleiste, gruppierte Listen, eigene Knöpfe/Schalter/Felder in `Ui.cs`,
   Segoe UI Variable + Segoe Fluent Icons unter Windows 11, Titelleiste in Grundfarbe).
-- Unter Windows noch nicht getestet (nur Mono/Xvfb: Fenster, alle Seiten, JSON-Rundlauf).
+- Unter Windows getestet (23.10., DESKTOP-9GQP24U, Version 1.7): Start, Statusfenster, Pausenbild. Bau unter Windows
+  mit `tools/RaumsteuerungTray/build.ps1` (csc aus .NET Framework, nur C# 5), unter Linux weiter `build.sh`/Mono.
+
+## Stand 23.10.2026 (lokaler Test auf DESKTOP-9GQP24U, Claude Code am PC)
+- Ablauf für lokale Tests: `docs/PROMPT-LOKAL-TEST.md` (Prompt für Claude Code am PC; „teste, Raum ist frei“ =
+  ohne Rückfrage testen, danach Raum wie vorgefunden). `installieren.ps1 -OhneWarten` wartet am Ende nicht auf Enter.
+  Screenshots/Sicherungen nach `C:\Raum5\backup\` (in `.gitignore`).
+- Raumsteuerung.exe 1.7: Pausenbild (`pause.png` im Vollbild auf dem Präsentations-Bildschirm, über `r5_blank`,
+  Companion 1/2/4 an, 1/2/5 aus) – live geprüft: Log „Pausenbild an (Bildschirm 1)“ / „Pausenbild aus“, Screenshot ok.
+- `pruefen.ps1` auf dem Test-PC: 1 Fehler, 3 Hinweise – alle erwartet (fehlende Hardware): RM-CR nicht im Netz,
+  nur ein Monitor (kein Sprecherplatz-Monitor für Teams), WLAN „Öffentlich“, kein RM-CR-USB-Audio
+  (Windows hat dann **gar kein Mikrofon** -> Teams sperrt „Mikro an“).
+- `teams-steuerung.ps1` (Commit 2dfd768), Ursachen aus dem Log vom 23.10. früh:
+  - 05:46 „GetCurrentPattern … Nicht unterstütztes Muster“: Ließ sich ein Teams-Button nicht drücken (gesperrt, z. B.
+    Mikro ohne Mikrofon), versuchte der Code immer „Aufklappen“ (nur für „Verlassen“ sinnvoll). Jetzt: Aufklappen nur
+    bei „Verlassen“, sonst bis 4 Versuche und klare Logzeile („… lässt sich nicht drücken (Grund) – Mikrofon in
+    Windows/Teams vorhanden?“). Live nachgestellt (mic_on ohne Mikrofon).
+  - 05:05/05:22 „Beitritt fehlgeschlagen (kein Meetingfenster)“: nach Standby verschluckt Teams den Klick auf
+    „Jetzt teilnehmen“, Meeting kam erst 05:23:22; danach stand im Meeting weiter „fehler: Teams reagiert nicht“.
+    Jetzt: erneut drücken, wenn der Beitrittsbildschirm nach 10 s noch steht, Wartezeit 75 s statt 40 s; kommt das
+    Meeting innerhalb 5 min doch noch („Beitritt: doch noch im Meeting“), wird der Status geleert und „Nur Redner“ gesetzt.
+    **Noch nicht live geprüft** (Standby-Fall nicht nachstellbar) – beim nächsten Auftreten Log ansehen.
+  - Fehler der Hauptschleife werden mit Befehl und Zeilennummer geloggt.
+  - Last (gemessen, % eines Kerns): Skript ~2–3 %, Teams im Meeting ~27 % ohne / ~30 % mit Skript (UI-Automation-
+    Abfragen), ohne Meeting/Teams zu ~0. `Close-AfterMeeting` läuft nur noch außerhalb des Meetings (vorher alle 5 s alle
+    Buttons aller Teams-Fenster, im Meeting nutzlos). Schließt jetzt auch die Qualitäts-Abfrage nach dem Meeting
+    („Hatte Probleme“/„Gut“, `cqf-dismiss-button`) – gesehen nach Verlassen direkt in Teams; Schließen selbst noch nicht
+    live gesehen (Abfrage kommt nur zufällig).
+  - Teams ganz geschlossen: „Teams-Meeting starten“ startet Teams über den Link (Beitritt in 12 s); Teams im Meeting
+    beendet -> nach ~9 s `r5_t_in = 0`. Beides live geprüft.
+  - Live getestet: Beitritt (3 s), Kamera an/aus (auch schnell hintereinander und beim Teilen), Teilen an/aus, Verlassen.
+- Displays (ViewSonic, LAN) in Companion vorbereitet: Verbindungen `disp1`/`disp2` (Generic TCP, Port 5000, CR,
+  **aus, ohne IP**) + Befehle in 1/0/1, 1/0/2, 1/2/6, 1/2/7, 1/3/7 (Details ANLEITUNG Abschnitt 8). Erzeugt mit
+  `tools/displays-companion.py` (wiederholbar), getestet gegen `test/mock-viewsonic.py` (alle Befehle 401+,
+  Warte-Schritte 8 s/10 s ok, Displays nicht erreichbar -> übrige Aktionen laufen normal).
+  Im Live-Companion des Test-PCs per Import eingespielt (Sicherung vorher: `backup/companion-vor-displays-20261023.companionconfig`
+  + Kopie der DB). **Wichtig:** Companion-Import übernimmt bei gleichnamigen Verbindungen deren *bestehende*
+  Einstellungen (IP, Passwort) – Verbindungseinstellungen also in Companion selbst ändern, nicht per Import.
+  Offen im Raum: IPs eintragen, einschalten, Display-ID/Energie-Einstellung prüfen, Modell CDE98G3 testen.
+- HDMI-Matrix TESmart (HMA404-E23 geplant, 4×4) in Companion vorbereitet: Verbindung `matrix` (Generic TCP, Port 5000,
+  CRLF, **aus, ohne IP**), Buttons 1/2/1–3 schalten **alle Ausgänge** auf Eingang 1 Raum-PC / 2 Laptop / 3 Kabellos
+  (`MT00SW0100NT` …, Protokoll wie Companion-Modul `tesmart-hdmimatrix` 2.0.0 – Modul selbst nicht nötig).
+  Erzeugt mit `tools/matrix-companion.py` (Eingänge/Ausgänge per Parameter), getestet gegen `test/mock-tesmart.py`.
+  Offen im Raum: Verkabelung (welcher Eingang/Ausgang), IP; ob ein Ausgang zur Capture-Karte geht und anders
+  geschaltet werden muss. „Raum an“ setzt die Quelle nicht zurück (Tablet merkt sich `S.src` lokal, liest `r5_src` nicht).
+- „Raum an“ (1/0/1) setzt die Quelle auf Raum-PC (Matrix Eingang 1, `r5_src = pc`) – sonst bliebe morgens der Laptop
+  von gestern (kein Bild). Die Aktionen stehen **vor** dem 8-s-Warten der Displays (Aktionen nach `wait` laufen in
+  Companion verzögert und hätten eine in den ersten 8 s gewählte Quelle zurückgesetzt). Das Tablet liest `r5_src` jetzt
+  mit (`srcVariable`), zeigt also auch Quellenwechsel vom Stream Deck. Tests: Mock 6/6, Tablet 88/88, Chaos 19/19,
+  Konfig 49/49, live im Companion geprüft.
+- Nach dem Meeting schaltet `teams-steuerung.ps1` die Kamera-Szene auf „Pausenbild“ (1/1/5), egal wie das Meeting
+  endet (erst nach 8 s „kein Meeting“ am Stück, also nicht beim Umschalten des Teilens; nicht beim Skriptstart). Getestet:
+  Verlassen am Tablet und direkt in Teams.
+- Beobachtung: bei jeder Neuinstallation (Raumsteuerung.exe beendet) wird auch OBS beendet und von der Teams-Steuerung
+  neu gestartet („OBS: Absturz-Abfrage“). Ursache im Code: `Dienste.cs` legt die Kindprozesse in ein Job-Objekt mit
+  KILL_ON_JOB_CLOSE, und OBS wird von `teams-steuerung.ps1` gestartet -> gehört mit zum Job. Im Betrieb nur relevant,
+  wenn die exe abstürzt/neu startet (Virtual Cam kurz weg). Noch nicht behoben.
+- Redner-Kamera in Companion vorbereitet (Modell noch offen): Verbindung `kamera_r` (Generic TCP 5678, reines VISCA in
+  Hex, **aus, ohne IP**). 3/0/1–3 Position 1–3 anfahren, 3/2/1–6 fahren/zoomen mit Stopp beim Loslassen („up“),
+  3/2/7 Home, **neu 3/0/5–7 „Position 1/2/3 speichern“** (nur Companion, zum Einrichten im Raum). Erzeugt mit
+  `tools/kamera-companion.py`, getestet gegen `test/mock-visca.py` – auch Ende-zu-Ende vom Tablet (Pfeil 1 s halten →
+  rechts, Loslassen → Stopp nach 1,0 s). Offen: Tracking (herstellerabhängig), Sony-VISCA-over-IP bräuchte das
+  Modul sony-visca.
+- Git auf dem PC: kein `user.name`/`user.email` gesetzt -> Commits mit
+  `git -c user.name=Claude -c user.email=noreply@anthropic.com commit …`; Push über den Credential Manager klappt.
 
 ## Nächster Schritt
 Im Raum (Raum-PC):
@@ -146,7 +210,9 @@ Im Raum (Raum-PC):
 2. AV-Netz, feste IPs, Netzwerkprofil „Privat“ (sonst erreicht das Tablet Port 8080/8000 nicht) – siehe `SICHERHEIT.md`.
 3. Publikum-Kamera fest auf den ganzen Raum ausrichten, in OBS als Quelle eintragen (keine Automatik mehr).
 4. `pruefen.cmd`, dann Checkliste ANLEITUNG Abschnitt 6 und 9 (Teams-Leiste) mit echtem Teams-Meeting.
-5. Wenn Hardware kommt: Geräte-Aktionen in die vorhandenen Buttons legen (ANLEITUNG Abschnitt 8).
+5. Wenn Hardware kommt: Displays, Matrix und Redner-Kamera sind seit 23.10. in Companion eingetragen (Verbindungen
+   `disp1`/`disp2`, `matrix`, `kamera_r`, ausgeschaltet) – nur IP eintragen, Schalter an, Kamera-Positionen 1–3 mit
+   3/0/5–7 speichern (ANLEITUNG Abschnitt 8). Offen: Tracking der Redner-Kamera (herstellerabhängig), Display-Eingang.
 6. Teams-Bild (Teilen) am Raum-PC einrichten, sobald Monitore und Capture-Karte feststehen:
    - Bildschirm für „Präsentation zeigen“: `pruefen.cmd` listet die Bildschirme mit Nummer; die Nummer des Bildschirms
      mit der Präsentation in `mikro-automatik.json` → `teilenBildschirm` eintragen (ohne Eintrag: Hauptbildschirm).
@@ -160,3 +226,25 @@ Im Raum (Raum-PC):
 
 ## Hardware-Lücken (für Ausstattungsplan v7)
 Tablet (Galaxy Tab A9+, ~209 €) + Halterung; HDMI-Matrix mit LAN (TESmart HMA404-E23, Companion-Modul vorhanden); 3. AOC-HDMI für Tisch-Laptop; WLAN-AP fürs AV-Netz (TP-Link EAP225 ~57 €); 3. Netzwerkkarte für RM-CR-Steuerung; LAN zu den ViewSonic-Displays. Publikum-Kamera mittig über den Displays montieren (FoMaKo 60° reicht nicht für ganze Reihen → Zonen).
+
+Recherche 23.10.2026 (Preise = Momentaufnahme, vor Bestellung prüfen; Vergleichstabellen mit Shops, Plus/Minus und
+Quellen als Word-Datei `docs/Recherche-Kabellos-Publikumkamera-2026-10-23.docx`, Russisch):
+- **Kabellos zeigen** (Windows, Mac, Android ohne App, HDMI → Matrix-Eingang 3): Empfehlung Barco ClickShare C-5 Gen2
+  (R9861605EU, ~840–940 €, AirPlay/Google Cast/Miracast, Button optional); Mitte Yealink RoomCast (~570 €, AirPlay vor
+  Kauf bestätigen lassen); günstig EZCast Pro Box II (~350 € brutto, ohne Abo). Nicht: Airtame (Jahreslizenz).
+  Achtung: AirPlay/Google Cast nur im selben Netz wie der Empfänger (AV-WLAN mit IT klären); online in Teams nur mit
+  Capture-Karte.
+- **Publikum-Kamera** (fest, ganzer Raum, ≤ 500 €, USB → OBS): Empfehlung Yealink UVC30 **Room** (120°, 4K, ~224 €);
+  Alternativen IPEVO Totem 120 (~194 €), AVer CAM130 (90/120°, nur US-Preise), Jabra PanaCast 180° (nur B-Ware ~399 €).
+  Brio 4K (90°) vermutlich zu schmal. Aktive USB-Verlängerung einplanen, Auto-Framing aus. Vorher Raumbreite und
+  Abstand Kamera → erste Reihe messen (120° diagonal ≈ Bildbreite 3 × Abstand).
+
+## Tablet-Kiosk (26.10.2026)
+- Android-App `android-kiosk/` (Java, ohne Bibliotheken): WebView auf `http://192.168.137.1:8080`, als Device Owner fester
+  Kiosk (Lock Task, Startbildschirm, Autostart, kein Sperrbildschirm/Statusleiste). Ausgang: 5× oben links + Admin-PIN;
+  PIN vergessen: Raumsteuerung.exe → Werkzeuge → „Tablet freigeben“ (schreibt `kiosk-freigabe.json`, Tablet fragt alle 10 s).
+- Build: GitHub Actions `.github/workflows/kiosk-apk.yml` → Release `kiosk-latest` (`raumkiosk.apk`), Fehler → Release
+  `kiosk-build-fehler` mit Log. Schlüssel `android-kiosk/kiosk.keystore` (bewusst im Repo, Signatur-Prüfsumme bleibt gleich).
+- Einrichtung: `kiosk-einrichten.html` (QR-Code für Werksreset + 6× Tippen) oder adb `dpm set-device-owner`.
+  Webserver liefert dafür `raumkiosk.apk` und `kiosk-freigabe.json` aus (sonst weiterhin keine JSON-Dateien).
+- Noch nicht auf echtem Tablet getestet (Build, Signatur und QR-Inhalt geprüft).

@@ -2,7 +2,9 @@
 # Liefert die Dateien aus diesem Ordner auf Port 8080 aus: http://<IP dieses PCs>:8080
 param([int]$Port = 8080)
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$types = @{ '.html'='text/html; charset=utf-8'; '.json'='application/manifest+json'; '.png'='image/png'; '.ico'='image/x-icon' }
+$types = @{ '.html'='text/html; charset=utf-8'; '.json'='application/json'; '.png'='image/png'; '.ico'='image/x-icon'; '.apk'='application/vnd.android.package-archive' }
+# JSON nur diese beiden (keine Einstellungsdateien ausliefern); APK nur die Kiosk-App
+$erlaubt = @('manifest.json', 'kiosk-freigabe.json', 'raumkiosk.apk')
 $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Any, $Port)
 # Port evtl. noch belegt (z. B. alte Instanz) -> warten statt ohne Listener weiterzulaufen
 while ($true) { try { $listener.Start(); break } catch { Start-Sleep -Seconds 5 } }
@@ -19,8 +21,8 @@ while ($true) {
     if ([string]::IsNullOrEmpty($name)) { $name = 'raumsteuerung.html' }
     $file = Join-Path $root $name
     $ext = [System.IO.Path]::GetExtension($name).ToLower()
-    if ((Test-Path -LiteralPath $file -PathType Leaf) -and $types.ContainsKey($ext) -and ($ext -ne '.json' -or $name -eq 'manifest.json')) {
-      $body = [System.IO.File]::ReadAllBytes($file); $status = '200 OK'; $ct = $types[$ext]
+    if ((Test-Path -LiteralPath $file -PathType Leaf) -and $types.ContainsKey($ext) -and (($ext -ne '.json' -and $ext -ne '.apk') -or $erlaubt -contains $name.ToLower())) {
+      $body = [System.IO.File]::ReadAllBytes($file); $status = '200 OK'; $ct = $types[$ext]; if ($name -eq 'manifest.json') { $ct = 'application/manifest+json' }
     } else {
       $body = [System.Text.Encoding]::UTF8.GetBytes('Nicht gefunden'); $status = '404 Not Found'; $ct = 'text/plain; charset=utf-8'
     }

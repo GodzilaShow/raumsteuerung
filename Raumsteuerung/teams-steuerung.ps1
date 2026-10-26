@@ -303,6 +303,16 @@ function Set-PeopleScene([switch]$Immer) {
   }
   Write-Log 'Teilen: Kamera-Szene nicht umgeschaltet (Companion antwortet nicht)'
 }
+function Set-PauseScene {
+  for ($i = 0; $i -lt 4; $i++) {
+    try {
+      $sc = (Invoke-Companion 'GET' '/api/variable/obs/scene_active/value').Trim()
+      if ($sc -eq 'Pausenbild') { return }
+      [void](Invoke-Companion 'POST' '/api/location/1/1/5/press'); Write-Log "Meeting zu Ende: Kamera-Szene '$sc' -> 'Pausenbild'"; return
+    } catch { Start-Sleep -Milliseconds 700 }
+  }
+  Write-Log 'Meeting zu Ende: Kamera-Szene nicht umgeschaltet (Companion antwortet nicht)'
+}
 function Stop-Share {
   $w = Find-Meeting; if (-not $w) { return $false }
   $b = $w.FindFirst($Scope::Descendants, (Cond 'share-button'))
@@ -403,11 +413,22 @@ function Invoke-Teams([string]$cmd) {
   for ($i = 0; $i -lt 6 -and -not $b; $i++) { Start-Sleep -Milliseconds 300; $b = $w.FindFirst($Scope::Descendants, (Cond $IDS[$cmd])) }
   if (-not $b) { Write-Log "Befehl ${cmd}: Button $($IDS[$cmd]) nach dem Wiederherstellen nicht gefunden"; return $false }
   $name = $b.Current.Name
-  try { $b.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
-  catch {
-    # "Verlassen" ist manchmal ein Menue-Knopf mit Rueckfrage -> aufklappen und dort "Verlassen" bestaetigen
-    $b.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand(); Start-Sleep -Milliseconds 800
+  # Waehrend Teams die Kamera/das Mikro umschaltet oder die Leiste umbaut, ist der Button kurz gesperrt bzw. veraltet
+  # (Invoke wirft) -> kurz warten, neu suchen, noch einmal. Nur "Verlassen" kann ein Menue-Knopf sein (aufklappen,
+  # Rueckfrage bestaetigt Confirm-Leave); bei den anderen gaebe Expand nur "Nicht unterstuetztes Muster".
+  $ok = $false; $grund = ''
+  for ($i = 0; $i -lt 4 -and -not $ok; $i++) {
+    if ($i) { Start-Sleep -Milliseconds 500; $b = $w.FindFirst($Scope::Descendants, (Cond $IDS[$cmd])); if (-not $b) { $grund = 'Button weg'; continue }; $name = $b.Current.Name }
+    $o = $null
+    if ($b.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$o)) {
+      try { $o.Invoke(); $ok = $true } catch { $grund = $_.Exception.Message }
+    } else { $grund = 'kein InvokePattern' }
+    if (-not $ok -and $cmd -eq 'leave' -and $b.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$o)) {
+      try { $o.Expand(); Start-Sleep -Milliseconds 800; $ok = $true } catch { $grund = $_.Exception.Message }
+    }
   }
+  # (z. B. Mikro einschalten ohne Mikrofon in Windows - RM-CR nicht per USB angeschlossen: Teams sperrt den Button)
+  if (-not $ok) { Write-Log ("Befehl ${cmd}: '$name' laesst sich nicht druecken ($grund)" + $(if ($cmd -eq 'mute') { ' - Mikrofon in Windows/Teams vorhanden?' } else { '' })); return $false }
   if ($cmd -eq 'leave') { $script:leaveZeit = [DateTime]::Now; Confirm-Leave $w }
   # warten, bis Teams umgeschaltet hat (Beschriftung wechselt), damit der gemeldete Zustand stimmt
   if ($cmd -ne 'leave') {
@@ -466,8 +487,11 @@ function Close-AfterMeeting {
     try {
       if ($ids -notcontains $w.Current.ProcessId) { continue }
       $btns = @($w.FindAll($Scope::Descendants, $cBtn))
-      if (-not ($btns | Where-Object { $_.Current.Name -match '(?i)erneut.*beitreten|rejoin' })) { continue }
       if ($btns | Where-Object { $_.Current.AutomationId -eq 'hangup-button' }) { continue }   # noch im Meeting
+      # Teams fragt nach manchen Meetings stattdessen nach der Anrufqualitaet ("Hatte Probleme" / "Gut") -> "Schliessen"
+      $cqf = $btns | Where-Object { $_.Current.AutomationId -eq 'cqf-dismiss-button' } | Select-Object -First 1
+      if ($cqf) { $cqf.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Write-Log 'Nach dem Meeting: Qualitaets-Abfrage geschlossen'; continue }
+      if (-not ($btns | Where-Object { $_.Current.Name -match '(?i)erneut.*beitreten|rejoin' })) { continue }
       $weg = $btns | Where-Object { $_.Current.Name -match '(?i)^(verwerfen|dismiss)$' } | Select-Object -First 1
       if ($weg) { $weg.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() }
       else { $w.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close() }
@@ -536,14 +560,31 @@ function Join-Teams {
     }
     if (-not $gedrueckt) { Start-Sleep -Milliseconds 1000 }
   }
-  $ende = [DateTime]::Now.AddSeconds(40); $w = $null
-  while (-not $w -and [DateTime]::Now -lt $ende) { Start-Sleep -Milliseconds 700; $w = Find-Meeting }
+  # Nach dem Aufwachen aus dem Standby verschluckt Teams den ersten Klick manchmal (Beitrittsbildschirm bleibt
+  # stehen, 23.10.: zweimal "fehlgeschlagen", Meeting kam erst 1-2 min spaeter). Steht der Beitrittsbildschirm nach
+  # 10 s noch da, "Jetzt teilnehmen" erneut druecken. Insgesamt bis 75 s warten.
+  $ende = [DateTime]::Now.AddSeconds(75); $w = $null; $erneut = [DateTime]::Now.AddSeconds(10)
+  while (-not $w -and [DateTime]::Now -lt $ende) {
+    Start-Sleep -Milliseconds 700; $w = Find-Meeting
+    if (-not $w -and [DateTime]::Now -ge $erneut) {
+      $erneut = [DateTime]::Now.AddSeconds(10)
+      if (Find-Lobby) { break }
+      $pre = Find-Prejoin
+      if ($pre) { try { $pre.FindFirst($Scope::Descendants, $cJoin).GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Write-Log 'Beitritt: "Jetzt teilnehmen" erneut gedrueckt' } catch { } }
+    }
+  }
   if (-not $w -and (Find-Lobby)) {
     # Im Wartebereich: Status "warten", die Hauptschleife meldet "im Meeting", sobald jemand den Raum einlaesst
     Write-Log 'Beitritt: im Wartebereich - wartet, bis jemand den Raum in Teams einlaesst'
     [void](Set-Var 'r5_t_status' 'warten: Wartebereich'); $script:wartenSeit = [DateTime]::Now; return $false
   }
-  if (-not $w) { Write-Log 'Beitritt fehlgeschlagen (kein Meetingfenster)'; [void](Set-Var 'r5_t_status' 'fehler: Teams reagiert nicht'); return $false }
+  if (-not $w) {
+    Write-Log 'Beitritt fehlgeschlagen (kein Meetingfenster)'; [void](Set-Var 'r5_t_status' 'fehler: Teams reagiert nicht')
+    # Kommt das Meeting doch noch (Teams langsam), behandelt die Hauptschleife es wie "eingelassen" (Status leer,
+    # "Nur Redner") - sonst stuende auf dem Tablet im laufenden Meeting weiter "Teams reagiert nicht"
+    $script:spaetSeit = [DateTime]::Now
+    return $false
+  }
   Start-Sleep -Seconds 2
   $script:win = $null
   Write-Log 'Beitritt: im Meeting'
@@ -565,7 +606,7 @@ Write-Log ('Start Teams-Steuerung, Companion ' + $Companion + ', Benutzer ' + $e
 # sonst tritt Teams nach der naechsten Anmeldung/Neustart unerwartet dem Meeting bei
 $alt = Get-Var 'r5_tcmd'
 if ($alt) { [void](Set-Var 'r5_tcmd' ''); Write-Log "Alter Befehl beim Start verworfen: $alt" }
-$script:wartenSeit = $null; $script:lastLobby = [DateTime]::MinValue; $script:leaveZeit = [DateTime]::MinValue; $script:wegSeit = $null
+$script:wartenSeit = $null; $script:spaetSeit = $null; $script:lastLobby = [DateTime]::MinValue; $script:leaveZeit = [DateTime]::MinValue; $script:wegSeit = $null
 $last = @{}; $lastPush = [DateTime]::MinValue; $nextState = [DateTime]::MinValue; $companionOk = $true; $script:lastClose = [DateTime]::MinValue; $script:lastObs = [DateTime]::MinValue
 while ($true) {
   try {
@@ -641,13 +682,24 @@ while ($true) {
       if (([DateTime]::Now - $script:lastObs).TotalSeconds -ge 30) {
         $script:lastObs = [DateTime]::Now; Ensure-Obs
       }
-      if (([DateTime]::Now - $script:lastClose).TotalSeconds -ge 5) { $script:lastClose = [DateTime]::Now; Close-AfterMeeting }
+      # Nur ausserhalb des Meetings: im Meeting gibt es kein Abschlussfenster, die Suche ueber alle Buttons kostete
+      # Teams dort nur CPU (nach eigenem "Verlassen" schliesst Invoke-Teams das Fenster selbst)
+      if (-not $s.In -and ([DateTime]::Now - $script:lastClose).TotalSeconds -ge 5) { $script:lastClose = [DateTime]::Now; Close-AfterMeeting }
       if ($s.In -ne $script:warIn) {
         Write-Log $(if ($s.In) { 'Teams-Meeting erkannt' } else { 'kein Teams-Meeting' })
         # Meeting zu Ende: alte Fehlermeldung (z. B. "fehler: Präsentation teilen") nicht ins naechste Meeting mitnehmen
         if (-not $s.In -and $script:warIn) { if ((Get-Var 'r5_t_status') -like 'fehler*') { [void](Set-Var 'r5_t_status' '') } }
+        # Meeting zu Ende (verlassen oder von anderen beendet): Kamera-Szene auf "Pausenbild" (Wunsch 23.10.2026),
+        # damit nach dem Meeting nicht weiter der Redner gezeigt wird
+        if (-not $s.In -and $script:warIn) { Set-PauseScene }
         # Aus dem Wartebereich eingelassen -> wie nach dem Beitritt: Kamera-Szene "Nur Redner", Status leer
         if ($s.In -and $script:wartenSeit) { $script:wartenSeit = $null; Write-Log 'Beitritt: eingelassen'; Set-PeopleScene -Immer; [void](Set-Var 'r5_t_status' '') }
+        # Beitritt als fehlgeschlagen gemeldet, Meeting kam aber innerhalb von 5 min doch noch
+        if ($s.In -and $script:spaetSeit -and ([DateTime]::Now - $script:spaetSeit).TotalMinutes -lt 5) {
+          Write-Log 'Beitritt: doch noch im Meeting'; Set-PeopleScene -Immer
+          if ((Get-Var 'r5_t_status') -like 'fehler*') { [void](Set-Var 'r5_t_status' '') }
+        }
+        $script:spaetSeit = $null
         $script:warIn = $s.In
       }
     }
@@ -660,7 +712,7 @@ while ($true) {
     }
     if (([DateTime]::Now - $script:lastPlace).TotalSeconds -ge 5) { $script:lastPlace = [DateTime]::Now; Place-Teams }
   } catch {
-    Write-Log ('Fehler: ' + $_.Exception.Message); $script:win = $null; Start-Sleep -Seconds 2
+    Write-Log ('Fehler' + $(if ($cmd) { " bei Befehl ${cmd}" } else { '' }) + ': ' + $_.Exception.Message + ' (Zeile ' + $_.InvocationInfo.ScriptLineNumber + ')'); $script:win = $null; Start-Sleep -Seconds 2
   }
   Start-Sleep -Milliseconds 250
 }
