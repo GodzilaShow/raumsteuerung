@@ -9,6 +9,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -44,6 +46,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -70,6 +73,8 @@ public class MainActivity extends Activity {
     private long ersterTap;
     private volatile boolean laeuft;
     private volatile int runde;
+
+    private ComponentName homeAlias() { return new ComponentName(getPackageName(), getPackageName() + ".Home"); }
 
     private DevicePolicyManager dpm() { return (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE); }
     private boolean istGeraeteinhaber() { return dpm().isDeviceOwnerApp(getPackageName()); }
@@ -205,7 +210,7 @@ public class MainActivity extends Activity {
         pauseLeiste.addView(einst);
         Button weiter = new Button(this);
         weiter.setText("Kiosk fortsetzen");
-        weiter.setOnClickListener(v -> { pausiert = false; pauseLeiste.setVisibility(View.GONE); sperren(); });
+        weiter.setOnClickListener(v -> fortsetzen());
         pauseLeiste.addView(weiter);
         pauseLeiste.setVisibility(View.GONE);
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.END);
@@ -221,12 +226,13 @@ public class MainActivity extends Activity {
         DevicePolicyManager d = dpm();
         ComponentName a = AdminReceiver.name(this);
         try {
+            homeAn(true);
             d.setLockTaskPackages(a, new String[]{getPackageName()});
             d.setLockTaskFeatures(a, DevicePolicyManager.LOCK_TASK_FEATURE_NONE);
             IntentFilter home = new IntentFilter(Intent.ACTION_MAIN);
             home.addCategory(Intent.CATEGORY_HOME);
             home.addCategory(Intent.CATEGORY_DEFAULT);
-            d.addPersistentPreferredActivity(a, home, new ComponentName(this, MainActivity.class));
+            d.addPersistentPreferredActivity(a, home, homeAlias());
             d.setKeyguardDisabled(a, true);
             d.setStatusBarDisabled(a, true);
             // Bildschirm bleibt an, solange das Tablet lädt (Netzteil, USB, kabellos)
@@ -374,7 +380,7 @@ public class MainActivity extends Activity {
                 "Seite neu laden",
                 "Adresse des Raum-PCs ändern",
                 "PIN ändern",
-                "Kiosk pausieren (Android benutzen)",
+                "Kiosk pausieren (zum Android-Startbildschirm)",
                 "Kiosk komplett entfernen"
         };
         new AlertDialog.Builder(this)
@@ -437,11 +443,48 @@ public class MainActivity extends Activity {
         d.show();
     }
 
+    /** Startbildschirm-Rolle an/aus: aus = Home-Taste führt zum normalen Samsung-Startbildschirm. */
+    private void homeAn(boolean an) {
+        getPackageManager().setComponentEnabledSetting(homeAlias(),
+                an ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                PackageManager.DONT_KILL_APP);
+        if (!istGeraeteinhaber()) return;
+        ComponentName a = AdminReceiver.name(this);
+        try {
+            dpm().clearPackagePersistentPreferredActivities(a, getPackageName());
+            if (an) {
+                IntentFilter home = new IntentFilter(Intent.ACTION_MAIN);
+                home.addCategory(Intent.CATEGORY_HOME);
+                home.addCategory(Intent.CATEGORY_DEFAULT);
+                dpm().addPersistentPreferredActivity(a, home, homeAlias());
+            }
+        } catch (Exception ignored) { }
+    }
+
+    /** Pausieren: Sperre aus, normaler Startbildschirm. Zurück über das App-Symbol "Raumsteuerung" oder Neustart. */
     private void pausieren() {
         pausiert = true;
         entsperren();
+        homeAn(false);
         pauseLeiste.setVisibility(View.VISIBLE);
-        Toast.makeText(this, "Kiosk pausiert – nach einem Neustart ist er wieder an.", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Kiosk pausiert. Zurück: App „Raumsteuerung“ öffnen → „Kiosk fortsetzen“, oder Tablet neu starten.", Toast.LENGTH_LONG).show();
+        Intent start = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
+        List<ResolveInfo> ziele = getPackageManager().queryIntentActivities(start, 0);
+        for (ResolveInfo r : ziele) {
+            if (r.activityInfo == null || getPackageName().equals(r.activityInfo.packageName)) continue;
+            try {
+                startActivity(new Intent(start).setClassName(r.activityInfo.packageName, r.activityInfo.name)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                return;
+            } catch (Exception ignored) { }
+        }
+    }
+
+    private void fortsetzen() {
+        pausiert = false;
+        pauseLeiste.setVisibility(View.GONE);
+        homeAn(true);
+        sperren();
     }
 
     private void entfernenFragen() {
@@ -463,6 +506,7 @@ public class MainActivity extends Activity {
             ComponentName a = AdminReceiver.name(this);
             try {
                 d.clearPackagePersistentPreferredActivities(a, getPackageName());
+                getPackageManager().setComponentEnabledSetting(homeAlias(), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
                 d.setKeyguardDisabled(a, false);
                 d.setLockTaskPackages(a, new String[0]);
                 d.setGlobalSetting(a, Settings.Global.STAY_ON_WHILE_PLUGGED_IN, "0");
