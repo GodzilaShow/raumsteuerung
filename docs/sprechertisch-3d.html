@@ -1,0 +1,538 @@
+<title>Sprechertisch Raum 5</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 3D-Bühne links (voll), Werkzeugleiste rechts; auf dem Handy untereinander */
+:root {
+  --bg: #eef2f5; --panel: #ffffff; --fg: #0e2a3f; --muted: #5a6b78; --line: #d6dde3;
+  --accent: #0071bc; --accent-ink: #ffffff; --soft: #e3eef7;
+  --scene-bg: #e6ebf0; --scene-floor: #dce2e8; --scene-grid: #bfc9d2;
+  --f-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1820; --panel: #15212b; --fg: #e4ecf2; --muted: #93a4b2; --line: #26343f;
+  --accent: #4aa3e6; --accent-ink: #06131d; --soft: #1b2e3d;
+  --scene-bg: #121d26; --scene-floor: #16222c; --scene-grid: #2b3a47; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1820; --panel: #15212b; --fg: #e4ecf2; --muted: #93a4b2; --line: #26343f;
+  --accent: #4aa3e6; --accent-ink: #06131d; --soft: #1b2e3d;
+  --scene-bg: #121d26; --scene-floor: #16222c; --scene-grid: #2b3a47; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.45 var(--f-body); display: flex; flex-direction: column; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px;
+  padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line); background: var(--panel); }
+.eyebrow { font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 4px 0 0; font-size: 20px; font-weight: 600; text-wrap: balance; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.seg button { border: 0; background: transparent; color: var(--fg); font: 600 13px var(--f-body); padding: 7px 12px; border-radius: 7px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 360px; }
+.stage { position: relative; min-height: 0; overflow: hidden; touch-action: none; }
+.stage canvas { display: block; }
+.hint { position: absolute; left: 12px; bottom: 12px; right: 12px; pointer-events: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.hint span { background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; font-size: 12px; color: var(--muted); }
+.hint kbd { font: 500 11px var(--f-mono); color: var(--fg); }
+.lbl { font: 600 11px/1.2 var(--f-body); color: var(--fg); background: color-mix(in srgb, var(--panel) 90%, transparent); border: 1px solid var(--line); padding: 2px 6px; border-radius: 5px; white-space: nowrap; pointer-events: none; }
+.panel { overflow-y: auto; border-left: 1px solid var(--line); background: var(--panel); padding-block: 4px 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 4px; }
+.panel section { padding-block: 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.panel section:last-child { border-bottom: 0; }
+h2 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.row label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+input[type=range] { flex: 1; accent-color: var(--accent); min-width: 140px; }
+.val { font: 500 14px var(--f-mono); font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
+.btn { border: 1px solid var(--line); background: var(--bg); color: var(--fg); font: 600 13px var(--f-body); padding: 6px 12px; border-radius: 7px; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.warn { border-color: #c2410c; color: #c2410c; }
+.sel-name { font-size: 17px; font-weight: 600; }
+.sel-note { color: var(--muted); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13px; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px 3px 6px; font-size: 12px; cursor: pointer; background: var(--bg); color: var(--fg); font-family: var(--f-body); }
+.chip[aria-pressed="false"] { opacity: .45; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+th.n, td.n { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td { padding: 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr[data-cid] { cursor: pointer; } tr[data-cid]:hover td, tr.on td { background: var(--soft); }
+td .t { display: flex; gap: 8px; align-items: flex-start; } td .t .dot { margin-top: 4px; }
+td small { color: var(--muted); display: block; }
+.note { font-size: 12px; color: var(--muted); }
+@media (max-width: 820px) {
+  html, body { height: auto; }
+  .app { display: block; }
+  .stage { height: 58vh; min-height: 340px; }
+  .panel { border-left: 0; border-top: 1px solid var(--line); }
+}
+</style>
+
+<header class="bar">
+  <div><div class="eyebrow">Sitzungszimmer 5 · KH II · Maße in cm</div><h1>Sprechertisch Raum 5</h1></div>
+  <div class="seg" role="group" aria-label="Ansicht">
+    <button data-view="over" aria-pressed="true">Übersicht</button>
+    <button data-view="sit" aria-pressed="false">Sitzend</button>
+    <button data-view="stand" aria-pressed="false">Stehend</button>
+    <button data-view="under" aria-pressed="false">Unter dem Tisch</button>
+  </div>
+</header>
+<main class="app">
+  <div class="stage" id="stage"><div class="hint" id="hint"></div></div>
+  <aside class="panel">
+    <section>
+      <h2>Tisch</h2>
+      <div class="row"><span>Höhe</span><input type="range" id="hoehe" min="72" max="122" step="1" value="75" aria-label="Tischhöhe"><span class="val" id="hoeheVal">75 cm</span></div>
+      <div class="row">
+        <label><input type="checkbox" id="optLbl" checked> Beschriftungen</label>
+        <label><input type="checkbox" id="optLaptop" checked> Gast-Laptop</label>
+      </div>
+      <div class="row"><button class="btn" id="reset">Anordnung zurücksetzen</button></div>
+    </section>
+    <section id="auswahl" aria-live="polite"></section>
+    <section>
+      <h2>Kabel</h2>
+      <div class="chips" id="filter"></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Kabel</th><th class="n">Jetzt</th><th class="n">Kaufen</th></tr></thead>
+        <tbody id="kabel"></tbody>
+      </table></div>
+      <p class="note">„Jetzt“ = Weg im Modell bei der aktuellen Tischhöhe. „Kaufen“ = Weg bei höchster Stellung (122 cm) + 15 % Reserve, auf Standardlänge aufgerundet. Kabel zum Bodenanschluss: nur bis dort, den Rest bis Rack/Wand vor Ort messen.</p>
+    </section>
+  </aside>
+</main>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const TH = 3, DW = 220, DD = 80, LEG = 95, H_MIN = 72, H_MAX = 122;
+let deskH = 75;
+const KEY = 'raum5-sprechertisch-v1';
+
+/* ---------- Kabeltypen ---------- */
+const TYPES = {
+  lanav: { name: 'LAN AV-Netz', color: '#2f80ed', r: 0.32 },
+  lanlk: { name: 'LAN Landkreis', color: '#9b6bdf', r: 0.32 },
+  hdmi:  { name: 'HDMI / DP', color: '#e8833a', r: 0.42 },
+  usb:   { name: 'USB-C / USB', color: '#2fa36b', r: 0.25 },
+  strom: { name: 'Strom', color: '#8a9096', r: 0.38 },
+};
+
+/* ---------- Materialien und Bausteine ---------- */
+const mat = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.6, metalness: 0.08, ...o });
+const M = { dark: mat('#23282e'), dark2: mat('#2f353c'), gray: mat('#8b939b'), silver: mat('#b9c0c7', { metalness: 0.3 }),
+  white: mat('#eef0f2'), wood: mat('#d9c7a7', { roughness: 0.8 }), frame: mat('#3a4048', { metalness: 0.4 }), black: mat('#111417') };
+function bx(w, h, d, m, x = 0, y = 0, z = 0) {
+  const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+  me.position.set(x, y + h / 2, z); me.castShadow = me.receiveShadow = true; return me;
+}
+function screenTex(t1, t2, bg = '#0b3a5b') {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 288;
+  const g = c.getContext('2d'); g.fillStyle = bg; g.fillRect(0, 0, 512, 288);
+  g.fillStyle = '#8dc63f'; g.fillRect(0, 270, 512, 18);
+  g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.font = '600 44px "Source Sans 3", sans-serif'; g.fillText(t1, 256, 140);
+  if (t2) { g.font = '400 26px "Source Sans 3", sans-serif'; g.fillStyle = '#cfe3f2'; g.fillText(t2, 256, 185); }
+  const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; return tx;
+}
+function screen(w, h, tex, x, y, z) {
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex }));
+  p.position.set(x, y, z); return p;
+}
+
+/* Jedes Gerät: Ursprung unten Mitte */
+const BUILD = {
+  monitor(d) {
+    const g = new THREE.Group();
+    g.add(bx(10, 0.8, 8, M.frame, 0, 0, -5));
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 30, 16), M.frame); pole.position.set(0, 15, -5); pole.castShadow = true; g.add(pole);
+    g.add(bx(61.4, 36.5, 2.5, M.dark, 0, 18, 0));
+    g.add(screen(59.8, 33.6, screenTex(d.screen[0], d.screen[1]), 0, 36.25, 1.27));
+    return g;
+  },
+  tablet() {
+    const g = new THREE.Group();
+    g.add(bx(12, 1, 10, M.gray));
+    g.add(bx(8, 6, 1, M.gray, 0, 1, -1.5));
+    const piv = new THREE.Group(); piv.position.set(0, 1, 3); piv.rotation.x = -0.42; g.add(piv);
+    piv.add(bx(25.7, 16.9, 0.7, M.dark));
+    piv.add(screen(24.3, 15.4, screenTex('Raumsteuerung', 'Tab A9+ · Kiosk', '#0e2a3f'), 0, 8.45, 0.36));
+    return g;
+  },
+  laptop() {
+    const g = new THREE.Group();
+    g.add(bx(32, 1.8, 22, M.silver));
+    const kb = new THREE.Mesh(new THREE.PlaneGeometry(28, 10), M.dark2); kb.rotation.x = -Math.PI / 2; kb.position.set(0, 1.81, -2); g.add(kb);
+    const piv = new THREE.Group(); piv.position.set(0, 1.8, -11); piv.rotation.x = -0.25; g.add(piv);
+    piv.add(bx(32, 21, 0.6, M.silver));
+    piv.add(screen(30, 19, screenTex('Gast-Laptop', 'HDMI am Tischanschluss', '#2b3a47'), 0, 10.5, 0.31));
+    return g;
+  },
+  keyboard() {
+    const g = new THREE.Group(); g.add(bx(44, 2.2, 14, M.dark2));
+    const m = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), M.dark2); m.scale.set(3, 1.6, 5.5); m.position.set(32, 1.6, 0); m.castShadow = true; g.add(m);
+    return g;
+  },
+  grommet() {
+    const g = new THREE.Group();
+    const r = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 4.2, 0.5, 28), M.frame); r.position.y = 0.25; g.add(r);
+    const h = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 0.52, 28), M.black); h.position.y = 0.26; g.add(h);
+    return g;
+  },
+  anschluss() {
+    const g = new THREE.Group(); g.add(bx(16, 0.8, 9, M.silver));
+    [-4.5, 0, 4.5].forEach(x => g.add(bx(2.6, 0.1, 1.4, M.black, x, 0.8, 0)));
+    return g;
+  },
+  adapter() { const g = new THREE.Group(); g.add(bx(6, 1.5, 3, M.dark2)); return g; },
+  wanne() {
+    const g = new THREE.Group(); const m = mat('#6b737c', { metalness: 0.5 });
+    g.add(bx(170, 0.5, 12, m)); g.add(bx(170, 7.5, 0.5, m, 0, 0, 6)); g.add(bx(170, 7.5, 0.5, m, 0, 0, -6)); return g;
+  },
+  leiste() { const g = new THREE.Group(); g.add(bx(45, 4, 6, mat('#dfe3e8'))); for (let i = 0; i < 6; i++) g.add(bx(3.4, 0.1, 3.4, M.dark2, -17 + i * 6.8, 4, 0)); return g; },
+  netzteil() { const g = new THREE.Group(); g.add(bx(5, 5, 3.5, M.white)); return g; },
+  switch8() {
+    const g = new THREE.Group(); g.add(bx(15.8, 2.5, 10.1, M.dark2));
+    for (let i = 0; i < 8; i++) g.add(bx(1.3, 1.1, 0.1, M.black, -5.6 + i * 1.6, 0.7, 5.06));
+    return g;
+  },
+  pc() { const g = new THREE.Group(); g.add(bx(20, 40, 42, M.dark)); g.add(bx(16, 3, 0.2, M.dark2, 0, 33, 21.05)); return g; },
+  boden() { const g = new THREE.Group(); g.add(bx(30, 3, 20, M.gray)); g.add(bx(26, 0.2, 16, M.dark2, 0, 3, 0)); return g; },
+  stuhl() {
+    const g = new THREE.Group(), m = mat('#3a4250');
+    g.add(bx(48, 6, 46, m, 0, 44, 0)); g.add(bx(46, 48, 5, m, 0, 54, 22));
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 40, 16), M.frame); p.position.set(0, 22, 0); g.add(p);
+    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2, s = bx(30, 2, 3, M.frame, 0, 2, 0); s.position.set(Math.cos(a) * 14, 3, Math.sin(a) * 14); s.rotation.y = -a; g.add(s); }
+    return g;
+  },
+};
+
+/* ---------- Geräte (Standard-Anordnung) ---------- */
+const DEFS = [
+  { id: 'monL', b: 'monitor', name: 'Monitor links', note: '27″ am Dreifach-Monitorarm. Teams-Fenster (Einstellung „Teams-Fenster“).', size: '61,4 × 36,5 cm', level: 'top', x: -63, z: -24, r: 0.35, port: [0, 20, -2], screen: ['Teams', 'Teilnehmer und Chat'] },
+  { id: 'monM', b: 'monitor', name: 'Monitor Mitte', note: '27″. Präsentation, die Teams teilt („Präsentation zeigen“).', size: '61,4 × 36,5 cm', level: 'top', x: 0, z: -27, r: 0, port: [0, 20, -2], screen: ['Präsentation', 'wird in Teams geteilt'] },
+  { id: 'monR', b: 'monitor', name: 'Monitor rechts', note: '27″. OBS, Notizen oder Raumsteuerung.exe.', size: '61,4 × 36,5 cm', level: 'top', x: 63, z: -24, r: -0.35, port: [0, 20, -2], screen: ['OBS / Notizen', 'Vorschau Kamera'] },
+  { id: 'tablet', b: 'tablet', name: 'Tablet', note: 'Galaxy Tab A9+ auf Ständer, Kiosk-App. Am Kabel, WLAN aus. IP 192.168.55.100.', size: '25,7 × 16,9 cm', level: 'top', x: 64, z: 14, r: -0.3, port: [0, 1.5, -4] },
+  { id: 'adapter', b: 'adapter', name: 'USB-C-LAN-Adapter', note: 'Mit PD-Buchse: LAN + Laden über den einen USB-C-Port des Tablets. Kurzes Kabel ist fest am Adapter.', size: '6 × 3 × 1,5 cm', level: 'top', x: 64, z: -4, r: 0, port: [0, 0.75, 0] },
+  { id: 'tastatur', b: 'keyboard', name: 'Tastatur + Maus', note: 'Für den Raum-PC.', size: '44 × 14 cm', level: 'top', x: -6, z: 16, r: 0, port: [0, 1.5, -7] },
+  { id: 'laptop', b: 'laptop', name: 'Gast-Laptop', note: 'Beispiel: Laptop der vortragenden Person, per HDMI am Tischanschluss.', size: '32 × 22 cm', level: 'top', x: -70, z: 10, r: 0.15, port: [-16, 1, -4], optional: true },
+  { id: 'anschluss', b: 'anschluss', name: 'Tischanschluss', note: 'Einbaufeld für Gäste: HDMI, USB-C, Strom. Kabel gehen direkt nach unten.', size: '16 × 9 cm', level: 'top', x: -78, z: -31, r: 0, port: [0, 0.4, 0], pass: true },
+  { id: 'gromL', b: 'grommet', name: 'Kabeldurchlass links', note: 'Bohrung Ø 80 mm. Kabel von oben gehen durch den nächsten Durchlass.', size: 'Ø 8,4 cm', level: 'top', x: -30, z: -34, r: 0, port: [0, 0, 0], grommet: true },
+  { id: 'gromR', b: 'grommet', name: 'Kabeldurchlass rechts', note: 'Bohrung Ø 80 mm. Kabel von oben gehen durch den nächsten Durchlass.', size: 'Ø 8,4 cm', level: 'top', x: 36, z: -34, r: 0, port: [0, 0, 0], grommet: true },
+  { id: 'wanne', b: 'wanne', name: 'Kabelwanne', note: 'Unter der Platte, nimmt Steckdosenleiste und Netzteile auf. Alle Kabel laufen hier entlang.', size: '170 × 12 × 7,5 cm', level: 'under', x: 0, z: -28, r: 0, h: 7.5, drop: 2, port: [0, 4, 0] },
+  { id: 'leiste', b: 'leiste', name: 'Steckdosenleiste', note: '6-fach, liegt in der Kabelwanne.', size: '45 × 6 cm', level: 'under', x: -40, z: -28, r: 0, h: 4, drop: 5, port: [0, 4, 0] },
+  { id: 'netzteil', b: 'netzteil', name: 'USB-C-Netzteil PD', note: 'Mindestens 25 W, versorgt Tablet über den Adapter.', size: '5 × 5 × 3,5 cm', level: 'under', x: -12, z: -28, r: 0, h: 5, drop: 4, port: [0, 2.5, 0] },
+  { id: 'tlsg', b: 'switch8', name: 'Switch TL-SG108E', note: 'Unter die Platte geschraubt. Port 1 Uplink, 2–3 Displays, 4 Matrix, 5 Tablet.', size: '15,8 × 10,1 × 2,5 cm', level: 'under', x: 40, z: -14, r: 0, h: 2.5, drop: 0.5, port: [0, 1.25, 5] },
+  { id: 'pc', b: 'pc', name: 'Raum-PC', note: 'Karte 1 = Landkreis, Karte 2 = AV-Netz (192.168.55.1).', size: '20 × 40 × 42 cm', level: 'floor', x: 82, z: -12, r: 0, port: [0, 30, -21] },
+  { id: 'boden', b: 'boden', name: 'Bodenanschluss', note: 'Boden-/Wanddose hinter dem Tisch: weiter zum Yamaha-Switch (Rack), zu den Displays/Matrix, Strom.', size: '30 × 20 cm', level: 'floor', x: 0, z: -58, r: 0, port: [0, 3, 0] },
+  { id: 'stuhl', b: 'stuhl', name: 'Stuhl', note: 'Nur zur Orientierung.', size: '48 × 46 cm', level: 'floor', x: 0, z: 62, r: 0, port: [0, 0, 0] },
+];
+const CABLES = [
+  { id: 'c1', t: 'lanav', a: 'tlsg', b: 'adapter', name: 'Tablet-Netz', sub: 'Switch Port 5 → Adapter' },
+  { id: 'c2', t: 'lanav', a: 'tlsg', b: 'boden', name: 'Uplink', sub: 'Switch Port 1 → Yamaha Port 10', toBoden: true },
+  { id: 'c3', t: 'lanav', a: 'pc', b: 'boden', name: 'PC Karte 2', sub: 'Raum-PC → Yamaha Port 9', toBoden: true },
+  { id: 'c4', t: 'lanlk', a: 'pc', b: 'boden', name: 'PC Karte 1', sub: 'Raum-PC → Landkreis-Netz', toBoden: true },
+  { id: 'c5', t: 'usb', a: 'netzteil', b: 'adapter', name: 'Laden (PD)', sub: 'Netzteil → Adapter' },
+  { id: 'c6', t: 'usb', a: 'adapter', b: 'tablet', name: 'Adapter → Tablet', sub: 'fest am Adapter', fixed: true },
+  { id: 'c7', t: 'usb', a: 'pc', b: 'tastatur', name: 'Tastatur/Maus', sub: 'Raum-PC → Tastatur' },
+  { id: 'c8', t: 'hdmi', a: 'pc', b: 'monL', name: 'Monitor links', sub: 'Raum-PC → Monitor links' },
+  { id: 'c9', t: 'hdmi', a: 'pc', b: 'monM', name: 'Monitor Mitte', sub: 'Raum-PC → Monitor Mitte' },
+  { id: 'c10', t: 'hdmi', a: 'pc', b: 'monR', name: 'Monitor rechts', sub: 'Raum-PC → Monitor rechts' },
+  { id: 'c11', t: 'hdmi', a: 'pc', b: 'boden', name: 'PC → Matrix', sub: 'Matrix Eingang 1', toBoden: true },
+  { id: 'c12', t: 'hdmi', a: 'anschluss', b: 'boden', name: 'Tischanschluss → Matrix', sub: 'Matrix Eingang 2', toBoden: true },
+  { id: 'c13', t: 'hdmi', a: 'laptop', b: 'anschluss', name: 'Gast-Laptop', sub: 'Laptop → Tischanschluss' },
+  { id: 'c14', t: 'strom', a: 'monL', b: 'leiste', name: 'Strom Monitor links', sub: '→ Steckdosenleiste' },
+  { id: 'c15', t: 'strom', a: 'monM', b: 'leiste', name: 'Strom Monitor Mitte', sub: '→ Steckdosenleiste' },
+  { id: 'c16', t: 'strom', a: 'monR', b: 'leiste', name: 'Strom Monitor rechts', sub: '→ Steckdosenleiste' },
+  { id: 'c17', t: 'strom', a: 'pc', b: 'leiste', name: 'Strom Raum-PC', sub: '→ Steckdosenleiste' },
+  { id: 'c18', t: 'strom', a: 'tlsg', b: 'leiste', name: 'Strom Switch', sub: 'Netzteil 12 V → Leiste' },
+  { id: 'c19', t: 'strom', a: 'anschluss', b: 'leiste', name: 'Strom Tischanschluss', sub: '→ Steckdosenleiste' },
+  { id: 'c20', t: 'strom', a: 'leiste', b: 'boden', name: 'Zuleitung', sub: 'Leiste → Bodenanschluss', toBoden: true },
+];
+
+/* ---------- Zustand ---------- */
+const DEFAULT = Object.fromEntries(DEFS.map(d => [d.id, { x: d.x, z: d.z, r: d.r }]));
+let state = { pos: structuredClone(DEFAULT), h: 75, labels: true, laptop: true, filter: Object.fromEntries(Object.keys(TYPES).map(k => [k, true])) };
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.pos) state = { ...state, ...s, pos: { ...structuredClone(DEFAULT), ...s.pos }, filter: { ...state.filter, ...(s.filter || {}) } }; } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+deskH = state.h;
+
+/* ---------- Szene ---------- */
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.prepend(renderer.domElement);
+const labelR = new CSS2DRenderer(); labelR.domElement.style.cssText = 'position:absolute;inset:0;pointer-events:none';
+stage.appendChild(labelR.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(55, 1, 1, 3000); camera.rotation.order = 'YXZ';
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.49; controls.minDistance = 40; controls.maxDistance = 700;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.4));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(120, 300, 160); sun.castShadow = true;
+Object.assign(sun.shadow.camera, { left: -200, right: 200, top: 200, bottom: -200, near: 10, far: 800 }); sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0005;
+scene.add(sun);
+const floorMat = new THREE.MeshStandardMaterial({ roughness: 0.95 });
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(800, 800), floorMat); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+let grid;
+function applyTheme() {
+  const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim();
+  scene.background = new THREE.Color(v('--scene-bg')); floorMat.color.set(v('--scene-floor'));
+  if (grid) { scene.remove(grid); grid.geometry.dispose(); }
+  grid = new THREE.GridHelper(600, 60, v('--scene-grid'), v('--scene-grid')); grid.position.y = 0.05; scene.add(grid);
+}
+applyTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+/* Tisch (Steh-Sitz-Gestell) */
+let desk;
+function buildDesk() {
+  if (desk) scene.remove(desk);
+  desk = new THREE.Group();
+  desk.add(bx(DW, TH, DD, M.wood, 0, deskH - TH, 0));
+  const colH = deskH - TH - 6;
+  [-LEG, LEG].forEach(x => {
+    desk.add(bx(7, colH, 6, M.frame, x, 3, 0));
+    desk.add(bx(7, 3, 70, M.frame, x, 0, 0));
+    desk.add(bx(6, 3, 64, M.frame, x, deskH - TH - 3, 0));
+  });
+  desk.add(bx(2 * LEG, 4, 3, M.frame, 0, deskH - TH - 7, 6));
+  scene.add(desk);
+}
+
+/* Geräte bauen */
+const objs = {}; const pickables = [];
+DEFS.forEach(d => {
+  const g = BUILD[d.b](d); g.traverse(m => { if (m.isMesh) { m.userData.oid = d.id; pickables.push(m); } });
+  scene.add(g);
+  const box = new THREE.Box3().setFromObject(g);
+  const el = document.createElement('div'); el.className = 'lbl'; el.textContent = d.name;
+  const lbl = new CSS2DObject(el); lbl.position.set(0, box.max.y + 4, 0); g.add(lbl);
+  objs[d.id] = { def: d, group: g, lbl };
+});
+const wanneBounds = () => { const w = objs.wanne.group.position; return { y: w.y + 4, z: w.z, x0: w.x - 84, x1: w.x + 84 }; };
+
+function yFor(d) {
+  if (d.level === 'top') return deskH;
+  if (d.level === 'under') return deskH - TH - d.drop - d.h;
+  return 0;
+}
+function placeAll() {
+  DEFS.forEach(d => { const p = state.pos[d.id], g = objs[d.id].group; g.position.set(p.x, yFor(d), p.z); g.rotation.y = p.r; });
+  objs.laptop.group.visible = state.laptop;
+}
+
+/* ---------- Kabelwege ---------- */
+const portWorld = o => o.group.localToWorld(V(...o.def.port));
+function nearestGrommet(p) {
+  let best = null, bd = 1e9;
+  DEFS.filter(d => d.grommet).forEach(d => { const g = objs[d.id].group.position; const dd = Math.hypot(g.x - p.x, g.z - p.z); if (dd < bd) { bd = dd; best = g; } });
+  return best;
+}
+function half(o) {
+  const p = portWorld(o), t = wanneBounds(), cx = x => Math.max(t.x0, Math.min(t.x1, x)), pts = [p], d = o.def;
+  if (d.level === 'top') {
+    const g = d.pass ? o.group.position : nearestGrommet(p);
+    if (p.y > deskH + 1.5) pts.push(V(p.x, deskH + 0.6, p.z - 1.5));
+    pts.push(V(g.x, deskH + 0.6, g.z), V(g.x, deskH - TH - 1, g.z), V(cx(g.x), t.y, t.z));
+  } else if (d.level === 'under') {
+    pts.push(V(cx(p.x), t.y, t.z));
+  } else {
+    const lx = p.x < 0 ? -LEG : LEG;
+    pts.push(V(p.x, 1, p.z), V(lx, 1, -4), V(lx, deskH - TH - 9, -4), V(cx(lx), t.y, t.z));
+  }
+  return pts;
+}
+function cablePts(c) {
+  const a = objs[c.a], b = objs[c.b], la = a.def.level, lb = b.def.level;
+  let pts;
+  if (la === 'top' && lb === 'top') {
+    const p = portWorld(a), q = portWorld(b); pts = [p];
+    if (p.y > deskH + 1.5) pts.push(V(p.x, deskH + 0.6, p.z - 1.5));
+    if (q.y > deskH + 1.5) pts.push(V(q.x, deskH + 0.6, q.z - 1.5)); else pts.push(V((p.x + q.x) / 2, deskH + 0.6, (p.z + q.z) / 2));
+    pts.push(q);
+  } else if (la === 'floor' && lb === 'floor') {
+    const p = portWorld(a), q = portWorld(b); pts = [p, V(p.x, 1, p.z), V(q.x, 1, q.z), q];
+  } else pts = half(a).concat(half(b).reverse());
+  return pts.filter((p, i) => i === 0 || p.distanceTo(pts[i - 1]) > 0.8);
+}
+const activeCables = () => CABLES.filter(c => state.laptop || (c.a !== 'laptop' && c.b !== 'laptop'));
+const cableGroup = new THREE.Group(); scene.add(cableGroup);
+const cMats = Object.fromEntries(Object.entries(TYPES).map(([k, t]) => [k, mat(t.color, { roughness: 0.5 })]));
+const hiMat = mat('#ffd400', { emissive: '#ffb000', emissiveIntensity: 0.6 });
+let selCable = null, curLen = {};
+function buildCables() {
+  cableGroup.children.forEach(m => m.geometry.dispose()); cableGroup.clear(); curLen = {};
+  scene.updateMatrixWorld(true);
+  activeCables().forEach(c => {
+    const curve = new THREE.CatmullRomCurve3(cablePts(c), false, 'centripetal');
+    const len = curve.getLength(); curLen[c.id] = len;
+    if (!state.filter[c.t] && selCable !== c.id) return;
+    const sel = selCable === c.id;
+    const m = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(24, Math.round(len / 2)), TYPES[c.t].r * (sel ? 1.8 : 1), 8), sel ? hiMat : cMats[c.t]);
+    m.castShadow = true; m.userData.cid = c.id; cableGroup.add(m);
+  });
+}
+function lengthsAt(h) {
+  const old = deskH; deskH = h; placeAll(); scene.updateMatrixWorld(true);
+  const r = {}; activeCables().forEach(c => r[c.id] = new THREE.CatmullRomCurve3(cablePts(c), false, 'centripetal').getLength());
+  deskH = old; placeAll(); scene.updateMatrixWorld(true); return r;
+}
+const STD = [0.25, 0.5, 1, 1.5, 2, 3, 5, 7.5, 10, 15];
+const buyLen = cm => { const m = cm * 1.15 / 100; return STD.find(s => s >= m) ?? Math.ceil(m); };
+const fmt = m => (m < 1 ? m.toFixed(2) : m.toFixed(m % 1 ? 1 : 0)).replace('.', ',') + ' m';
+
+/* ---------- Seitenleiste ---------- */
+const $ = id => document.getElementById(id);
+function renderFilter() {
+  $('filter').innerHTML = Object.entries(TYPES).map(([k, t]) => {
+    const n = activeCables().filter(c => c.t === k).length;
+    return `<button class="chip" data-t="${k}" aria-pressed="${state.filter[k]}"><span class="dot" style="--c:${t.color}"></span>${t.name} · ${n}</button>`;
+  }).join('');
+}
+function renderTable() {
+  const maxL = lengthsAt(H_MAX);
+  $('kabel').innerHTML = activeCables().filter(c => state.filter[c.t]).map(c => {
+    const buy = c.fixed ? 'fest' : fmt(buyLen(maxL[c.id])) + (c.toBoden ? ' +' : '');
+    return `<tr data-cid="${c.id}" class="${selCable === c.id ? 'on' : ''}"><td><div class="t"><span class="dot" style="--c:${TYPES[c.t].color}"></span><div>${c.name}<small>${c.sub}</small></div></div></td><td class="n">${fmt(curLen[c.id] / 100)}</td><td class="n">${buy}</td></tr>`;
+  }).join('');
+}
+let selObj = null, helper = null;
+function renderSel() {
+  const box = $('auswahl');
+  if (!selObj) { box.innerHTML = '<h2>Auswahl</h2><p class="sel-note">Gerät antippen, um es auszuwählen. Ziehen verschiebt es, <kbd>R</kbd> dreht es.</p>'; return; }
+  const d = objs[selObj].def, p = state.pos[selObj], deg = Math.round(p.r * 180 / Math.PI);
+  const ebene = { top: 'auf der Platte', under: 'unter der Platte', floor: 'auf dem Boden' }[d.level];
+  box.innerHTML = `<h2>Auswahl</h2><div class="sel-name">${d.name}</div><p class="sel-note">${d.note}</p>
+  <dl class="kv"><dt>Maße</dt><dd>${d.size}</dd><dt>Lage</dt><dd>${ebene}</dd><dt>Position</dt><dd>x ${Math.round(p.x)} · z ${Math.round(p.z)} cm</dd><dt>Drehung</dt><dd>${deg}°</dd></dl>
+  <div class="row"><button class="btn" data-rot="-15">↺ 15°</button><button class="btn" data-rot="15">↻ 15°</button><button class="btn" id="deselect">Fertig</button></div>`;
+}
+$('auswahl').addEventListener('click', e => {
+  const r = e.target.closest('[data-rot]'); if (r) rotateSel(+r.dataset.rot);
+  if (e.target.id === 'deselect') select(null);
+});
+$('filter').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return; state.filter[b.dataset.t] = !state.filter[b.dataset.t]; save(); refresh(true); });
+$('kabel').addEventListener('click', e => { const tr = e.target.closest('tr[data-cid]'); if (!tr) return; selCable = selCable === tr.dataset.cid ? null : tr.dataset.cid; refresh(true); });
+
+function select(id) {
+  selObj = id; if (helper) { scene.remove(helper); helper = null; }
+  if (id) { helper = new THREE.BoxHelper(objs[id].group, 0x0071bc); scene.add(helper); }
+  renderSel();
+}
+function rotateSel(deg) {
+  if (!selObj) return; state.pos[selObj].r += deg * Math.PI / 180; placeAll(); buildCables(); helper?.update(); renderSel(); renderTable(); save();
+}
+function refresh(table) { placeAll(); buildCables(); helper?.update(); renderFilter(); if (table) renderTable(); }
+
+/* Tisch-Steuerung */
+const hoehe = $('hoehe'); hoehe.value = deskH; $('hoeheVal').textContent = deskH + ' cm';
+hoehe.addEventListener('input', () => { deskH = +hoehe.value; state.h = deskH; $('hoeheVal').textContent = deskH + ' cm'; buildDesk(); refresh(false); });
+hoehe.addEventListener('change', () => { save(); renderTable(); });
+$('optLbl').checked = state.labels; $('optLaptop').checked = state.laptop;
+const applyLabels = () => DEFS.forEach(d => objs[d.id].lbl.visible = state.labels);
+$('optLbl').addEventListener('change', e => { state.labels = e.target.checked; applyLabels(); save(); });
+$('optLaptop').addEventListener('change', e => { state.laptop = e.target.checked; if (!state.laptop && selObj === 'laptop') select(null); save(); refresh(true); });
+let resetArmed = 0;
+$('reset').addEventListener('click', e => {
+  const b = e.currentTarget;
+  if (Date.now() - resetArmed > 3000) { resetArmed = Date.now(); b.textContent = 'Wirklich zurücksetzen?'; b.classList.add('warn'); setTimeout(() => { b.textContent = 'Anordnung zurücksetzen'; b.classList.remove('warn'); }, 3000); return; }
+  resetArmed = 0; b.textContent = 'Anordnung zurücksetzen'; b.classList.remove('warn');
+  state.pos = structuredClone(DEFAULT); deskH = state.h = 75; hoehe.value = 75; $('hoeheVal').textContent = '75 cm';
+  buildDesk(); select(null); save(); refresh(true);
+});
+
+/* ---------- Ansichten und Steuerung ---------- */
+let mode = 'orbit', yaw = 0, pitch = 0;
+const VIEWS = {
+  over: () => { mode = 'orbit'; camera.position.set(170, 210, 240); controls.target.set(0, 60, -10); },
+  sit: () => { mode = 'fp'; camera.position.set(0, deskH + 43, 70); yaw = 0; pitch = -0.38; },
+  stand: () => { mode = 'fp'; camera.position.set(0, 165, 66); yaw = 0; pitch = -0.6; },
+  under: () => { mode = 'fp'; camera.position.set(-20, 40, 105); yaw = 0.12; pitch = -0.02; },
+};
+function setView(v) {
+  document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === v));
+  VIEWS[v](); controls.enabled = mode === 'orbit';
+  if (mode === 'orbit') controls.update(); else camera.rotation.set(pitch, yaw, 0);
+  $('hint').innerHTML = mode === 'orbit'
+    ? '<span>Gerät ziehen: verschieben</span><span><kbd>R</kbd> drehen</span><span>Fläche ziehen: Ansicht drehen</span><span>Rad: Zoom</span>'
+    : '<span><kbd>W A S D</kbd> gehen</span><span><kbd>Q</kbd>/<kbd>E</kbd> runter/hoch</span><span>Fläche ziehen: umsehen</span><span>Gerät ziehen: verschieben</span>';
+}
+document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let drag = null, look = null, moved = false;
+function setNdc(e) { const r = renderer.domElement.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(ndc, camera); }
+function limits(d) {
+  if (d.level === 'floor') return { x0: -280, x1: 280, z0: -150, z1: 200 };
+  return { x0: -DW / 2 + 4, x1: DW / 2 - 4, z0: -DD / 2 + 3, z1: DD / 2 - 3 };
+}
+renderer.domElement.addEventListener('pointerdown', e => {
+  setNdc(e); moved = false;
+  const hits = ray.intersectObjects([...pickables.filter(m => objs[m.userData.oid].group.visible), ...cableGroup.children], false);
+  const h = hits[0];
+  if (h && h.object.userData.oid) {
+    const id = h.object.userData.oid, d = objs[id].def, y = objs[id].group.position.y;
+    const plane = new THREE.Plane(V(0, 1, 0), -y), pt = new THREE.Vector3();
+    if (ray.ray.intersectPlane(plane, pt)) {
+      drag = { id, plane, off: V(state.pos[id].x - pt.x, 0, state.pos[id].z - pt.z), d };
+      controls.enabled = false; renderer.domElement.setPointerCapture(e.pointerId); select(id);
+    }
+  } else if (h && h.object.userData.cid) {
+    selCable = selCable === h.object.userData.cid ? null : h.object.userData.cid; refresh(true);
+  } else if (mode === 'fp') { look = { x: e.clientX, y: e.clientY }; renderer.domElement.setPointerCapture(e.pointerId); }
+});
+let pending = false;
+renderer.domElement.addEventListener('pointermove', e => {
+  if (drag) {
+    setNdc(e); const pt = new THREE.Vector3(); if (!ray.ray.intersectPlane(drag.plane, pt)) return;
+    const L = limits(drag.d), p = state.pos[drag.id];
+    p.x = Math.round(Math.max(L.x0, Math.min(L.x1, pt.x + drag.off.x))); p.z = Math.round(Math.max(L.z0, Math.min(L.z1, pt.z + drag.off.z)));
+    moved = true;
+    if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; placeAll(); buildCables(); helper?.update(); renderSel(); }); }
+  } else if (look) {
+    yaw -= (e.clientX - look.x) * 0.004; pitch = Math.max(-1.45, Math.min(1.2, pitch - (e.clientY - look.y) * 0.004));
+    look = { x: e.clientX, y: e.clientY }; camera.rotation.set(pitch, yaw, 0);
+  }
+});
+const endPtr = () => { if (drag) { drag = null; controls.enabled = mode === 'orbit'; if (moved) { save(); renderTable(); } } look = null; };
+renderer.domElement.addEventListener('pointerup', endPtr); renderer.domElement.addEventListener('pointercancel', endPtr);
+renderer.domElement.addEventListener('wheel', e => { if (mode !== 'fp') return; e.preventDefault(); const f = V(0, 0, -1).applyEuler(camera.rotation); camera.position.addScaledVector(f, -e.deltaY * 0.15); }, { passive: false });
+
+const keys = new Set();
+addEventListener('keydown', e => {
+  if (e.target.closest('input, button, textarea')) return;
+  const k = e.key.toLowerCase();
+  if (k === 'r' && selObj) { rotateSel(e.shiftKey ? -15 : 15); return; }
+  if (k === 'escape') select(null);
+  if ('wasdqe'.includes(k) && mode === 'fp') { keys.add(k); e.preventDefault(); }
+});
+addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
+
+/* ---------- Größe und Schleife ---------- */
+function resize() { const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h); labelR.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(stage);
+const clock = new THREE.Clock();
+function loop() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  if (mode === 'fp' && keys.size) {
+    const f = V(-Math.sin(yaw), 0, -Math.cos(yaw)), r = V(Math.cos(yaw), 0, -Math.sin(yaw)), s = 120 * dt;
+    if (keys.has('w')) camera.position.addScaledVector(f, s); if (keys.has('s')) camera.position.addScaledVector(f, -s);
+    if (keys.has('d')) camera.position.addScaledVector(r, s); if (keys.has('a')) camera.position.addScaledVector(r, -s);
+    if (keys.has('e')) camera.position.y += s; if (keys.has('q')) camera.position.y = Math.max(15, camera.position.y - s);
+  }
+  if (mode === 'orbit') controls.update();
+  renderer.render(scene, camera); labelR.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+
+buildDesk(); applyLabels(); refresh(true); renderSel(); resize(); setView('over'); loop();
+</script>
