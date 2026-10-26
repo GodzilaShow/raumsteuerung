@@ -1,0 +1,28 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'de.emsland.raumkiosk'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'de.emsland.raumkiosk'
+        minSdk 28
+        targetSdk 34
+        versionCode((project.findProperty('versionCode') ?: '1') as Integer)
+        versionName '1.' + (project.findProperty('versionCode') ?: '0')
+    }
+    // Fester Schlüssel: Updates lassen sich über die alte Version installieren, und die
+    // Prüfsumme im Einrichtungs-QR-Code bleibt gleich. Kein Geheimnis - siehe README.
+    signingConfigs {
+        kiosk {
+            storeFile file('../kiosk.keystore')
+            storePassword 'raumkiosk'
+            keyAlias 'kiosk'
+            keyPassword 'raumkiosk'
+        }
+    }
+    buildTypes {
+        release { minifyEnabled false; signingConfig signingConfigs.kiosk }
+        debug { signingConfig signingConfigs.kiosk }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
