@@ -164,6 +164,22 @@ function screen(w, h, tex, x, y, z) {
   p.position.set(x, y, z); return p;
 }
 
+/* Ein PC-Platz wie im Schulungsraum: Tisch 160 × 80, zwei Monitore 23,8″ (iiyama XUB2493HS), Tastatur, Maus,
+   Mini-PC (bluechip), Freischwinger. Blick nach +z: Monitore an der Vorderkante, Stuhl hinten. */
+function pcPlatz(g, tx, dunkel) {
+  const top = dunkel ? mat('#33383d') : mat('#e8eaec'), leg = mat(dunkel ? '#2a2e33' : '#8e959c', { metalness: 0.4 }), scr = mat('#141a20', { roughness: 0.3 });
+  g.add(bx(160, 2.5, 80, top, tx, 72.5, 0));
+  [[-76, -36], [76, -36], [-76, 36], [76, 36]].forEach(([x, z]) => g.add(bx(4, 72.5, 4, leg, tx + x, 0, z)));
+  g.add(bx(150, 8, 2, leg, tx, 63, 36));
+  [-29, 29].forEach(sx => {
+    const m = new THREE.Group(); m.position.set(tx + sx, 0, 24); m.rotation.y = sx < 0 ? 0.12 : -0.12; g.add(m);
+    m.add(bx(22, 1, 17, M.dark, 0, 75, 0)); m.add(bx(5, 26, 3, M.dark, 0, 76, 5));
+    m.add(bx(54, 33, 4, M.dark, 0, 87, 1)); m.add(bx(52, 30, 0.2, scr, 0, 88.5, -1.1));
+  });
+  g.add(bx(44, 2, 14, M.dark2, tx, 75, -10)); g.add(bx(6, 3, 10, M.dark2, tx + 32, 75, -10));
+  g.add(bx(18, 4, 18, M.dark2, tx, 75, 12));
+  const c = BUILD.freischwinger(); c.position.set(tx, 0, -52); g.add(c);
+}
 /* Jedes Gerät: Ursprung unten Mitte */
 const BUILD = {
   monitor(d) {
@@ -246,21 +262,31 @@ const BUILD = {
   row() {
     /* wie im Foto: 4 Tische 160 × 80 cm nebeneinander, je ein PC-Platz mit 2 Monitoren 24″, Tastatur, Maus, Mini-PC, Freischwinger.
        Blick nach +z (zu den Displays): Monitor an der Vorderkante, Stuhl hinten. */
-    const g = new THREE.Group(), top = mat('#e8eaec'), leg = mat('#8e959c', { metalness: 0.4 }), scr = mat('#141a20', { roughness: 0.3 });
-    [-240, -80, 80, 240].forEach(tx => {
-      g.add(bx(160, 2.5, 80, top, tx, 72.5, 0));
-      [[-76, -36], [76, -36], [-76, 36], [76, 36]].forEach(([x, z]) => g.add(bx(4, 72.5, 4, leg, tx + x, 0, z)));
-      g.add(bx(150, 8, 2, leg, tx, 63, 36));
-      /* ein Platz je Tisch: zwei Monitore, Tastatur und Mini-PC in der Mitte, ein Stuhl */
-      [-29, 29].forEach(sx => {
-        const m = new THREE.Group(); m.position.set(tx + sx, 0, 24); m.rotation.y = sx < 0 ? 0.12 : -0.12; g.add(m);
-        m.add(bx(22, 1, 17, M.dark, 0, 75, 0)); m.add(bx(5, 26, 3, M.dark, 0, 76, 5));
-        m.add(bx(54, 33, 4, M.dark, 0, 87, 1)); m.add(bx(52, 30, 0.2, scr, 0, 88.5, -1.1));
-      });
-      g.add(bx(44, 2, 14, M.dark2, tx, 75, -10)); g.add(bx(6, 3, 10, M.dark2, tx + 32, 75, -10));
-      g.add(bx(18, 4, 18, M.dark2, tx, 75, 12));
-      const c = BUILD.freischwinger(); c.position.set(tx, 0, -52); g.add(c);
-    });
+    const g = new THREE.Group();
+    [-240, -80, 80, 240].forEach(tx => pcPlatz(g, tx, false));
+    return g;
+  },
+  pcdesk() { const g = new THREE.Group(); pcPlatz(g, 0, true); return g; },
+  ecke() {
+    /* Ecke aus dem Video: Stehtisch dunkel, zwei Barhocker, Teppich, Kartons */
+    const g = new THREE.Group(), dk = mat('#2e3338'), leg = mat('#2a2e33', { metalness: 0.3 });
+    const c = document.createElement('canvas'); c.width = 256; c.height = 256; const x = c.getContext('2d');
+    x.fillStyle = '#ece9e2'; x.fillRect(0, 0, 256, 256); x.strokeStyle = '#3c4046'; x.lineWidth = 7;
+    for (let i = -256; i < 512; i += 85) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 256, 256); x.stroke(); x.beginPath(); x.moveTo(i + 256, 0); x.lineTo(i, 256); x.stroke(); }
+    const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace;
+    const rug = new THREE.Mesh(new THREE.BoxGeometry(140, 1.5, 190), new THREE.MeshStandardMaterial({ map: tx, roughness: 1 })); rug.position.set(-10, 0.75, 30); rug.receiveShadow = true; g.add(rug);
+    g.add(bx(120, 3, 60, dk, 40, 102, 60)); [[-56, -26], [56, -26], [-56, 26], [56, 26]].forEach(([a, b]) => g.add(bx(4, 102, 4, leg, 40 + a, 0, 60 + b)));
+    const wood = mat('#c9a874'), steel = mat('#b8bec4', { metalness: 0.6 });
+    [0, 75].forEach(sx => { g.add(bx(34, 3, 32, wood, sx, 72, 15)); g.add(bx(30, 22, 2, wood, sx, 85, 1)); [[-14, 2], [14, 2], [-14, 28], [14, 28]].forEach(([a, b]) => g.add(bx(2, 72, 2, steel, sx + a, 0, b))); });
+    const box = mat('#b98b55'); g.add(bx(50, 35, 40, box, 95, 0, -30)); g.add(bx(40, 30, 35, box, 50, 0, -55));
+    return g;
+  },
+  beamer() {
+    const g = new THREE.Group(); g.add(bx(4, 22, 4, M.frame, 0, 278, 0)); g.add(bx(32, 12, 34, M.white, 0, 266, 0));
+    return g;
+  },
+  kabelwand() {
+    const g = new THREE.Group(), o = mat('#e8742a'); g.add(bx(1.2, 90, 1.2, o, -1, 120, 0)); g.add(bx(1.2, 85, 1.2, mat('#9aa1a8'), 1.5, 125, 0)); g.add(bx(2, 4, 2, M.white, -1, 116, 0));
     return g;
   },
   freischwinger() {
@@ -312,13 +338,17 @@ const DEFS = [
   { id: 'saal', b: 'saalcam', room: true, name: 'Saal-Kamera', note: 'Fest auf den ganzen Raum (Empfehlung Yealink UVC30 Room). USB zum Raum-PC, über 5 m aktives USB-Kabel.', size: '14 × 5 cm', level: 'wall', axis: 'x', x: -460.0, z: 226, r: Math.PI, port: [0, 222, -3] },
   { id: 'ez', b: 'ezcast', room: true, name: 'EZCast', note: 'EZCast Pro Dongle II, eigener Hotspot, kein Netz. HDMI → Matrix Eingang 3.', size: '9 × 4,5 cm', level: 'wall', axis: 'x', x: -460.0, z: 226.5, r: Math.PI, port: [0, 87, -2] },
   { id: 'ptz', b: 'ptz', room: true, name: 'PTZ-Kamera', note: 'Speaker-Kamera an der Decke, schaut immer auf den Sprechertisch. PoE+ (Yamaha Port 8), Kabel über die Decke. Modell offen.', size: 'an der Decke', level: 'ceil', x: -465.0, z: -215.0, r: 0, aim: true, port: [0, 299, 0] },
-  { id: 'row1', b: 'row', room: true, name: 'Reihe 1', note: '4 Tische 160 × 80 cm, je ein PC-Platz mit 2 Monitoren und Freischwinger (wie im Schulungsraum), also 4 Plätze. Abstand zur nächsten Reihe 180 cm.', size: '640 × 80 cm', level: 'floor', x: -440.0, z: -70.0, r: 0, port: [0, 0, 0] },
-  { id: 'row2', b: 'row', room: true, name: 'Reihe 2', note: '4 Tische 160 × 80 cm, je ein PC-Platz mit 2 Monitoren und Freischwinger (wie im Schulungsraum), also 4 Plätze. Abstand zur nächsten Reihe 180 cm.', size: '640 × 80 cm', level: 'floor', x: -440.0, z: -250.0, r: 0, port: [0, 0, 0] },
-  { id: 'row3', b: 'row', room: true, name: 'Reihe 3', note: '4 Tische 160 × 80 cm, je ein PC-Platz mit 2 Monitoren und Freischwinger (wie im Schulungsraum), also 4 Plätze. Abstand zur nächsten Reihe 180 cm.', size: '640 × 80 cm', level: 'floor', x: -440.0, z: -430.0, r: 0, port: [0, 0, 0] },
-  { id: 'tt1', b: 'tt', room: true, name: 'RM-TT 1', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 2).', size: 'Ø 14 cm', level: 'tabletop', x: -280.0, z: -82.0, r: 0, port: [0, 1, 0] },
-  { id: 'tt2', b: 'tt', room: true, name: 'RM-TT 2', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 3).', size: 'Ø 14 cm', level: 'tabletop', x: -600.0, z: -82.0, r: 0, port: [0, 1, 0] },
-  { id: 'tt3', b: 'tt', room: true, name: 'RM-TT 3', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 4).', size: 'Ø 14 cm', level: 'tabletop', x: -440.0, z: -262.0, r: 0, port: [0, 1, 0] },
-  { id: 'tt4', b: 'tt', room: true, name: 'RM-TT 4', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 5).', size: 'Ø 14 cm', level: 'tabletop', x: -440.0, z: -442.0, r: 0, port: [0, 1, 0] },
+  { id: 'ecke', b: 'ecke', room: true, name: 'Ecke mit Stehtisch', note: 'Aus dem Video: dunkler Stehtisch, zwei Barhocker, Teppich, Kartons. Lage im Raum geschätzt, bitte verschieben.', size: 'ca. 250 × 230 cm', level: 'floor', x: -780.0, z: 80.0, r: 0, port: [0, 0, 0] },
+  { id: 'dunkeltisch', b: 'pcdesk', room: true, name: 'PC-Tisch dunkel', note: 'Aus dem Video: anthrazitfarbener Tisch mit zwei Monitoren. Lage geschätzt, bitte verschieben.', size: '160 × 80 cm', level: 'floor', x: -780.0, z: -70.0, r: Math.PI / 2, port: [0, 0, 0] },
+  { id: 'beamer', b: 'beamer', room: true, name: 'Alter Beamer-Halter', note: 'Aus dem Video: alter Projektor an der Decke mit Kabel. Sein Leitungsweg wird für das PTZ-Kabel genutzt. Lage geschätzt.', size: 'an der Decke', level: 'ceil', x: -430.0, z: -110.0, r: 0, port: [0, 278, 0] },
+  { id: 'kabelwand', b: 'kabelwand', room: true, name: 'Kabel aus der Wand', note: 'Aus dem Video: orangefarbenes Kabel (vermutlich LWL oder Patchkabel) und graues Kabel hängen aus der Wand. Lage geschätzt.', size: '–', level: 'wall', axis: 'x', x: -140.0, z: 229, r: Math.PI, port: [0, 120, 0] },
+  { id: 'row1', b: 'row', room: true, name: 'Reihe 1', note: '4 Tische 160 × 80 cm, je ein PC-Platz mit 2 Monitoren und Freischwinger (wie im Schulungsraum), also 4 Plätze. Abstand zur nächsten Reihe 175 cm.', size: '640 × 80 cm', level: 'floor', x: -410.0, z: -85.0, r: 0, port: [0, 0, 0] },
+  { id: 'row2', b: 'row', room: true, name: 'Reihe 2', note: '4 Tische 160 × 80 cm, je ein PC-Platz mit 2 Monitoren und Freischwinger (wie im Schulungsraum), also 4 Plätze. Abstand zur nächsten Reihe 175 cm.', size: '640 × 80 cm', level: 'floor', x: -410.0, z: -260.0, r: 0, port: [0, 0, 0] },
+  { id: 'row3', b: 'row', room: true, name: 'Reihe 3', note: '4 Tische 160 × 80 cm, je ein PC-Platz mit 2 Monitoren und Freischwinger (wie im Schulungsraum), also 4 Plätze. Abstand zur nächsten Reihe 175 cm.', size: '640 × 80 cm', level: 'floor', x: -410.0, z: -435.0, r: 0, port: [0, 0, 0] },
+  { id: 'tt1', b: 'tt', room: true, name: 'RM-TT 1', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 2).', size: 'Ø 14 cm', level: 'tabletop', x: -250.0, z: -97.0, r: 0, port: [0, 1, 0] },
+  { id: 'tt2', b: 'tt', room: true, name: 'RM-TT 2', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 3).', size: 'Ø 14 cm', level: 'tabletop', x: -570.0, z: -97.0, r: 0, port: [0, 1, 0] },
+  { id: 'tt3', b: 'tt', room: true, name: 'RM-TT 3', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 4).', size: 'Ø 14 cm', level: 'tabletop', x: -410.0, z: -272.0, r: 0, port: [0, 1, 0] },
+  { id: 'tt4', b: 'tt', room: true, name: 'RM-TT 4', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 5).', size: 'Ø 14 cm', level: 'tabletop', x: -410.0, z: -447.0, r: 0, port: [0, 1, 0] },
   { id: 'stuhl', b: 'stuhl', name: 'Stuhl', note: 'Nur zur Orientierung.', size: '48 × 46 cm', level: 'floor', x: 0, z: 62, r: 0, port: [0, 0, 0] },
 ];
 const CABLES = [
@@ -358,8 +388,8 @@ const CABLES = [
 
 /* ---------- Zustand ---------- */
 const DEFAULT = Object.fromEntries(DEFS.map(d => [d.id, { x: d.x, z: d.z, r: d.r }]));
-let state = { v: 2, pos: structuredClone(DEFAULT), h: 75, labels: true, laptop: true, raum: true, filter: Object.fromEntries(Object.keys(TYPES).map(k => [k, true])) };
-try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.pos && (s.v || 1) < 2) Object.keys(s.pos).forEach(k => { if (/^(row|tt)\d/.test(k)) delete s.pos[k]; }); if (s && s.pos) state = { ...state, ...s, v: 2, pos: { ...structuredClone(DEFAULT), ...s.pos }, filter: { ...state.filter, ...(s.filter || {}) } }; } catch (e) {}
+let state = { v: 3, pos: structuredClone(DEFAULT), h: 75, labels: true, laptop: true, raum: true, filter: Object.fromEntries(Object.keys(TYPES).map(k => [k, true])) };
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.pos && (s.v || 1) < 3) Object.keys(s.pos).forEach(k => { if (/^(row|tt)\d/.test(k)) delete s.pos[k]; }); if (s && s.pos) state = { ...state, ...s, v: 3, pos: { ...structuredClone(DEFAULT), ...s.pos }, filter: { ...state.filter, ...(s.filter || {}) } }; } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
 deskH = state.h;
 
@@ -432,19 +462,29 @@ function rlabelAt(x, y, z, text) { const el = document.createElement('div'); el.
   const A = R(0, 0), B = R(10, 7.5), cx = (A.x + B.x) / 2, cz = (A.z + B.z) / 2;
   const wall = (w, x, z, ry) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, 300), wallMat); m.position.set(x, 150, z); m.rotation.y = ry; m.receiveShadow = true; roomG.add(m); };
   wall(1000, cx, A.z, Math.PI); wall(750, A.x, cz, -Math.PI / 2); wall(1000, cx, B.z, 0);
-  /* rechte Wand mit Fensterband: Brüstung 0–95 cm, Sturz ab 245 cm, Fenster Y 0,3–6,7 m */
-  const piece = (w, h, y, z) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallMat); m.position.set(B.x, y, z); m.rotation.y = Math.PI / 2; m.receiveShadow = true; roomG.add(m); };
-  const wz0 = R(0, 0.3).z, wz1 = R(0, 6.7).z;
-  piece(750, 95, 47.5, cz); piece(750, 55, 272.5, cz);
-  piece(A.z - wz0, 150, 170, (A.z + wz0) / 2); piece(wz1 - B.z, 150, 170, (wz1 + B.z) / 2);
-  const win = new THREE.Mesh(new THREE.PlaneGeometry(640, 150), new THREE.MeshStandardMaterial({ color: '#cfe6f7', transparent: true, opacity: 0.18, roughness: 0.05, metalness: 0.1, side: THREE.DoubleSide, depthWrite: false }));
-  win.position.set(B.x + 0.6, 170, R(0, 3.5).z); win.rotation.y = Math.PI / 2; roomG.add(win);
-  rlabelAt(B.x + 5, 255, R(0, 3.5).z, 'Fenster');
+  /* Fensterfront: Glas vom Boden bis zur Decke, dunkle Pfosten alle 125 cm, Riegel bei 90 und 240 cm, runde Betonsäulen innen */
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(750, 300), new THREE.MeshStandardMaterial({ color: '#cfe6f7', transparent: true, opacity: 0.16, roughness: 0.05, metalness: 0.1, side: THREE.DoubleSide, depthWrite: false }));
+  glass.position.set(B.x, 150, cz); glass.rotation.y = Math.PI / 2; roomG.add(glass);
+  const frame = mat('#3a3f45', { metalness: 0.4 });
+  for (let z = A.z; z >= B.z - 1; z -= 125) roomG.add(bx(6, 300, 6, frame, B.x + 1, 0, z));
+  [0, 90, 240, 296].forEach(y => roomG.add(bx(6, 4, 750, frame, B.x + 1, y, cz)));
+  const beton = mat('#b7b5b0', { roughness: 0.9 });
+  [R(0, 0.9).z, R(0, 3.4).z, R(0, 5.9).z].forEach(z => { const c = new THREE.Mesh(new THREE.CylinderGeometry(16, 16, 300, 24), beton); c.position.set(B.x + 40, 150, z); c.castShadow = c.receiveShadow = true; roomG.add(c); });
+  roomG.add(bx(26, 2, 750, mat('#4a4f55'), B.x + 16, 0, cz));
+  rlabelAt(B.x + 20, 270, R(0, 3.5).z, 'Fensterfront');
+  /* Decke mit gelochten Akustikplatten (nur von innen sichtbar) */
+  const dc = document.createElement('canvas'); dc.width = 128; dc.height = 128; const dx2 = dc.getContext('2d');
+  dx2.fillStyle = '#f2f2f0'; dx2.fillRect(0, 0, 128, 128); dx2.fillStyle = '#3a3a3a';
+  for (let i = 0; i < 70; i++) { dx2.beginPath(); dx2.arc((i * 37) % 128, (i * 53) % 128, 1.5 + (i % 3), 0, 7); dx2.fill(); }
+  const dtx = new THREE.CanvasTexture(dc); dtx.wrapS = dtx.wrapT = THREE.RepeatWrapping; dtx.repeat.set(16, 12); dtx.colorSpace = THREE.SRGBColorSpace;
+  const decke = new THREE.Mesh(new THREE.PlaneGeometry(1000, 750), new THREE.MeshStandardMaterial({ map: dtx, roughness: 1 })); decke.rotation.x = Math.PI / 2; decke.position.set(cx, 300, cz); roomG.add(decke);
   const door = new THREE.Mesh(new THREE.PlaneGeometry(100, 210), mat('#b08a5a')); door.position.set(A.x - 0.6, 105, R(0, 6.85).z); door.rotation.y = -Math.PI / 2; roomG.add(door);
   rlabelAt(A.x - 5, 225, R(0, 6.85).z, 'Eingang');
-  /* Hauptkabelkanal als Brüstungskanal an der Fensterwand */
-  const kanal = bx(8, 16, 700, mat('#e9e6df'), B.x + 4, 62, cz); roomG.add(kanal);
-  rlabelAt(B.x + 10, 86, R(0, 1.2).z, 'Hauptkabelkanal');
+  /* Kabelkanal unten an der Wand (Sockelkanal) mit Steckdosen, an der Rückwand und der Türwand */
+  const km = mat('#ecebe6');
+  roomG.add(bx(1000, 12, 6, km, cx, 4, B.z + 3)); roomG.add(bx(6, 12, 560, km, A.x - 3, 4, R(0, 3.2).z));
+  for (let x = A.x - 80; x > B.x; x -= 150) roomG.add(bx(8, 8, 0.4, M.white, x, 6, B.z + 6.2));
+  rlabelAt(cx, 24, B.z + 10, 'Kabelkanal mit Steckdosen');
   const gang = new THREE.Mesh(new THREE.PlaneGeometry(135, 460), new THREE.MeshBasicMaterial({ color: '#3b8a1a', transparent: true, opacity: 0.12, depthWrite: false }));
   gang.rotation.x = -Math.PI / 2; gang.position.set(R(0.925, 0).x, 0.3, R(0, 5.2).z); roomG.add(gang);
   rlabelAt(R(0.925, 0).x, 6, R(0, 6.2).z, 'Gang');
