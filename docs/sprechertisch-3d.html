@@ -449,8 +449,6 @@ const outG = new THREE.Group(); scene.add(outG);
   const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace;
   const bld = new THREE.Mesh(new THREE.BoxGeometry(1040, STOCK, 790), [new THREE.MeshLambertMaterial({ map: tx }), new THREE.MeshLambertMaterial({ map: tx }), plain('#b9b2a6'), plain('#b9b2a6'), new THREE.MeshLambertMaterial({ map: tx }), new THREE.MeshLambertMaterial({ map: tx })]);
   bld.position.set((A.x + B.x) / 2, G + STOCK / 2 - 1, (A.z + B.z) / 2); outG.add(bld);
-  /* Nachbargebäude gegenüber */
-  [[-3000, -900, 1400, 1600], [-3100, 900, 1800, 1300], [-2900, 2600, 1200, 1500]].forEach(([x, z, h, w]) => { const b = new THREE.Mesh(new THREE.BoxGeometry(700, h, w), new THREE.MeshLambertMaterial({ map: tx })); b.position.set(x, G + h / 2, z); outG.add(b); });
 })();
 const ROOMB = { x0: R(10, 0).x + 5, x1: R(0, 0).x - 5, z0: R(0, 7.5).z + 5, z1: R(0, 0).z - 5 };
 const applyRoom = () => { roomG.visible = state.raum; outG.visible = state.raum; };
