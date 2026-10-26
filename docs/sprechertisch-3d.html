@@ -244,9 +244,28 @@ const BUILD = {
   },
   wallbox() { const g = new THREE.Group(); g.add(bx(8, 8, 3, M.white, 0, 26, 0)); g.add(bx(4, 3, 0.2, M.dark2, 0, 28.5, 1.6)); return g; },
   row() {
-    const g = new THREE.Group(); g.add(bx(830, 3, 45, M.wood, 0, 72, 0));
-    [-405, -138, 138, 405].forEach(x => g.add(bx(4, 72, 40, M.frame, x, 0, 0)));
-    [-311, -104, 104, 311].forEach(x => { const c = BUILD.konfstuhl(); c.position.set(x, 0, -32); g.add(c); });
+    /* wie im Foto: 4 Tische 160 × 80 cm nebeneinander, je 2 PC-Plätze (Monitor 24″, Tastatur, Maus, Mini-PC), Freischwinger.
+       Blick nach +z (zu den Displays): Monitor an der Vorderkante, Stuhl hinten. */
+    const g = new THREE.Group(), top = mat('#e8eaec'), leg = mat('#8e959c', { metalness: 0.4 }), scr = mat('#141a20', { roughness: 0.3 });
+    [-240, -80, 80, 240].forEach(tx => {
+      g.add(bx(160, 2.5, 80, top, tx, 72.5, 0));
+      [[-76, -36], [76, -36], [-76, 36], [76, 36]].forEach(([x, z]) => g.add(bx(4, 72.5, 4, leg, tx + x, 0, z)));
+      g.add(bx(150, 8, 2, leg, tx, 63, 36));
+      [-40, 40].forEach(sx => {
+        const x = tx + sx;
+        g.add(bx(22, 1, 17, M.dark, x, 75, 24)); g.add(bx(5, 26, 3, M.dark, x, 76, 29));
+        g.add(bx(54, 33, 4, M.dark, x, 87, 25)); g.add(bx(52, 30, 0.2, scr, x, 88.5, 22.9));
+        g.add(bx(44, 2, 14, M.dark2, x, 75, -12)); g.add(bx(6, 3, 10, M.dark2, x + 30, 75, -12));
+        g.add(bx(18, 4, 18, M.dark2, x - 34, 75, 18));
+        const c = BUILD.freischwinger(); c.position.set(x, 0, -52); g.add(c);
+      });
+    });
+    return g;
+  },
+  freischwinger() {
+    const g = new THREE.Group(), m = mat('#2c3138'), chrome = mat('#c9cfd5', { metalness: 0.8, roughness: 0.25 });
+    g.add(bx(46, 5, 44, m, 0, 44, 0)); g.add(bx(44, 40, 4, m, 0, 52, -21));
+    [-21, 21].forEach(x => { g.add(bx(2, 2, 52, chrome, x, 0, -2)); g.add(bx(2, 44, 2, chrome, x, 1, 23)); g.add(bx(2, 2, 26, chrome, x, 43, 11)); });
     return g;
   },
   konfstuhl() {
@@ -292,15 +311,13 @@ const DEFS = [
   { id: 'saal', b: 'saalcam', room: true, name: 'Saal-Kamera', note: 'Fest auf den ganzen Raum (Empfehlung Yealink UVC30 Room). USB zum Raum-PC, über 5 m aktives USB-Kabel.', size: '14 × 5 cm', level: 'wall', axis: 'x', x: -460.0, z: 226, r: Math.PI, port: [0, 222, -3] },
   { id: 'ez', b: 'ezcast', room: true, name: 'EZCast', note: 'EZCast Pro Dongle II, eigener Hotspot, kein Netz. HDMI → Matrix Eingang 3.', size: '9 × 4,5 cm', level: 'wall', axis: 'x', x: -460.0, z: 226.5, r: Math.PI, port: [0, 87, -2] },
   { id: 'ptz', b: 'ptz', room: true, name: 'PTZ-Kamera', note: 'Speaker-Kamera an der Decke, schaut immer auf den Sprechertisch. PoE+ (Yamaha Port 8), Kabel über die Decke. Modell offen.', size: 'an der Decke', level: 'ceil', x: -465.0, z: -215.0, r: 0, aim: true, port: [0, 299, 0] },
-  { id: 'row1', b: 'row', room: true, name: 'Reihe 1', note: '4 Plätze, Tisch 830 × 45 cm (aus dem Raumplan).', size: '830 × 45 cm', level: 'floor', x: -480.0, z: -130.0, r: 0, port: [0, 0, 0] },
-  { id: 'row2', b: 'row', room: true, name: 'Reihe 2', note: '4 Plätze, Tisch 830 × 45 cm (aus dem Raumplan).', size: '830 × 45 cm', level: 'floor', x: -475.0, z: -205.0, r: 0, port: [0, 0, 0] },
-  { id: 'row3', b: 'row', room: true, name: 'Reihe 3', note: '4 Plätze, Tisch 830 × 45 cm (aus dem Raumplan).', size: '830 × 45 cm', level: 'floor', x: -475.0, z: -280.0, r: 0, port: [0, 0, 0] },
-  { id: 'row4', b: 'row', room: true, name: 'Reihe 4', note: '4 Plätze, Tisch 830 × 45 cm (aus dem Raumplan).', size: '830 × 45 cm', level: 'floor', x: -475.0, z: -360.0, r: 0, port: [0, 0, 0] },
-  { id: 'row5', b: 'row', room: true, name: 'Reihe 5', note: '4 Plätze, Tisch 830 × 45 cm (aus dem Raumplan).', size: '830 × 45 cm', level: 'floor', x: -475.0, z: -430.0, r: 0, port: [0, 0, 0] },
-  { id: 'tt1', b: 'tt', room: true, name: 'RM-TT 1', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 2).', size: 'Ø 14 cm', level: 'tabletop', x: -357.0, z: -135.0, r: 0, port: [0, 1, 0] },
-  { id: 'tt2', b: 'tt', room: true, name: 'RM-TT 2', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 3).', size: 'Ø 14 cm', level: 'tabletop', x: -577.0, z: -205.0, r: 0, port: [0, 1, 0] },
-  { id: 'tt3', b: 'tt', room: true, name: 'RM-TT 3', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 4).', size: 'Ø 14 cm', level: 'tabletop', x: -357.0, z: -280.0, r: 0, port: [0, 1, 0] },
-  { id: 'tt4', b: 'tt', room: true, name: 'RM-TT 4', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 5).', size: 'Ø 14 cm', level: 'tabletop', x: -577.0, z: -360.0, r: 0, port: [0, 1, 0] },
+  { id: 'row1', b: 'row', room: true, name: 'Reihe 1', note: '4 Tische 160 × 80 cm, 8 PC-Plätze mit Freischwinger (wie im Schulungsraum). Abstand zur nächsten Reihe 180 cm.', size: '640 × 80 cm', level: 'floor', x: -440.0, z: -70.0, r: 0, port: [0, 0, 0] },
+  { id: 'row2', b: 'row', room: true, name: 'Reihe 2', note: '4 Tische 160 × 80 cm, 8 PC-Plätze mit Freischwinger (wie im Schulungsraum). Abstand zur nächsten Reihe 180 cm.', size: '640 × 80 cm', level: 'floor', x: -440.0, z: -250.0, r: 0, port: [0, 0, 0] },
+  { id: 'row3', b: 'row', room: true, name: 'Reihe 3', note: '4 Tische 160 × 80 cm, 8 PC-Plätze mit Freischwinger (wie im Schulungsraum). Abstand zur nächsten Reihe 180 cm.', size: '640 × 80 cm', level: 'floor', x: -440.0, z: -430.0, r: 0, port: [0, 0, 0] },
+  { id: 'tt1', b: 'tt', room: true, name: 'RM-TT 1', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 2).', size: 'Ø 14 cm', level: 'tabletop', x: -280.0, z: -82.0, r: 0, port: [0, 1, 0] },
+  { id: 'tt2', b: 'tt', room: true, name: 'RM-TT 2', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 3).', size: 'Ø 14 cm', level: 'tabletop', x: -600.0, z: -82.0, r: 0, port: [0, 1, 0] },
+  { id: 'tt3', b: 'tt', room: true, name: 'RM-TT 3', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 4).', size: 'Ø 14 cm', level: 'tabletop', x: -440.0, z: -262.0, r: 0, port: [0, 1, 0] },
+  { id: 'tt4', b: 'tt', room: true, name: 'RM-TT 4', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 5).', size: 'Ø 14 cm', level: 'tabletop', x: -440.0, z: -442.0, r: 0, port: [0, 1, 0] },
   { id: 'stuhl', b: 'stuhl', name: 'Stuhl', note: 'Nur zur Orientierung.', size: '48 × 46 cm', level: 'floor', x: 0, z: 62, r: 0, port: [0, 0, 0] },
 ];
 const CABLES = [
@@ -340,8 +357,8 @@ const CABLES = [
 
 /* ---------- Zustand ---------- */
 const DEFAULT = Object.fromEntries(DEFS.map(d => [d.id, { x: d.x, z: d.z, r: d.r }]));
-let state = { pos: structuredClone(DEFAULT), h: 75, labels: true, laptop: true, raum: true, filter: Object.fromEntries(Object.keys(TYPES).map(k => [k, true])) };
-try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.pos) state = { ...state, ...s, pos: { ...structuredClone(DEFAULT), ...s.pos }, filter: { ...state.filter, ...(s.filter || {}) } }; } catch (e) {}
+let state = { v: 2, pos: structuredClone(DEFAULT), h: 75, labels: true, laptop: true, raum: true, filter: Object.fromEntries(Object.keys(TYPES).map(k => [k, true])) };
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.pos && (s.v || 1) < 2) Object.keys(s.pos).forEach(k => { if (/^(row|tt)\d/.test(k)) delete s.pos[k]; }); if (s && s.pos) state = { ...state, ...s, v: 2, pos: { ...structuredClone(DEFAULT), ...s.pos }, filter: { ...state.filter, ...(s.filter || {}) } }; } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
 deskH = state.h;
 
@@ -597,10 +614,10 @@ function renderRows() {
   const rows = DEFS.filter(d => d.b === 'row').map(d => ({ n: d.name, z: state.pos[d.id].z })).sort((a, b) => b.z - a.z);
   let html = '<dl class="rows">';
   for (let i = 1; i < rows.length; i++) {
-    const pitch = Math.round(rows[i - 1].z - rows[i].z), ok = pitch >= 110, clash = pitch < 76;
-    html += `<dt>${rows[i - 1].n} → ${rows[i].n}</dt><dd class="${ok ? '' : 'w'}">${pitch} cm${clash ? ' · Stühle stoßen an' : ok ? '' : ' · eng'}</dd>`;
+    const pitch = Math.round(rows[i - 1].z - rows[i].z), free = pitch - 80, ok = free >= 90, clash = pitch < 112;
+    html += `<dt>${rows[i - 1].n} → ${rows[i].n}</dt><dd class="${ok ? '' : 'w'}">${pitch} cm · frei ${free} cm${clash ? ' · Stühle stoßen an' : ok ? '' : ' · eng'}</dd>`;
   }
-  box.innerHTML = html + '</dl><p class="note">Abstand Tischmitte zu Tischmitte. Bei 45 cm tiefen Tischen sind etwa 110–120 cm bequem; unter 76 cm stößt die Stuhllehne an den Tisch dahinter. Reihen lassen sich verschieben.</p>';
+  box.innerHTML = html + '</dl><p class="note">Erste Zahl: Tischmitte zu Tischmitte. „Frei“: Boden zwischen den Tischkanten (Tische 80 cm tief), davon brauchen die Stühle etwa 30–40 cm. Ab 90 cm frei kommt man gut durch. Reihen lassen sich verschieben.</p>';
 }
 function refresh(table) { placeAll(); buildCables(); helper?.update(); renderFilter(); renderRows(); if (table) renderTable(); }
 
