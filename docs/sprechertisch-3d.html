@@ -147,7 +147,7 @@ function screenTex(t1, t2, bg = '#0b3a5b') {
   const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; return tx;
 }
 function screen(w, h, tex, x, y, z) {
-  const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex }));
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
   p.position.set(x, y, z); return p;
 }
 
@@ -270,13 +270,13 @@ deskH = state.h;
 
 /* ---------- Szene ---------- */
 const stage = document.getElementById('stage');
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 stage.prepend(renderer.domElement);
 const labelR = new CSS2DRenderer(); labelR.domElement.style.cssText = 'position:absolute;inset:0;pointer-events:none';
 stage.appendChild(labelR.domElement);
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(55, 1, 1, 3000); camera.rotation.order = 'YXZ';
+const camera = new THREE.PerspectiveCamera(55, 1, 2, 3000); camera.rotation.order = 'YXZ';
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.49; controls.minDistance = 40; controls.maxDistance = 1500;
 
@@ -338,7 +338,7 @@ function rlabel(obj, text, y) { const el = document.createElement('div'); el.cla
   [['Display links', 4.5], ['Display rechts', 7.1]].forEach(([n, X]) => {
     const p = R(X, 0), g = new THREE.Group();
     g.add(bx(219.4, 125.4, 7.7, M.dark, 0, 95, 0));
-    g.add(screen(215, 121, screenTex('Präsentation', 'ViewSonic CDE98G3 · 98″'), 0, 95 + 62.7, 3.86));
+    g.add(screen(215, 121, screenTex('Präsentation', 'ViewSonic CDE98G3 · 98″'), 0, 95 + 62.7, 4.1));
     g.position.set(p.x, 0, p.z - 5); g.rotation.y = Math.PI; roomG.add(g); rlabel(g, n + ' 98″', 232);
   });
   [['Lautsprecher L (VXL)', 3.0], ['Lautsprecher R (VXL)', 8.7]].forEach(([n, X]) => {
