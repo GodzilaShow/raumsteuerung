@@ -244,21 +244,22 @@ const BUILD = {
   },
   wallbox() { const g = new THREE.Group(); g.add(bx(8, 8, 3, M.white, 0, 26, 0)); g.add(bx(4, 3, 0.2, M.dark2, 0, 28.5, 1.6)); return g; },
   row() {
-    /* wie im Foto: 4 Tische 160 × 80 cm nebeneinander, je 2 PC-Plätze (Monitor 24″, Tastatur, Maus, Mini-PC), Freischwinger.
+    /* wie im Foto: 4 Tische 160 × 80 cm nebeneinander, je ein PC-Platz mit 2 Monitoren 24″, Tastatur, Maus, Mini-PC, Freischwinger.
        Blick nach +z (zu den Displays): Monitor an der Vorderkante, Stuhl hinten. */
     const g = new THREE.Group(), top = mat('#e8eaec'), leg = mat('#8e959c', { metalness: 0.4 }), scr = mat('#141a20', { roughness: 0.3 });
     [-240, -80, 80, 240].forEach(tx => {
       g.add(bx(160, 2.5, 80, top, tx, 72.5, 0));
       [[-76, -36], [76, -36], [-76, 36], [76, 36]].forEach(([x, z]) => g.add(bx(4, 72.5, 4, leg, tx + x, 0, z)));
       g.add(bx(150, 8, 2, leg, tx, 63, 36));
-      [-40, 40].forEach(sx => {
-        const x = tx + sx;
-        g.add(bx(22, 1, 17, M.dark, x, 75, 24)); g.add(bx(5, 26, 3, M.dark, x, 76, 29));
-        g.add(bx(54, 33, 4, M.dark, x, 87, 25)); g.add(bx(52, 30, 0.2, scr, x, 88.5, 22.9));
-        g.add(bx(44, 2, 14, M.dark2, x, 75, -12)); g.add(bx(6, 3, 10, M.dark2, x + 30, 75, -12));
-        g.add(bx(18, 4, 18, M.dark2, x - 34, 75, 18));
-        const c = BUILD.freischwinger(); c.position.set(x, 0, -52); g.add(c);
+      /* ein Platz je Tisch: zwei Monitore, Tastatur und Mini-PC in der Mitte, ein Stuhl */
+      [-29, 29].forEach(sx => {
+        const m = new THREE.Group(); m.position.set(tx + sx, 0, 24); m.rotation.y = sx < 0 ? 0.12 : -0.12; g.add(m);
+        m.add(bx(22, 1, 17, M.dark, 0, 75, 0)); m.add(bx(5, 26, 3, M.dark, 0, 76, 5));
+        m.add(bx(54, 33, 4, M.dark, 0, 87, 1)); m.add(bx(52, 30, 0.2, scr, 0, 88.5, -1.1));
       });
+      g.add(bx(44, 2, 14, M.dark2, tx, 75, -10)); g.add(bx(6, 3, 10, M.dark2, tx + 32, 75, -10));
+      g.add(bx(18, 4, 18, M.dark2, tx, 75, 12));
+      const c = BUILD.freischwinger(); c.position.set(tx, 0, -52); g.add(c);
     });
     return g;
   },
@@ -311,9 +312,9 @@ const DEFS = [
   { id: 'saal', b: 'saalcam', room: true, name: 'Saal-Kamera', note: 'Fest auf den ganzen Raum (Empfehlung Yealink UVC30 Room). USB zum Raum-PC, über 5 m aktives USB-Kabel.', size: '14 × 5 cm', level: 'wall', axis: 'x', x: -460.0, z: 226, r: Math.PI, port: [0, 222, -3] },
   { id: 'ez', b: 'ezcast', room: true, name: 'EZCast', note: 'EZCast Pro Dongle II, eigener Hotspot, kein Netz. HDMI → Matrix Eingang 3.', size: '9 × 4,5 cm', level: 'wall', axis: 'x', x: -460.0, z: 226.5, r: Math.PI, port: [0, 87, -2] },
   { id: 'ptz', b: 'ptz', room: true, name: 'PTZ-Kamera', note: 'Speaker-Kamera an der Decke, schaut immer auf den Sprechertisch. PoE+ (Yamaha Port 8), Kabel über die Decke. Modell offen.', size: 'an der Decke', level: 'ceil', x: -465.0, z: -215.0, r: 0, aim: true, port: [0, 299, 0] },
-  { id: 'row1', b: 'row', room: true, name: 'Reihe 1', note: '4 Tische 160 × 80 cm, 8 PC-Plätze mit Freischwinger (wie im Schulungsraum). Abstand zur nächsten Reihe 180 cm.', size: '640 × 80 cm', level: 'floor', x: -440.0, z: -70.0, r: 0, port: [0, 0, 0] },
-  { id: 'row2', b: 'row', room: true, name: 'Reihe 2', note: '4 Tische 160 × 80 cm, 8 PC-Plätze mit Freischwinger (wie im Schulungsraum). Abstand zur nächsten Reihe 180 cm.', size: '640 × 80 cm', level: 'floor', x: -440.0, z: -250.0, r: 0, port: [0, 0, 0] },
-  { id: 'row3', b: 'row', room: true, name: 'Reihe 3', note: '4 Tische 160 × 80 cm, 8 PC-Plätze mit Freischwinger (wie im Schulungsraum). Abstand zur nächsten Reihe 180 cm.', size: '640 × 80 cm', level: 'floor', x: -440.0, z: -430.0, r: 0, port: [0, 0, 0] },
+  { id: 'row1', b: 'row', room: true, name: 'Reihe 1', note: '4 Tische 160 × 80 cm, je ein PC-Platz mit 2 Monitoren und Freischwinger (wie im Schulungsraum), also 4 Plätze. Abstand zur nächsten Reihe 180 cm.', size: '640 × 80 cm', level: 'floor', x: -440.0, z: -70.0, r: 0, port: [0, 0, 0] },
+  { id: 'row2', b: 'row', room: true, name: 'Reihe 2', note: '4 Tische 160 × 80 cm, je ein PC-Platz mit 2 Monitoren und Freischwinger (wie im Schulungsraum), also 4 Plätze. Abstand zur nächsten Reihe 180 cm.', size: '640 × 80 cm', level: 'floor', x: -440.0, z: -250.0, r: 0, port: [0, 0, 0] },
+  { id: 'row3', b: 'row', room: true, name: 'Reihe 3', note: '4 Tische 160 × 80 cm, je ein PC-Platz mit 2 Monitoren und Freischwinger (wie im Schulungsraum), also 4 Plätze. Abstand zur nächsten Reihe 180 cm.', size: '640 × 80 cm', level: 'floor', x: -440.0, z: -430.0, r: 0, port: [0, 0, 0] },
   { id: 'tt1', b: 'tt', room: true, name: 'RM-TT 1', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 2).', size: 'Ø 14 cm', level: 'tabletop', x: -280.0, z: -82.0, r: 0, port: [0, 1, 0] },
   { id: 'tt2', b: 'tt', room: true, name: 'RM-TT 2', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 3).', size: 'Ø 14 cm', level: 'tabletop', x: -600.0, z: -82.0, r: 0, port: [0, 1, 0] },
   { id: 'tt3', b: 'tt', room: true, name: 'RM-TT 3', note: 'Yamaha Tischmikrofon, PoE (Yamaha Port 4).', size: 'Ø 14 cm', level: 'tabletop', x: -440.0, z: -262.0, r: 0, port: [0, 1, 0] },
