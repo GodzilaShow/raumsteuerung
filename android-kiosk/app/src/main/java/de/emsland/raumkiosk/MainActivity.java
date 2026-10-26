@@ -356,15 +356,15 @@ public class MainActivity extends Activity {
 
     private void pinAbfrage() {
         if (dialogOffen) return;
-        EditText pin = pinFeld("PIN");
+        EditText pin = pinFeld("Passwort");
         dialogOffen = true;
         AlertDialog d = new AlertDialog.Builder(this)
-                .setTitle("Admin-PIN")
+                .setTitle("Admin-Passwort")
                 .setView(abstand(pin))
                 .setPositiveButton("OK", (x, w) -> {
                     dialogOffen = false;
                     if (Prefs.pinStimmt(this, pin.getText().toString())) adminMenue();
-                    else Toast.makeText(this, "Falsche PIN", Toast.LENGTH_SHORT).show();
+                    else Toast.makeText(this, "Falsches Passwort", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Abbrechen", (x, w) -> dialogOffen = false)
                 .setOnCancelListener(x -> dialogOffen = false)
@@ -379,7 +379,7 @@ public class MainActivity extends Activity {
         String[] punkte = {
                 "Seite neu laden",
                 "Adresse des Raum-PCs ändern",
-                "PIN ändern",
+                "Passwort ändern",
                 "Kiosk pausieren (zum Android-Startbildschirm)",
                 "Kiosk komplett entfernen"
         };
@@ -416,16 +416,16 @@ public class MainActivity extends Activity {
 
     private void pinFestlegen(boolean abbrechbar) {
         if (dialogOffen) return;
-        EditText p1 = pinFeld("Neue PIN (4–8 Ziffern)");
-        EditText p2 = pinFeld("PIN wiederholen");
+        EditText p1 = pinFeld("Neues Passwort (4–16 Zeichen)");
+        EditText p2 = pinFeld("Passwort wiederholen");
         LinearLayout l = new LinearLayout(this);
         l.setOrientation(LinearLayout.VERTICAL);
         l.addView(p1);
         l.addView(p2);
         dialogOffen = true;
         AlertDialog d = new AlertDialog.Builder(this)
-                .setTitle("Admin-PIN festlegen")
-                .setMessage("Mit dieser PIN kommt man aus dem Kiosk heraus: 5× schnell oben links tippen.")
+                .setTitle("Admin-Passwort festlegen")
+                .setMessage("Mit diesem Passwort kommt man aus dem Kiosk heraus: 5× schnell oben links tippen.")
                 .setView(abstand(l))
                 .setCancelable(abbrechbar)
                 .setPositiveButton("Speichern", null)
@@ -433,12 +433,12 @@ public class MainActivity extends Activity {
                 .create();
         d.setOnShowListener(x -> d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String a = p1.getText().toString(), b = p2.getText().toString();
-            if (a.length() < 4 || a.length() > 8) { p1.setError("4 bis 8 Ziffern"); return; }
+            if (a.length() < 4 || a.length() > 16) { p1.setError("4 bis 16 Zeichen"); return; }
             if (!a.equals(b)) { p2.setError("Stimmt nicht überein"); return; }
             Prefs.setPin(this, a);
             dialogOffen = false;
             d.dismiss();
-            Toast.makeText(this, "PIN gespeichert", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Passwort gespeichert", Toast.LENGTH_SHORT).show();
         }));
         d.show();
     }
@@ -525,7 +525,7 @@ public class MainActivity extends Activity {
     private EditText pinFeld(String hint) {
         EditText e = new EditText(this);
         e.setHint(hint);
-        e.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+        e.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         e.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
         return e;
     }
