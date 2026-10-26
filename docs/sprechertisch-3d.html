@@ -6,18 +6,18 @@
 :root {
   --bg: #eef2f5; --panel: #ffffff; --fg: #0e2a3f; --muted: #5a6b78; --line: #d6dde3;
   --accent: #0071bc; --accent-ink: #ffffff; --soft: #e3eef7;
-  --scene-bg: #e6ebf0; --scene-floor: #dce2e8; --scene-grid: #bfc9d2;
+  --scene-bg: #e6ebf0; --scene-floor: #dce2e8; --scene-grid: #bfc9d2; --scene-wall: #f4f1ec;
   --f-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0f1820; --panel: #15212b; --fg: #e4ecf2; --muted: #93a4b2; --line: #26343f;
   --accent: #4aa3e6; --accent-ink: #06131d; --soft: #1b2e3d;
-  --scene-bg: #121d26; --scene-floor: #16222c; --scene-grid: #2b3a47; color-scheme: dark } }
+  --scene-bg: #121d26; --scene-floor: #16222c; --scene-grid: #2b3a47; --scene-wall: #2a3540; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0f1820; --panel: #15212b; --fg: #e4ecf2; --muted: #93a4b2; --line: #26343f;
   --accent: #4aa3e6; --accent-ink: #06131d; --soft: #1b2e3d;
-  --scene-bg: #121d26; --scene-floor: #16222c; --scene-grid: #2b3a47; color-scheme: dark }
+  --scene-bg: #121d26; --scene-floor: #16222c; --scene-grid: #2b3a47; --scene-wall: #2a3540; color-scheme: dark }
 html, body { height: 100%; }
 body { background: var(--bg); color: var(--fg); font: 15px/1.45 var(--f-body); display: flex; flex-direction: column; }
 .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px;
@@ -80,6 +80,7 @@ td small { color: var(--muted); display: block; }
     <button data-view="sit" aria-pressed="false">Sitzend</button>
     <button data-view="stand" aria-pressed="false">Stehend</button>
     <button data-view="under" aria-pressed="false">Unter dem Tisch</button>
+    <button data-view="aud" aria-pressed="false">Publikum</button>
   </div>
 </header>
 <main class="app">
@@ -91,6 +92,7 @@ td small { color: var(--muted); display: block; }
       <div class="row">
         <label><input type="checkbox" id="optLbl" checked> Beschriftungen</label>
         <label><input type="checkbox" id="optLaptop" checked> Gast-Laptop</label>
+        <label><input type="checkbox" id="optRaum" checked> Raum</label>
       </div>
       <div class="row"><button class="btn" id="undo" disabled>↶ Rückgängig</button><button class="btn" id="reset">Anordnung zurücksetzen</button></div>
     </section>
@@ -260,7 +262,7 @@ const CABLES = [
 
 /* ---------- Zustand ---------- */
 const DEFAULT = Object.fromEntries(DEFS.map(d => [d.id, { x: d.x, z: d.z, r: d.r }]));
-let state = { pos: structuredClone(DEFAULT), h: 75, labels: true, laptop: true, filter: Object.fromEntries(Object.keys(TYPES).map(k => [k, true])) };
+let state = { pos: structuredClone(DEFAULT), h: 75, labels: true, laptop: true, raum: true, filter: Object.fromEntries(Object.keys(TYPES).map(k => [k, true])) };
 try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.pos) state = { ...state, ...s, pos: { ...structuredClone(DEFAULT), ...s.pos }, filter: { ...state.filter, ...(s.filter || {}) } }; } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
 deskH = state.h;
@@ -275,20 +277,21 @@ stage.appendChild(labelR.domElement);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(55, 1, 1, 3000); camera.rotation.order = 'YXZ';
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.49; controls.minDistance = 40; controls.maxDistance = 700;
+controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.49; controls.minDistance = 40; controls.maxDistance = 1500;
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.4));
-const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(120, 300, 160); sun.castShadow = true;
-Object.assign(sun.shadow.camera, { left: -200, right: 200, top: 200, bottom: -200, near: 10, far: 800 }); sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0005;
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(-150, 520, 330); sun.target.position.set(-380, 0, -145); scene.add(sun.target); sun.castShadow = true;
+Object.assign(sun.shadow.camera, { left: -650, right: 650, top: 650, bottom: -650, near: 10, far: 1500 }); sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0005;
 scene.add(sun);
 const floorMat = new THREE.MeshStandardMaterial({ roughness: 0.95 });
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(800, 800), floorMat); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+const wallMat = new THREE.MeshStandardMaterial({ roughness: 0.95 });
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), floorMat); floor.position.set(-380, 0, -145); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
 let grid;
 function applyTheme() {
   const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim();
-  scene.background = new THREE.Color(v('--scene-bg')); floorMat.color.set(v('--scene-floor'));
+  scene.background = new THREE.Color(v('--scene-bg')); floorMat.color.set(v('--scene-floor')); wallMat.color.set(v('--scene-wall'));
   if (grid) { scene.remove(grid); grid.geometry.dispose(); }
-  grid = new THREE.GridHelper(600, 60, v('--scene-grid'), v('--scene-grid')); grid.position.y = 0.05; scene.add(grid);
+  grid = new THREE.GridHelper(1200, 120, v('--scene-grid'), v('--scene-grid')); grid.position.set(-380, 0.05, -145); scene.add(grid);
 }
 applyTheme();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
@@ -320,6 +323,37 @@ DEFS.forEach(d => {
   const lbl = new CSS2DObject(el); lbl.position.set(0, box.max.y + 4, 0); g.add(lbl);
   objs[d.id] = { def: d, group: g, lbl };
 });
+/* ---------- Raum: Stirnwand mit Displays, Reihe 1 (Lage aus dem Raumplan, Raum 10 × 7,5 m) ---------- */
+/* Raumplan: X nach rechts, Y von der Stirnwand nach hinten; Sprechertisch-Mitte X 1,2 / Y 2,3. Die Person am Tisch
+   schaut ins Publikum, die Displays hängen hinter ihr. */
+const R = (X, Y) => ({ x: -(X - 1.2) * 100, z: -(Y - 2.3) * 100 });
+const roomG = new THREE.Group(); scene.add(roomG);
+const roomLbls = [];
+function rlabel(obj, text, y) { const el = document.createElement('div'); el.className = 'lbl'; el.textContent = text; const l = new CSS2DObject(el); l.position.set(0, y, 0); obj.add(l); roomLbls.push(l); }
+(function buildRoom() {
+  const A = R(0, 0), B = R(10, 7.5);
+  const front = new THREE.Mesh(new THREE.PlaneGeometry(1000, 300), wallMat); front.position.set((A.x + B.x) / 2, 150, A.z); front.rotation.y = Math.PI; front.receiveShadow = true; roomG.add(front);
+  const left = new THREE.Mesh(new THREE.PlaneGeometry(750, 300), wallMat); left.position.set(A.x, 150, (A.z + B.z) / 2); left.rotation.y = -Math.PI / 2; left.receiveShadow = true; roomG.add(left);
+  [['Display links', 4.5], ['Display rechts', 7.1]].forEach(([n, X]) => {
+    const p = R(X, 0), g = new THREE.Group();
+    g.add(bx(219.4, 125.4, 7.7, M.dark, 0, 95, 0));
+    g.add(screen(215, 121, screenTex('Präsentation', 'ViewSonic CDE98G3 · 98″'), 0, 95 + 62.7, 3.86));
+    g.position.set(p.x, 0, p.z - 5); g.rotation.y = Math.PI; roomG.add(g); rlabel(g, n + ' 98″', 232);
+  });
+  [['Lautsprecher L (VXL)', 3.0], ['Lautsprecher R (VXL)', 8.7]].forEach(([n, X]) => {
+    const p = R(X, 0), g = new THREE.Group(); g.add(bx(7, 60, 9, M.dark2, 0, 130, 0));
+    g.position.set(p.x, 0, p.z - 6); g.rotation.y = Math.PI; roomG.add(g); rlabel(g, n, 198);
+  });
+  { const p = R(5.8, 0), g = new THREE.Group(); g.add(bx(12, 6, 8, M.dark2, 0, 224, 0)); g.position.set(p.x, 0, p.z - 5); roomG.add(g); rlabel(g, 'Saal-Kamera', 242); }
+  { const p = R(6.0, 3.6), g = new THREE.Group();
+    g.add(bx(830, 3, 45, M.wood, 0, 72, 0));
+    [-405, -138, 138, 405].forEach(x => g.add(bx(4, 72, 40, M.frame, x, 0, 0)));
+    [-311, -104, 104, 311].forEach(x => { const c = BUILD.stuhl(); c.position.set(x, 0, -48); c.rotation.y = Math.PI; g.add(c); });
+    const tt = new THREE.Mesh(new THREE.CylinderGeometry(7, 7.5, 2.5, 24), M.dark2); tt.position.set(123, 76.25, -5); tt.castShadow = true; g.add(tt); rlabel(tt, 'RM-TT 1', 8);
+    g.position.set(p.x, 0, p.z); roomG.add(g); rlabel(g, 'Reihe 1 · 4 Plätze', 130);
+  }
+})();
+const applyRoom = () => { roomG.visible = state.raum; };
 const wanneBounds = () => { const w = objs.wanne.group.position; return { y: w.y + 4, z: w.z, x0: w.x - 84, x1: w.x + 84 }; };
 
 function yFor(d) {
@@ -451,7 +485,9 @@ $('undo').addEventListener('click', undo);
 hoehe.addEventListener('input', () => { if (!hBefore) hBefore = snap(); deskH = +hoehe.value; state.h = deskH; $('hoeheVal').textContent = deskH + ' cm'; buildDesk(); refresh(false); });
 hoehe.addEventListener('change', () => { if (hBefore) pushHist(hBefore); hBefore = null; save(); renderTable(); });
 $('optLbl').checked = state.labels; $('optLaptop').checked = state.laptop;
-const applyLabels = () => DEFS.forEach(d => objs[d.id].lbl.visible = state.labels);
+const applyLabels = () => { DEFS.forEach(d => objs[d.id].lbl.visible = state.labels); roomLbls.forEach(l => l.visible = state.labels && state.raum); };
+$('optRaum').checked = state.raum;
+$('optRaum').addEventListener('change', e => { state.raum = e.target.checked; applyRoom(); applyLabels(); save(); });
 $('optLbl').addEventListener('change', e => { state.labels = e.target.checked; applyLabels(); save(); });
 $('optLaptop').addEventListener('change', e => { state.laptop = e.target.checked; if (!state.laptop && selObj === 'laptop') select(null); save(); refresh(true); });
 let resetArmed = 0;
@@ -470,6 +506,7 @@ const VIEWS = {
   sit: () => { mode = 'fp'; camera.position.set(0, deskH + 43, 70); yaw = 0; pitch = -0.38; },
   stand: () => { mode = 'fp'; camera.position.set(0, 165, 66); yaw = 0; pitch = -0.6; },
   under: () => { mode = 'fp'; camera.position.set(-20, 40, 105); yaw = 0.12; pitch = -0.02; },
+  aud: () => { mode = 'orbit'; camera.position.set(-360, 240, -720); controls.target.set(-260, 100, 120); },
 };
 function setView(v) {
   document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === v));
@@ -548,5 +585,5 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-buildDesk(); applyLabels(); refresh(true); renderSel(); updUndo(); resize(); setView('over'); loop();
+buildDesk(); applyRoom(); applyLabels(); refresh(true); renderSel(); updUndo(); resize(); setView('over'); loop();
 </script>
