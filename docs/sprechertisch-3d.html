@@ -427,7 +427,7 @@ function rlabelAt(x, y, z, text) { const el = document.createElement('div'); el.
   rlabelAt(B.x + 10, 86, R(0, 1.2).z, 'Hauptkabelkanal');
   const gang = new THREE.Mesh(new THREE.PlaneGeometry(135, 460), new THREE.MeshBasicMaterial({ color: '#3b8a1a', transparent: true, opacity: 0.12, depthWrite: false }));
   gang.rotation.x = -Math.PI / 2; gang.position.set(R(0.925, 0).x, 0.3, R(0, 5.2).z); roomG.add(gang);
-  rlabelAt(R(0.925, 0).x, 6, R(0, 6.2).z, 'Gang (Fluchtweg)');
+  rlabelAt(R(0.925, 0).x, 6, R(0, 6.2).z, 'Gang');
 })();
 /* ---------- Außen: Raum liegt im 3. Stock (Fußboden ca. 10,5 m über dem Gelände) ---------- */
 const STOCK = 1050;
