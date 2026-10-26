@@ -46,6 +46,7 @@ input[type=range] { flex: 1; accent-color: var(--accent); min-width: 140px; }
 .val { font: 500 14px var(--f-mono); font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
 .btn { border: 1px solid var(--line); background: var(--bg); color: var(--fg); font: 600 13px var(--f-body); padding: 6px 12px; border-radius: 7px; cursor: pointer; }
 .btn:hover { border-color: var(--accent); }
+.btn:disabled { opacity: .45; cursor: default; border-color: var(--line); }
 .btn.warn { border-color: #c2410c; color: #c2410c; }
 .sel-name { font-size: 17px; font-weight: 600; }
 .sel-note { color: var(--muted); }
@@ -91,7 +92,7 @@ td small { color: var(--muted); display: block; }
         <label><input type="checkbox" id="optLbl" checked> Beschriftungen</label>
         <label><input type="checkbox" id="optLaptop" checked> Gast-Laptop</label>
       </div>
-      <div class="row"><button class="btn" id="reset">Anordnung zurücksetzen</button></div>
+      <div class="row"><button class="btn" id="undo" disabled>↶ Rückgängig</button><button class="btn" id="reset">Anordnung zurücksetzen</button></div>
     </section>
     <section id="auswahl" aria-live="polite"></section>
     <section>
@@ -429,14 +430,26 @@ function select(id) {
   renderSel();
 }
 function rotateSel(deg) {
-  if (!selObj) return; state.pos[selObj].r += deg * Math.PI / 180; placeAll(); buildCables(); helper?.update(); renderSel(); renderTable(); save();
+  if (!selObj) return; pushHist(snap()); state.pos[selObj].r += deg * Math.PI / 180; placeAll(); buildCables(); helper?.update(); renderSel(); renderTable(); save();
+}
+/* Rückgängig: bis zu 50 Schritte */
+const hist = [];
+const snap = () => JSON.stringify({ pos: state.pos, h: state.h });
+const updUndo = () => { $('undo').disabled = !hist.length; $('undo').title = hist.length ? 'Letzten Schritt zurücknehmen (Strg+Z)' : 'Nichts zum Zurücknehmen'; };
+function pushHist(s) { if (hist.length && hist[hist.length - 1] === s) return; hist.push(s); if (hist.length > 50) hist.shift(); updUndo(); }
+function undo() {
+  const s = hist.pop(); if (!s) return; const o = JSON.parse(s);
+  state.pos = o.pos; deskH = state.h = o.h; hoehe.value = deskH; $('hoeheVal').textContent = deskH + ' cm';
+  buildDesk(); save(); refresh(true); renderSel(); updUndo();
 }
 function refresh(table) { placeAll(); buildCables(); helper?.update(); renderFilter(); if (table) renderTable(); }
 
 /* Tisch-Steuerung */
 const hoehe = $('hoehe'); hoehe.value = deskH; $('hoeheVal').textContent = deskH + ' cm';
-hoehe.addEventListener('input', () => { deskH = +hoehe.value; state.h = deskH; $('hoeheVal').textContent = deskH + ' cm'; buildDesk(); refresh(false); });
-hoehe.addEventListener('change', () => { save(); renderTable(); });
+let hBefore = null;
+$('undo').addEventListener('click', undo);
+hoehe.addEventListener('input', () => { if (!hBefore) hBefore = snap(); deskH = +hoehe.value; state.h = deskH; $('hoeheVal').textContent = deskH + ' cm'; buildDesk(); refresh(false); });
+hoehe.addEventListener('change', () => { if (hBefore) pushHist(hBefore); hBefore = null; save(); renderTable(); });
 $('optLbl').checked = state.labels; $('optLaptop').checked = state.laptop;
 const applyLabels = () => DEFS.forEach(d => objs[d.id].lbl.visible = state.labels);
 $('optLbl').addEventListener('change', e => { state.labels = e.target.checked; applyLabels(); save(); });
@@ -445,7 +458,7 @@ let resetArmed = 0;
 $('reset').addEventListener('click', e => {
   const b = e.currentTarget;
   if (Date.now() - resetArmed > 3000) { resetArmed = Date.now(); b.textContent = 'Wirklich zurücksetzen?'; b.classList.add('warn'); setTimeout(() => { b.textContent = 'Anordnung zurücksetzen'; b.classList.remove('warn'); }, 3000); return; }
-  resetArmed = 0; b.textContent = 'Anordnung zurücksetzen'; b.classList.remove('warn');
+  resetArmed = 0; b.textContent = 'Anordnung zurücksetzen'; b.classList.remove('warn'); pushHist(snap());
   state.pos = structuredClone(DEFAULT); deskH = state.h = 75; hoehe.value = 75; $('hoeheVal').textContent = '75 cm';
   buildDesk(); select(null); save(); refresh(true);
 });
@@ -463,7 +476,7 @@ function setView(v) {
   VIEWS[v](); controls.enabled = mode === 'orbit';
   if (mode === 'orbit') controls.update(); else camera.rotation.set(pitch, yaw, 0);
   $('hint').innerHTML = mode === 'orbit'
-    ? '<span>Gerät ziehen: verschieben</span><span><kbd>R</kbd> drehen</span><span>Fläche ziehen: Ansicht drehen</span><span>Rad: Zoom</span>'
+    ? '<span>Gerät ziehen: verschieben</span><span><kbd>R</kbd> drehen</span><span><kbd>Strg+Z</kbd> zurück</span><span>Fläche ziehen: Ansicht drehen</span><span>Rad: Zoom</span>'
     : '<span><kbd>W A S D</kbd> gehen</span><span><kbd>Q</kbd>/<kbd>E</kbd> runter/hoch</span><span>Fläche ziehen: umsehen</span><span>Gerät ziehen: verschieben</span>';
 }
 document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
@@ -483,7 +496,7 @@ renderer.domElement.addEventListener('pointerdown', e => {
     const id = h.object.userData.oid, d = objs[id].def, y = objs[id].group.position.y;
     const plane = new THREE.Plane(V(0, 1, 0), -y), pt = new THREE.Vector3();
     if (ray.ray.intersectPlane(plane, pt)) {
-      drag = { id, plane, off: V(state.pos[id].x - pt.x, 0, state.pos[id].z - pt.z), d };
+      drag = { before: snap(), id, plane, off: V(state.pos[id].x - pt.x, 0, state.pos[id].z - pt.z), d };
       controls.enabled = false; renderer.domElement.setPointerCapture(e.pointerId); select(id);
     }
   } else if (h && h.object.userData.cid) {
@@ -503,12 +516,13 @@ renderer.domElement.addEventListener('pointermove', e => {
     look = { x: e.clientX, y: e.clientY }; camera.rotation.set(pitch, yaw, 0);
   }
 });
-const endPtr = () => { if (drag) { drag = null; controls.enabled = mode === 'orbit'; if (moved) { save(); renderTable(); } } look = null; };
+const endPtr = () => { if (drag) { const before = drag.before; drag = null; controls.enabled = mode === 'orbit'; if (moved) { pushHist(before); save(); renderTable(); } } look = null; };
 renderer.domElement.addEventListener('pointerup', endPtr); renderer.domElement.addEventListener('pointercancel', endPtr);
 renderer.domElement.addEventListener('wheel', e => { if (mode !== 'fp') return; e.preventDefault(); const f = V(0, 0, -1).applyEuler(camera.rotation); camera.position.addScaledVector(f, -e.deltaY * 0.15); }, { passive: false });
 
 const keys = new Set();
 addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.target.closest('input[type=text], textarea')) { e.preventDefault(); undo(); return; }
   if (e.target.closest('input, button, textarea')) return;
   const k = e.key.toLowerCase();
   if (k === 'r' && selObj) { rotateSel(e.shiftKey ? -15 : 15); return; }
@@ -534,5 +548,5 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-buildDesk(); applyLabels(); refresh(true); renderSel(); resize(); setView('over'); loop();
+buildDesk(); applyLabels(); refresh(true); renderSel(); updUndo(); resize(); setView('over'); loop();
 </script>
