@@ -27,7 +27,7 @@ Yamaha: Dante-Optimierung an, EEE aus. Kabel Cat6 S/FTP (~100 m gesamt).
 .41–.42 VXL · .51 PTZ · .61/.62 Displays · .70 Matrix · .100 Tablet.
 
 ## Einkauf (zusätzlich)
-TL-SG108E 25–35 € · USB-C-Hub Gigabit-LAN + PD 25–40 € · Cat6 S/FTP 80–150 € · USB-Netzteil 5 V/1,5 A für EZCast ~10 €.
+TL-SG108E 25–35 € · USB-C-LAN-Adapter Gigabit + PD (z. B. UGREEN, PD 3.0 bis 100 W, ~36 €; Belkin INC019btBK) · USB-C-Netzteil PD ≥ 25 W 15–20 € · Cat6 S/FTP 80–150 € · USB-Netzteil 5 V/1,5 A für EZCast ~10 €.
 PTZ (offen): PoE+, Video über LAN (NDI|HX oder RTSP für OBS), VISCA over IP.
 
 ## Umstellung ICS → Plan

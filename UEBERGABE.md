@@ -1,6 +1,6 @@
 # Übergabe: Raumsteuerung Sitzungszimmer 5 (KH II) – Stand 23.10.2026
 
-Neuer Chat: Repo https://github.com/godzilashow/raumsteuerung, Branch `claude/website-testing-fixes-ahd51r`.
+Neuer Chat: Repo https://github.com/godzilashow/raumsteuerung, Branch `claude/modest-mayer-tbnbre`.
 Schreiben: „Wir machen hier weiter. Lies UEBERGABE.md und setz bei ‚Nächster Schritt‘ an. Antworte auf Russisch."
 
 **Aktualisieren am PC (bestätigt funktionierend, PowerShell als Admin; Repo liegt in `C:\Raum5`, Git nicht im PATH):**
@@ -225,7 +225,7 @@ Im Raum (Raum-PC):
      Präsentation zeigen/beenden → Verlassen, Ergebnis per Handy im Meeting prüfen.
 
 ## Hardware-Lücken (für Ausstattungsplan v7)
-Tablet (Galaxy Tab A9+, ~209 €) + Halterung; HDMI-Matrix mit LAN (TESmart HMA404-E23, Companion-Modul vorhanden); 3. AOC-HDMI für Tisch-Laptop; WLAN-AP fürs AV-Netz (TP-Link EAP225 ~57 €); 3. Netzwerkkarte für RM-CR-Steuerung; LAN zu den ViewSonic-Displays. Publikum-Kamera mittig über den Displays montieren (FoMaKo 60° reicht nicht für ganze Reihen → Zonen).
+Tablet (Galaxy Tab A9+, ~209 €) + Halterung; HDMI-Matrix mit LAN (TESmart HMA404-E23, Companion-Modul vorhanden); 3. AOC-HDMI für Tisch-Laptop; LAN zu den ViewSonic-Displays. Laut `docs/NETZPLAN.md` (26.10.) **entfallen** WLAN-AP (EAP225) und 3. Netzwerkkarte; neu: Zusatz-Switch TP-Link TL-SG108E (25–35 €), Cat6 S/FTP (80–150 €), Tablet am Kabel über **USB-C-LAN-Adapter mit PD** (z. B. UGREEN 1000 Mbit/s mit PD 3.0 bis 100 W, ~36 €, oder Belkin INC019btBK) + USB-C-Netzteil PD ≥ 25 W (~15–20 €; Tablet lädt mit max. 15 W, Adapter braucht selbst etwas). Vor dem Einbau testen: Tablet lädt am Adapter, LAN bleibt stabil. Publikum-Kamera mittig über den Displays montieren (FoMaKo 60° reicht nicht für ganze Reihen → Zonen).
 
 Recherche 23.10.2026 (Preise = Momentaufnahme, vor Bestellung prüfen; Vergleichstabellen mit Shops, Plus/Minus und
 Quellen als Word-Datei `docs/Recherche-Kabellos-Publikumkamera-2026-10-23.docx`, Russisch):
