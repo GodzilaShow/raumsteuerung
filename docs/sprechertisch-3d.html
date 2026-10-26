@@ -81,6 +81,7 @@ td small { color: var(--muted); display: block; }
     <button data-view="stand" aria-pressed="false">Stehend</button>
     <button data-view="under" aria-pressed="false">Unter dem Tisch</button>
     <button data-view="aud" aria-pressed="false">Publikum</button>
+    <button data-view="free" aria-pressed="false">Frei</button>
   </div>
 </header>
 <main class="app">
@@ -506,6 +507,10 @@ const VIEWS = {
   sit: () => { mode = 'fp'; camera.position.set(0, deskH + 43, 70); yaw = 0; pitch = -0.38; },
   stand: () => { mode = 'fp'; camera.position.set(0, 165, 66); yaw = 0; pitch = -0.6; },
   under: () => { mode = 'fp'; camera.position.set(-20, 40, 105); yaw = 0.12; pitch = -0.02; },
+  free: () => {
+    const dir = (mode === 'orbit') ? controls.target.clone().sub(camera.position).normalize() : V(0, 0, -1).applyEuler(camera.rotation);
+    mode = 'fp'; yaw = Math.atan2(-dir.x, -dir.z); pitch = Math.atan2(dir.y, Math.hypot(dir.x, dir.z));
+  },
   aud: () => { mode = 'orbit'; camera.position.set(-360, 240, -720); controls.target.set(-260, 100, 120); },
 };
 function setView(v) {
@@ -513,7 +518,7 @@ function setView(v) {
   VIEWS[v](); controls.enabled = mode === 'orbit';
   if (mode === 'orbit') controls.update(); else camera.rotation.set(pitch, yaw, 0);
   $('hint').innerHTML = mode === 'orbit'
-    ? '<span>Gerät ziehen: verschieben</span><span><kbd>R</kbd> drehen</span><span><kbd>Strg+Z</kbd> zurück</span><span>Fläche ziehen: Ansicht drehen</span><span>Rad: Zoom</span>'
+    ? '<span>Gerät ziehen: verschieben</span><span><kbd>R</kbd> drehen</span><span><kbd>Strg+Z</kbd> zurück</span><span>Fläche ziehen: Ansicht drehen</span><span>Rechte Maustaste: schieben</span><span><kbd>W A S D</kbd> bewegen</span><span>Rad: Zoom</span>'
     : '<span><kbd>W A S D</kbd> gehen</span><span><kbd>Q</kbd>/<kbd>E</kbd> runter/hoch</span><span>Fläche ziehen: umsehen</span><span>Gerät ziehen: verschieben</span>';
 }
 document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
@@ -564,7 +569,7 @@ addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   if (k === 'r' && selObj) { rotateSel(e.shiftKey ? -15 : 15); return; }
   if (k === 'escape') select(null);
-  if ('wasdqe'.includes(k) && mode === 'fp') { keys.add(k); e.preventDefault(); }
+  if (k.length === 1 && 'wasdqe'.includes(k) && !e.ctrlKey && !e.metaKey) { keys.add(k); e.preventDefault(); }
 });
 addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
 
@@ -579,6 +584,14 @@ function loop() {
     if (keys.has('w')) camera.position.addScaledVector(f, s); if (keys.has('s')) camera.position.addScaledVector(f, -s);
     if (keys.has('d')) camera.position.addScaledVector(r, s); if (keys.has('a')) camera.position.addScaledVector(r, -s);
     if (keys.has('e')) camera.position.y += s; if (keys.has('q')) camera.position.y = Math.max(15, camera.position.y - s);
+  }
+  if (mode === 'orbit' && keys.size) {
+    const d = controls.target.clone().sub(camera.position); d.y = 0; d.normalize();
+    const r = V(-d.z, 0, d.x), s = 200 * dt, mv = V(0, 0, 0);
+    if (keys.has('w')) mv.addScaledVector(d, s); if (keys.has('s')) mv.addScaledVector(d, -s);
+    if (keys.has('d')) mv.addScaledVector(r, s); if (keys.has('a')) mv.addScaledVector(r, -s);
+    if (keys.has('e')) mv.y += s; if (keys.has('q')) mv.y -= s;
+    camera.position.add(mv); controls.target.add(mv);
   }
   if (mode === 'orbit') controls.update();
   renderer.render(scene, camera); labelR.render(scene, camera);
