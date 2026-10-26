@@ -44,6 +44,18 @@ optimierte Lösung – keine Vorschläge, die du zwei Nachrichten später zurüc
   - Tablet Galaxy Tab A9+ (Bedienung, ruft Companion/Webseite am PC auf).
   - WLAN-AP TP-Link EAP225 (geplant, PoE) – prüfen: DHCP-Server ja/nein; brauchen wir ihn überhaupt?
   - Stream Deck (USB am PC).
+- Abhängigkeiten, die eine IP-Änderung betreffen:
+  - Tablet-Kiosk-App (`android-kiosk/`) öffnet fest `http://192.168.137.1:8080` (PC im ICS-Netz) – bei neuem IP-Plan
+    muss die App (oder ihre Einstellung) mit geändert werden.
+  - Companion-Verbindungen: RM-CR (TCP 49280), Displays disp1/disp2 (TCP 5000), Matrix, Redner-Kamera `kamera_r`
+    (VISCA, TCP 5678; Modell noch offen) – alle mit IP-Adressen.
+  - In `UEBERGABE.md` steht als Hardware-Lücke eine **3. Netzwerkkarte für die RM-CR-Steuerung** – prüfen, ob das
+    nötig ist oder ob RM-CR-Steuerung und Dante im selben AV-Netz laufen können (Yamaha-Doku).
+- Kabellos zeigen ist noch nicht entschieden (Recherche: Barco ClickShare C-5 Gen2, Yealink RoomCast, EZCast Pro Box II).
+  AirPlay/Google Cast funktionieren nur, wenn Gast und Empfänger im selben Netz sind – das muss in die WLAN-Entscheidung
+  (Gäste nie ins AV-Netz; also: eigener Hotspot des Empfängers, Gäste-WLAN mit IT, oder Button/Dongle ohne Netz).
+- Repo zum Nachlesen: https://github.com/GodzilaShow/raumsteuerung, Branch `claude/modest-mayer-tbnbre`
+  (`UEBERGABE.md`, `ANLEITUNG.txt`, `SICHERHEIT.md`).
 
 ## Gewünschtes Ergebnis
 1. Geräteliste mit: Netz (AV / Landkreis / Gäste / keins), Strom (PoE-Port / Netzteil / USB), IP (fest / DHCP).
