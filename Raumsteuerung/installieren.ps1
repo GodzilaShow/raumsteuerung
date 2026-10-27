@@ -34,8 +34,13 @@ New-Item -ItemType Directory -Force -Path $ziel | Out-Null
 Copy-Item -Path (Join-Path $PSScriptRoot '*') -Destination $ziel -Force -Exclude 'installieren.ps1','deinstallieren.ps1','mikro-automatik.json','pause.png','*.log'
 # Einstellungen nur beim ersten Mal kopieren (spaeter angepasste Werte nicht ueberschreiben; Name bleibt aus Kompatibilitaet)
 if (-not (Test-Path (Join-Path $ziel 'mikro-automatik.json'))) { Copy-Item (Join-Path $PSScriptRoot 'mikro-automatik.json') $ziel }
-# Pausenbild ebenso: ein eigenes pause.png in C:\Raumsteuerung bleibt erhalten
-if (-not (Test-Path (Join-Path $ziel 'pause.png'))) { Copy-Item (Join-Path $PSScriptRoot 'pause.png') $ziel }
+# Pausenbild ebenso: ein eigenes pause.png in C:\Raumsteuerung bleibt erhalten.
+# Das alte Standardbild (weiß, mit Text, bis 27.10.2026) wird durch das neue dunkle ersetzt.
+$pauseZiel = Join-Path $ziel 'pause.png'
+$altesPausenbild = '57FB1E577966B125EB9B9C14CBF0351E7724CB01115446A252C7644372F6AE04'
+if (-not (Test-Path $pauseZiel) -or (Get-FileHash $pauseZiel -Algorithm SHA256).Hash -eq $altesPausenbild) {
+  Copy-Item (Join-Path $PSScriptRoot 'pause.png') $pauseZiel -Force
+}
 # Nicht mehr benutzt (Publikum-Kamera fest, keine Mikrofon-Automatik seit 22.10.2026)
 foreach ($alt in 'mikro-automatik.ps1', 'mikrofone-testen.cmd') { Remove-Item (Join-Path $ziel $alt) -Force -ErrorAction SilentlyContinue }
 
