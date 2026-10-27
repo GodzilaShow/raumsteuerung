@@ -743,8 +743,8 @@ function setView(v) {
   VIEWS[v](); controls.enabled = mode === 'orbit';
   if (mode === 'orbit') controls.update(); else camera.rotation.set(pitch, yaw, 0);
   $('hint').innerHTML = mode === 'orbit'
-    ? '<span>Gerät ziehen: verschieben</span><span><kbd>R</kbd> drehen</span><span><kbd>Strg+Z</kbd> zurück</span><span>Fläche ziehen: Ansicht drehen</span><span>Rechte Maustaste: schieben</span><span><kbd>W A S D</kbd> bewegen</span><span><kbd>Leertaste</kbd>/<kbd>C</kbd> hoch/runter</span><span><kbd>Shift</kbd> schnell</span><span>Rad: Zoom</span>'
-    : '<span><kbd>W A S D</kbd> gehen</span><span><kbd>Leertaste</kbd>/<kbd>C</kbd> hoch/runter</span><span><kbd>Shift</kbd> rennen</span><span>Fläche ziehen: umsehen</span><span>Gerät ziehen: verschieben</span>';
+    ? '<span>Gerät ziehen: verschieben</span><span><kbd>R</kbd> drehen</span><span><kbd>Strg+Z</kbd> zurück</span><span>Fläche ziehen: Ansicht drehen</span><span>Rechte Maustaste: schieben</span><span><kbd>W A S D</kbd> bewegen</span><span><kbd>Leertaste</kbd>/<kbd>Shift</kbd> hoch/runter</span><span><kbd>C</kbd> schnell</span><span>Rad: Zoom</span>'
+    : '<span><kbd>W A S D</kbd> gehen</span><span><kbd>Leertaste</kbd>/<kbd>Shift</kbd> hoch/runter</span><span><kbd>C</kbd> rennen</span><span>Fläche ziehen: umsehen</span><span>Gerät ziehen: verschieben</span>';
 }
 document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
 
@@ -794,21 +794,19 @@ renderer.domElement.addEventListener('pointerup', endPtr); renderer.domElement.a
 renderer.domElement.addEventListener('wheel', e => { if (mode !== 'fp') return; e.preventDefault(); const f = V(0, 0, -1).applyEuler(camera.rotation); camera.position.addScaledVector(f, -e.deltaY * 0.15); }, { passive: false });
 
 const keys = new Set();
-let sprint = false;
-/* Bewegung: WASD, hoch = E oder Leertaste, runter = Q oder C, Shift = schnell */
-const MOVE = { KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', KeyE: 'up', Space: 'up', KeyQ: 'dn', KeyC: 'dn' };
+/* Bewegung: WASD, hoch = Leertaste oder E, runter = Shift oder Q, C gedrückt halten = schnell */
+const MOVE = { KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', KeyE: 'up', Space: 'up', KeyQ: 'dn', ShiftLeft: 'dn', ShiftRight: 'dn', KeyC: 'boost' };
 addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.target.closest('input[type=text], textarea')) { e.preventDefault(); undo(); return; }
   if (e.target.closest('input, button, textarea')) return;
   const k = e.key.toLowerCase();
-  if (k === 'r' && selObj) { rotateSel(e.shiftKey ? -15 : 15); return; }
+  if (k === 'r' && selObj) { rotateSel(e.altKey ? -15 : 15); return; }
   if (k === 'escape') select(null);
   if (k === 'l') { setLock(!locked); return; }
-  sprint = e.shiftKey;
   const mk = MOVE[e.code]; if (mk && !e.ctrlKey && !e.metaKey && !e.altKey) { keys.add(mk); e.preventDefault(); }
 });
-addEventListener('keyup', e => { sprint = e.shiftKey; const mk = MOVE[e.code]; if (mk) keys.delete(mk); });
-addEventListener('blur', () => { keys.clear(); sprint = false; });
+addEventListener('keyup', e => { const mk = MOVE[e.code]; if (mk) keys.delete(mk); });
+addEventListener('blur', () => keys.clear());
 
 /* ---------- Größe und Schleife ---------- */
 function resize() { const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h); labelR.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); }
@@ -817,14 +815,14 @@ const clock = new THREE.Clock();
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
   if (mode === 'fp' && keys.size) {
-    const f = V(-Math.sin(yaw), 0, -Math.cos(yaw)), r = V(Math.cos(yaw), 0, -Math.sin(yaw)), s = (sprint ? 360 : 120) * dt;
+    const f = V(-Math.sin(yaw), 0, -Math.cos(yaw)), r = V(Math.cos(yaw), 0, -Math.sin(yaw)), s = (keys.has('boost') ? 360 : 120) * dt;
     if (keys.has('w')) camera.position.addScaledVector(f, s); if (keys.has('s')) camera.position.addScaledVector(f, -s);
     if (keys.has('d')) camera.position.addScaledVector(r, s); if (keys.has('a')) camera.position.addScaledVector(r, -s);
     if (keys.has('up')) camera.position.y += s; if (keys.has('dn')) camera.position.y = Math.max(15, camera.position.y - s);
   }
   if (mode === 'orbit' && keys.size) {
     const d = controls.target.clone().sub(camera.position); d.y = 0; d.normalize();
-    const r = V(-d.z, 0, d.x), s = (sprint ? 600 : 200) * dt, mv = V(0, 0, 0);
+    const r = V(-d.z, 0, d.x), s = (keys.has('boost') ? 600 : 200) * dt, mv = V(0, 0, 0);
     if (keys.has('w')) mv.addScaledVector(d, s); if (keys.has('s')) mv.addScaledVector(d, -s);
     if (keys.has('d')) mv.addScaledVector(r, s); if (keys.has('a')) mv.addScaledVector(r, -s);
     if (keys.has('up')) mv.y += s; if (keys.has('dn')) mv.y -= s;
