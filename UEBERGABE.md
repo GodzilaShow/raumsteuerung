@@ -251,3 +251,25 @@ Quellen als Word-Datei `docs/Recherche-Kabellos-Publikumkamera-2026-10-23.docx`,
 - Einrichtung: `kiosk-einrichten.html` (QR-Code für Werksreset + 6× Tippen) oder adb `dpm set-device-owner`.
   Webserver liefert dafür `raumkiosk.apk` und `kiosk-freigabe.json` aus (sonst weiterhin keine JSON-Dateien).
 - Noch nicht auf echtem Tablet getestet (Build, Signatur und QR-Inhalt geprüft).
+
+## Stand 27.10.2026
+- **Pausenbild neu:** `Raumsteuerung/pause.png` dunkelblau (#0B3A5B) wie der Szenen-Hintergrund, dezente Linien oben/unten,
+  grüne Linie unten, kein Text, nur das Emsland-Zeichen in der Mitte (blendet auf 2× 98″ nicht). Vorlage
+  `tools/pause-bild.html`, Logo mit ergänztem rechten Blatt `Raumsteuerung/emsland-logo-voll.png`.
+  `installieren.ps1` ersetzt alte Standardbilder (weiß bzw. erste dunkle Fassung) per SHA256, ein eigenes Bild bleibt.
+- **3D-Modell** `docs/sprechertisch-3d.html` (Artefakt „Sprechertisch Raum 5“): ganzer Raum nach Fotos/Videos,
+  ca. 11 × 10 m (Breite geschritten, Tiefe geschätzt), 5 Reihen à 4 PC-Plätze (2 Monitore, 1 Stuhl), Fensterbrüstung
+  45 cm mit Brüstungskanal (Strom + LAN), Bodenkonvektor, Bodentank, PTZ am alten Beamer-Halter, Eingang Seitenwand.
+  Steuerung: WASD, Leertaste hoch, Shift runter, C schnell, L sperren, Strg+Z zurück.
+- **Netzplan** geprüft und ergänzt (`docs/NETZPLAN.md`): ICS zuerst aus, Firewall nur 192.168.55.0/24, Tablet am Kabel
+  (USB-C-LAN-Adapter mit PD + Netzteil ≥ 25 W), PTZ-Anforderungen. `SICHERHEIT.md` angepasst.
+- **Teams-API:** auch mit Arsenijs Landkreis-Konto fehlt „API verwalten“ → M365-Admin fragen; API könnte ohnehin
+  weder Beitritt noch Teilen.
+- **PTZ-Vorschlag:** FoMaKo FMK20UH (NDI HX3, 20x, AI-Tracking, ~389 USD bei B&H) – PoE-Standard, VISCA-Port und
+  Preis in DE vor Bestellung prüfen.
+- **Kiosk-App Test** ohne Device Owner: APK https://github.com/GodzilaShow/raumsteuerung/releases/download/kiosk-latest/raumkiosk.apk
+  Standard-URL 192.168.137.1 = Windows-Hotspot; Navigationsleiste nur mit Device Owner (adb) + Wischgesten ohne Hinweis weg.
+- **AP2:** `docs/AP2/` (Prüf-Prompt, Vorgaben, Stand) + Doku-Gerüst https://claude.ai/artifact/8xyc9nko2rwYG1Jpyn27Z6
+  (Tabs: Gerüst, Arbeitsstand, Einschätzung). Projekt = **ein Raum, Sitzungszimmer 5**; Angebote AN26-0893/-0926
+  gehören dazu. Offen: genehmigter Projektantrag aus PAO, Prüfungstermin. Doku schreibt Arsenij selbst, Claude
+  prüft; Fachgespräch wird auf Deutsch geübt.
