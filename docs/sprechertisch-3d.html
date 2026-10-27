@@ -516,8 +516,8 @@ function rlabelAt(x, y, z, text) { const el = document.createElement('div'); el.
   for (let i = 0; i < 70; i++) { dx2.beginPath(); dx2.arc((i * 37) % 128, (i * 53) % 128, 1.5 + (i % 3), 0, 7); dx2.fill(); }
   const dtx = new THREE.CanvasTexture(dc); dtx.wrapS = dtx.wrapT = THREE.RepeatWrapping; dtx.repeat.set(Math.round(RW * 1.6), Math.round(RD * 1.6)); dtx.colorSpace = THREE.SRGBColorSpace;
   const decke = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshStandardMaterial({ map: dtx, roughness: 1 })); decke.rotation.x = Math.PI / 2; decke.position.set(cx, 300, cz); roomG.add(decke);
-  const door = new THREE.Mesh(new THREE.PlaneGeometry(100, 210), mat('#b08a5a')); door.position.set(R(1.0, 0).x, 105, B.z + 0.6); door.rotation.y = 0; roomG.add(door);
-  rlabelAt(R(1.0, 0).x, 225, B.z + 5, 'Eingang');
+  const door = new THREE.Mesh(new THREE.PlaneGeometry(100, 210), mat('#b08a5a')); door.position.set(A.x - 0.6, 105, R(0, RD - 0.85).z); door.rotation.y = -Math.PI / 2; roomG.add(door);
+  rlabelAt(A.x - 5, 225, R(0, RD - 0.85).z, 'Eingang');
   /* Kabelkanal: Brüstungskanal an der Fensterfront (siehe oben) */
   const gang = new THREE.Mesh(new THREE.PlaneGeometry(135, (RD - 2.9) * 100), new THREE.MeshBasicMaterial({ color: '#3b8a1a', transparent: true, opacity: 0.12, depthWrite: false }));
   gang.rotation.x = -Math.PI / 2; gang.position.set(R(0.925, 0).x, 0.3, R(0, (2.9 + RD) / 2).z); roomG.add(gang);
