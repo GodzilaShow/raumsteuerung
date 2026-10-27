@@ -35,10 +35,10 @@ Copy-Item -Path (Join-Path $PSScriptRoot '*') -Destination $ziel -Force -Exclude
 # Einstellungen nur beim ersten Mal kopieren (spaeter angepasste Werte nicht ueberschreiben; Name bleibt aus Kompatibilitaet)
 if (-not (Test-Path (Join-Path $ziel 'mikro-automatik.json'))) { Copy-Item (Join-Path $PSScriptRoot 'mikro-automatik.json') $ziel }
 # Pausenbild ebenso: ein eigenes pause.png in C:\Raumsteuerung bleibt erhalten.
-# Das alte Standardbild (weiß, mit Text, bis 27.10.2026) wird durch das neue dunkle ersetzt.
+# Alte Standardbilder (weiß mit Text; erste dunkle Fassung vom 27.10.2026) werden durch das aktuelle ersetzt.
 $pauseZiel = Join-Path $ziel 'pause.png'
-$altesPausenbild = '57FB1E577966B125EB9B9C14CBF0351E7724CB01115446A252C7644372F6AE04'
-if (-not (Test-Path $pauseZiel) -or (Get-FileHash $pauseZiel -Algorithm SHA256).Hash -eq $altesPausenbild) {
+$altePausenbilder = @('57FB1E577966B125EB9B9C14CBF0351E7724CB01115446A252C7644372F6AE04', 'E9F0CECBC1BC42F2EA937CC3B35AA822B41B5302C6BCFDBF7FFF638FA79BE792')
+if (-not (Test-Path $pauseZiel) -or $altePausenbilder -contains (Get-FileHash $pauseZiel -Algorithm SHA256).Hash) {
   Copy-Item (Join-Path $PSScriptRoot 'pause.png') $pauseZiel -Force
 }
 # Nicht mehr benutzt (Publikum-Kamera fest, keine Mikrofon-Automatik seit 22.10.2026)
