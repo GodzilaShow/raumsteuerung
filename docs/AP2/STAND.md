@@ -13,4 +13,6 @@
 | 8 Fazit | fehlt | – | Ist-Stunden |
 | Anhang | Material im Repo | – | Auswahl |
 
+Dokument (Gerüst mit Leitfragen): https://claude.ai/artifact/8xyc9nko2rwYG1Jpyn27Z6
+
 Wichtig zuerst: **Projektantrag aus PAO** (Text und Zeitplan) ins Repo legen: `docs/AP2/Projektantrag.pdf` oder als Text.
