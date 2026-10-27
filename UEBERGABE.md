@@ -78,6 +78,9 @@ Am 12.10. geändert (alles gepusht):
   Teams-Buttons per UI Automation (feste AutomationIds, sprachunabhängig), Companion 1/0/4–6 setzen `r5_tcmd`,
   Zustand in `r5_t_in/_mute/_video`. Live getestet 13.10. (Tablet -> Companion -> Skript -> Teams stumm/an).
   Teams-Drittanbieter-API war auf beiden Testkonten nicht verfügbar (kein „API verwalten“) -> nicht genutzt.
+  27.10.2026: auch mit Arsenijs normalem Landkreis-Konto fehlt „API verwalten“ ganz (Einstellungen → Datenschutz).
+  Offen: M365-Admin fragen (Richtlinie für Drittanbieter-Geräte), mit dem späteren Raumkonto erneut prüfen.
+  Laut Microsoft kann die API Mikro, Kamera, Hand, Verlassen – Beitritt per Link und Bildschirm teilen nicht.
 - OBS-Pausenbild mit Emsland-Logo (`Raumsteuerung/emsland-logo.png`); OBS-Test mit Bildschirm + Laptop-Kamera
   in den Rahmen (Platzhalter nur ausgeblendet, Sicherung `C:\Raum5_Sicherung\obs_scenes_2026-10-13_0955`).
 - Tests: Ports per `API_PORT`/`PAGE_PORT` änderbar (wenn echter Companion/Webserver laufen), Chromium-Pfad mit Fallback.
