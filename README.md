@@ -18,6 +18,11 @@ python3 -I tools/companion_config.py tools/Raum5_Companion_Export_2026-10-05.com
 ```
 
 Mit einem neueren Export aus dem Raum geht es genauso (erster Parameter = neuer Export).
+Danach die Saal-Mikrofone ergänzen (wiederholbar):
+
+```
+python3 -I tools/mikrofone-companion.py Raum5_Companion.companionconfig Raum5_Companion.companionconfig
+```
 
 ## Testen ohne Raum-PC
 

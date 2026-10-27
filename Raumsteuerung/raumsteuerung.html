@@ -102,6 +102,17 @@ h2{margin:0;font-size:21px;font-weight:600}
 .btn.spk.muted{background:var(--red);border-color:var(--red);color:#fff}
 .btn.spk.muted .x{display:inline}.btn.spk.muted .w1,.btn.spk.muted .w2{display:none}
 .panel.mutedvol .volnum{color:var(--muted)}
+/* Saal-Mikrofone (RM-CR): Alle sprechen | Nur Sprecher | Alle stumm – links in der Lautsprecher-Zeile */
+.micgrp{display:flex;align-items:center;gap:14px}
+.volrow h2{min-width:0}
+.micseg button{height:60px;min-width:0;width:150px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:16px;white-space:nowrap}
+.micseg button svg{width:22px;height:22px;flex:none}
+.micseg button.on.stumm{background:var(--red);color:#fff}
+.vsep{width:1px;height:48px;background:var(--line);margin:0 6px}
+.volrow .vbtn{width:60px}
+.volrow .btn.spk{white-space:nowrap;padding:4px 14px}
+.volrow .volnum{min-width:90px}
+#tMic{display:none}   /* Mikro steuert jetzt die Zeile „Mikrofone“ (RM-CR), nicht Teams – sonst zwei „Mikro aus“ */
 .volnum b{font-size:42px;line-height:1}.volnum small{font-size:18px;font-weight:600}
 .volrow{flex-direction:row;align-items:center;gap:14px;padding:12px 22px}.volrow h2{min-width:130px}.volrow .volnum{min-width:110px;justify-content:center}
 .vbtn{width:72px;min-height:60px;padding:0;font-size:34px;font-weight:500}.volrow .btn.spk{min-height:60px;padding:4px 18px;font-size:17px}
@@ -257,7 +268,10 @@ h2{margin:0;font-size:21px;font-weight:600}
 </div>
 </div>
 <div class="panel volrow">
-<h2>Lautstärke</h2>
+<div class="micgrp"><h2>Mikrofone</h2>
+<div class="seg micseg" id="micSeg"><button data-mic="alle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2a5 5 0 0 1 5.5 5.8"/></svg>Alle sprechen</button><button data-mic="sprecher"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="2.5" y="13" width="4" height="6" rx="1.5"/><rect x="17.5" y="13" width="4" height="6" rx="1.5"/><path d="M19.5 19c0 1.5-2 2.5-5 2.5"/></svg>Nur Sprecher</button><button data-mic="stumm" class="stumm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/><path d="M4 4l16 16"/></svg>Alle stumm</button></div></div>
+<div class="vsep"></div>
+<h2>Lautsprecher</h2>
 <button class="btn vbtn" data-act="volDown" aria-label="Leiser">−</button>
 <div class="volnum"><b id="volNum">60</b><small>%</small></div>
 <button class="btn vbtn primary" data-act="volUp" aria-label="Lauter">+</button>
@@ -386,7 +400,8 @@ var CONFIG = {
   volVariable: 'r5_vol_db',
   blankVariable: 'r5_blank',                   // 1 = Pausenbild auf dem Präsentations-Bildschirm (Raumsteuerung.exe zeigt pause.png)
   srcVariable: 'r5_src',                       // Quelle der Matrix: pc | laptop | cast („Raum an“ setzt pc)
-  spkVariable: 'r5_spk_mute',                 // 1 = Lautsprecher stumm (RM-CR NeOut On = 0), Pegel bleibt                    // Companion Custom Variable für den Pegel (0,01 dB)
+  spkVariable: 'r5_spk_mute',                 // 1 = Lautsprecher stumm (RM-CR NeOut On = 0), Pegel bleibt
+  micVariable: 'r5_mic_mode',                 // Saal-Mikrofone: alle | sprecher | stumm („Raum an“ = alle, „Raum aus“ = stumm)
   // Pegel je Stufe 0..10 in 0,01 dB (RM-CR NeOut Kanal 0+1 = Lautsprecher). 10 = 0 dB, nie lauter.
   volSteps: [-32768, -4000, -3200, -2600, -2100, -1700, -1300, -1000, -700, -350, 0],
   obsConnection: 'obs',                        // Name der OBS-Verbindung in Companion
@@ -401,6 +416,7 @@ var CONFIG = {
     src_pc: '1/2/1', src_laptop: '1/2/2', src_cast: '1/2/3',
     blank_on: '1/2/4', blank_off: '1/2/5', disp_on: '1/2/6', disp_off: '1/2/7',
     spk_off: '1/1/6', spk_on: '1/1/7',   // Ton aus / Ton an (Lautsprecher stumm, Pegel bleibt)
+    mic_alle: '1/4/1', mic_sprecher: '1/4/2', mic_stumm: '1/4/3',   // Saal-Mikrofone (RM-CR), tools/mikrofone-companion.py
     vol_apply: '1/3/1',   // setzt RM:NeOut_Fader Level aus $(custom:r5_vol_db)
     track_on: '1/3/3', track_off: '1/3/4',
     fix_kamera: '1/3/5', fix_ton: '1/3/6', fix_displays: '1/3/7',
@@ -431,14 +447,14 @@ var $$ = function (q, el) { return Array.prototype.slice.call((el || document).q
 $$('img[data-logo]').forEach(function (i) { i.src = $('#logoImg').src; });
 
 // Publikum-Kamera ist fest (ganzer Raum) -> nur die Redner-Kamera wird bedient (S.cam immer 'r')
-var S = { screen: 'start', scene: 'alles', src: 'pc', vol: 6, blank: false, disp: true, track: true, cam: 'r', rPreset: 'r_pult' };
+var S = { screen: 'start', scene: 'alles', src: 'pc', mic: 'alle', vol: 6, blank: false, disp: true, track: true, cam: 'r', rPreset: 'r_pult' };
 try { var saved = JSON.parse(localStorage.getItem('raum5') || '{}'); for (var k in saved) S[k] = saved[k]; } catch (e) {}
 S.cam = 'r'; delete S.pAuto; delete S.pMic; delete S.pPreset;   // gespeicherter Stand von früher (mit Publikum-Kamera)
 function save() { try { localStorage.setItem('raum5', JSON.stringify(S)); } catch (e) {} }
 
 /* ---- Companion ---- */
 var connTimer, MSG_NOCONN = 'Keine Verbindung zum Raum-PC. Bitte IT-Service ' + CONFIG.serviceNumber + ' anrufen.';
-var touched = { scene: 0, vol: 0, room: 0, teams: 0, spk: 0, share: 0, blank: 0, src: 0 };
+var touched = { scene: 0, vol: 0, room: 0, teams: 0, spk: 0, share: 0, blank: 0, src: 0, mic: 0 };
 var T = { inMeeting: false, muted: false, video: true, status: '', joinAt: 0, mode: '', share: false };   // joinAt: wann Beitritt angestoßen   // Teams-Zustand (nicht gespeichert)
 function sendFailed() {
   var c = $('#conn'); c.textContent = MSG_NOCONN; c.classList.add('show');
@@ -525,6 +541,7 @@ function render() {
 
   $$('.scene').forEach(function (b) { b.classList.toggle('on', b.dataset.scene === S.scene); });
   $$('[data-src]').forEach(function (b) { b.classList.toggle('on', b.dataset.src === S.src); });
+  $$('[data-mic]').forEach(function (b) { b.classList.toggle('on', b.dataset.mic === S.mic); });
   $('#srcHint').textContent = HINTS[S.src]; $('#srcHint').hidden = S.src === 'pc';   // Hinweis nur, wenn man etwas tun muss
   $('#blankBtn').className = 'btn' + (S.blank ? ' danger' : '');
   $('#blankBtn').textContent = S.blank ? 'Pausenbild beenden' : 'Pausenbild zeigen';
@@ -572,6 +589,7 @@ var ACTIONS = {
   start: function () {
     call('raum_an').then(function (ok) { if (!ok && S.screen !== 'start') go('start'); });
     S.src = 'pc'; touched.src = Date.now();   // „Raum an“ schaltet die Matrix auf den Raum-PC (nicht der Laptop von gestern)
+    S.mic = 'alle'; touched.mic = Date.now(); // „Raum an“ schaltet alle Saal-Mikrofone an (Companion 1/0/1 drückt 1/4/1)
     touched.room = Date.now(); stopIdle(); nextAsk = Date.now() + CONFIG.askEveryMinutes * 60000; go('main');
   },
   tJoin: function () {
@@ -619,6 +637,7 @@ document.addEventListener('click', function (e) {
   else if (t.dataset.act && ACTIONS[t.dataset.act]) { ACTIONS[t.dataset.act](); save(); render(); }
   else if (t.dataset.scene) { S.scene = t.dataset.scene; touched.scene = Date.now(); call('scene_' + t.dataset.scene); save(); render(); }
   else if (t.dataset.src) { S.src = t.dataset.src; touched.src = Date.now(); call('src_' + t.dataset.src); save(); render(); }
+  else if (t.dataset.mic) { S.mic = t.dataset.mic; touched.mic = Date.now(); call('mic_' + t.dataset.mic); save(); render(); }
   else if (t.dataset.preset) {
     var p = t.dataset.preset; S.rPreset = p;
     call(p); save(); render();
@@ -750,7 +769,8 @@ function poll() {
     getText(V + CONFIG.teamsVariables.mode + '/value'),
     getText(V + CONFIG.teamsVariables.share + '/value'),
     getText(V + CONFIG.blankVariable + '/value'),
-    getText(V + CONFIG.srcVariable + '/value')
+    getText(V + CONFIG.srcVariable + '/value'),
+    getText(V + CONFIG.micVariable + '/value')
   ]).then(function (r) {
     polling = false;
     var scene = r[0], vol = r[1], live = r[2], room = r[3], changed = false, grace = 4000, now = Date.now();
@@ -775,6 +795,9 @@ function poll() {
     // Quelle (auch vom Stream Deck / anderem Tablet / „Raum an“); nur bekannte Werte übernehmen
     var src = r[12] === null ? '' : String(r[12]).trim();
     if (/^(pc|laptop|cast)$/.test(src) && now - touched.src > grace && src !== S.src) { S.src = src; changed = true; }
+    // Saal-Mikrofone (auch vom Stream Deck / „Raum an“ / „Raum aus“); ohne Mikrofon-Buttons fehlt die Variable -> nichts tun
+    var mic = r[13] === null ? '' : String(r[13]).trim();
+    if (/^(alle|sprecher|stumm)$/.test(mic) && now - touched.mic > grace && mic !== S.mic) { S.mic = mic; changed = true; }
     if (r[8] !== null && now - touched.spk > grace) { var sm = isOn(r[8]); if (sm !== !!S.spkMute) { S.spkMute = sm; changed = true; } }
     // Raum wurde woanders (Stream Deck, Auto-Aus in Companion) ein- oder ausgeschaltet -> Tablet folgt.
     // Nur auf echte Wechsel reagieren, damit eine nie gesetzte Variable nichts kaputt macht.

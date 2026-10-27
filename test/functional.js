@@ -64,6 +64,21 @@ const clear = () => fetch(API + '/_test/clear');
   await clear(); await p.click('#spkBtn'); await p.waitForTimeout(400);
   check((await state()).log.includes('1/1/7 press'), 'Ton an -> 1/1/7');
 
+  console.log('Saal-Mikrofone');
+  let mm = await state();
+  check(mm.vars.r5_mic_mode === 'alle' && await p.$eval('[data-mic=alle]', e => e.classList.contains('on')), 'Raum an -> Mikrofone „Alle sprechen“ (r5_mic_mode = alle)');
+  await clear(); await p.click('[data-mic=sprecher]'); await p.waitForTimeout(400);
+  mm = await state();
+  check(mm.log.includes('1/4/2 press') && mm.vars.r5_mic_mode === 'sprecher', 'Nur Sprecher -> 1/4/2, r5_mic_mode = sprecher');
+  check(mm.log.includes('rmcr: set RM:MicMute/Group 0 0 1') && mm.log.includes('rmcr: set RM:MicMute/Group 4 0 0'), 'RM-TT-Gruppe stumm, Headset-Gruppe an');
+  await clear(); await p.click('[data-mic=stumm]'); await p.waitForTimeout(400);
+  mm = await state();
+  check(mm.log.includes('1/4/3 press') && mm.log.includes('rmcr: set RM:MicMute/All 0 0 1'), 'Alle stumm -> 1/4/3, MicMute/All = 1');
+  check(await p.$eval('[data-mic=stumm]', e => e.classList.contains('on') && getComputedStyle(e).backgroundColor === 'rgb(180, 35, 24)'), '„Alle stumm“ gewählt = rot');
+  await set('r5_mic_mode=alle'); await p.waitForTimeout(7000);
+  check(await p.$eval('[data-mic=alle]', e => e.classList.contains('on')), 'Mikrofon-Modus von außen (Stream Deck) erscheint auf dem Tablet');
+  check(!(await p.isVisible('#tMic')), 'Teams-Knopf „Mikro“ ausgeblendet (kein zweites „Mikro aus“)');
+
   console.log('Quelle / Displays');
   check(!(await p.textContent('#srcHint')).includes('[CODE]'), 'kein Platzhalter [CODE] im Hinweis');
   await p.click('[data-src=cast]');
@@ -157,7 +172,7 @@ const clear = () => fetch(API + '/_test/clear');
         .sort((x, y) => x.getBoundingClientRect().top - y.getBoundingClientRect().top || x.getBoundingClientRect().left - y.getBoundingClientRect().left)[0].dataset.scene) === 'redner',
         'Modus teilen: „Nur Redner“ steht links oben');
   const big = await p.$$eval('#teamsBar .tbtn', els => els.filter(e => e.offsetParent).map(e => [e.id, Math.round(e.getBoundingClientRect().height)]));
-  check(big.map(x => x[0]).join() === 'tMic,tCam,tShare' && big.every(x => x[1] >= 90), 'Modus teilen: Mikro, Kamera, Präsentation groß unter dem Kopf (' + JSON.stringify(big) + ')');
+  check(big.map(x => x[0]).join() === 'tCam,tShare' && big.every(x => x[1] >= 90), 'Modus teilen: Kamera, Präsentation groß unter dem Kopf (Mikro über „Mikrofone“) (' + JSON.stringify(big) + ')');
   check(await p.isVisible('header #tLeave') && !(await p.isVisible('#tJoin')), '„Verlassen“ klein im Kopf');
   const cut = await p.$$eval('#s-main .panel, #s-main .scene, #s-main .btn, #s-main .tbtn', els => els.filter(e => e.offsetParent && (e.scrollHeight > e.clientHeight + 2 || e.scrollWidth > e.clientWidth + 2)).map(e => (e.id || e.className) + ' ' + e.textContent.trim().slice(0, 20)));
   check(cut.length === 0, 'Steuerung im Meeting: nichts abgeschnitten ' + (cut.length ? JSON.stringify(cut) : ''));
@@ -180,24 +195,20 @@ const clear = () => fetch(API + '/_test/clear');
   await set('r5_t_status='); await p.waitForTimeout(3500);
   await set('r5_t_share=0&r5_t_mode=kamera'); await p.waitForTimeout(3500);
   check(await p.isVisible('[data-scene=alles]') && (await p.textContent('#scenesH')) === 'Was sehen die Online-Teilnehmer?', 'Modus kamera: wieder alle 5 Ansichten');
-  await clear(); await p.click('#tMic'); await p.waitForTimeout(300);
-  let ts = await state();
-  check(ts.vars.r5_tcmd === 'mic_off', 'Mikro tippen -> Zielzustand r5_tcmd = mic_off (kein Umschalten)');
-  check((await p.textContent('#tMic')).includes('Mikro aus') && await p.$eval('#tMic', e => e.classList.contains('off')), 'Knopf zeigt sofort „Mikro aus“ (rot)');
-  await set('r5_t_mute=1'); await p.waitForTimeout(4000);
-  check((await p.textContent('#tMic')).includes('Mikro aus'), 'Zustand aus Teams bestätigt „Mikro aus“');
   await clear(); await p.click('#tCam'); await p.waitForTimeout(300);
   check((await state()).vars.r5_tcmd === 'video_off' && (await p.textContent('#tCam')).includes('Kamera aus'), 'Bild tippen -> r5_tcmd = video_off, Knopf „Kamera aus“');
   await clear(); await p.click('#tLeave'); await p.waitForTimeout(300);
   check(!(await state()).log.includes('1/0/6 press') && (await p.textContent('#tLeave')).includes('Wirklich'), 'Verlassen: erstes Tippen fragt nur nach');
   await p.click('#tLeave'); await p.waitForTimeout(300);
-  ts = await state();
+  let ts = await state();
   check(ts.log.includes('1/0/6 press') && ts.vars.r5_tcmd === 'leave', 'zweites Tippen -> 1/0/6, r5_tcmd = leave');
   await set('r5_t_in=0'); await p.waitForTimeout(4500);
   check(!(await p.isVisible('#teamsBar')), 'nach dem Meeting verschwindet die Leiste');
   check((await p.textContent('#liveTxt')) === 'Nur im Raum', 'kein Meeting -> Live-Kachel „Nur im Raum“');
 
   console.log('Ausschalten');
+  // Teams meldet beim Ausschalten noch „im Meeting“ (sonst setzt eine Abfrage mit r5_t_in = 0 das Verlassen zurück – Zeitfrage)
+  await set('r5_t_in=1'); await p.waitForTimeout(3500);
   await clear(); await p.click('[data-act=askOff]'); await p.waitForTimeout(400);
   check(await p.isVisible('#dlgOff'), 'Abfrage erscheint');
   await p.click('#dlgOff [data-act=off]'); await p.waitForTimeout(300);

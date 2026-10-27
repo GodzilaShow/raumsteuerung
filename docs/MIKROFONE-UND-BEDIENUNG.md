@@ -38,9 +38,14 @@ Teams-Ton von außen → USB → RM-CR → Lautsprecher. Steuerung des RM-CR: Co
 - Ein RM-TT liefert ggf. 2 Kanäle; Zuordnung Kanal ↔ Mikrofon im RM-CR prüfen.
 - Hat Windows **kein Mikrofon** (RM-CR-USB fehlt), sperrt Teams „Mikro an“ → Tablet-Knopf wirkt nicht.
 
-## Noch offen (für die Oberfläche zu entscheiden)
-- Soll das Tablet zusätzlich **Saal-Mikrofone (RM-CR) stummschalten** können – getrennt von Teams-Mikro?
-  (z. B. „Publikum-Mikros aus“ während eines Vortrags; geht per RCP-Befehl in Companion wie „Ton aus“.)
+## Saal-Mikrofone auf dem Tablet (eingebaut 27.10.2026)
+- Zeile „Mikrofone | Lautsprecher“: links **Alle sprechen · Nur Sprecher · Alle stumm** (gewählt blau, „Alle stumm“ rot),
+  rechts „Lautsprecher − 60 % + Ton aus“. Der Teams-Knopf „Mikro“ ist ausgeblendet (sonst zwei „Mikro aus“).
+- Companion: Buttons 1/4/1–3, Variable `r5_mic_mode` (alle/sprecher/stumm), erzeugt mit `tools/mikrofone-companion.py`.
+  „Raum an“ → Alle sprechen, „Raum aus“ → Alle stumm, Teams-Ende → keine Änderung.
+- Nur Sprecher: Headset an, RM-TT stumm; ein Gast drückt die Taste am RM-TT (Modus „Mute Toggle“) und spricht.
+- RCP: Mute-Gruppen `RM:MicMute/Group` (je RM-TT eine Gruppe 0–3, Headset Gruppe 4) und `RM:MicMute/All`.
+  **Am Gerät noch nicht geprüft** (Index, Wert 1 = stumm?): `get RM:MicMute/Group 0 0`; sonst Parameter des Skripts anpassen.
+- Mikrofone nur nach Teams (USB), nicht auf die Saal-Lautsprecher – Einstellung im RM-CR.
+- Später: Start-Modus in den Einstellungen von Raumsteuerung.exe (heute Skript-Parameter `--start`).
 - Headset (EW-D): Akku/Funkstatus ist **nicht** abfragbar (kein Netzwerk) – nur am Empfänger/in der App.
-- Der Nutzer hat in anderen Chats weitere Wünsche zu Mikrofon-Knöpfen geäußert, die hier nicht protokolliert sind –
-  **beim Nutzer nachfragen**, bevor Knöpfe gebaut werden.
