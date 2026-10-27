@@ -356,10 +356,9 @@ const DEFS = [
   { id: 'vxlR', b: 'vxl', room: true, name: 'Lautsprecher R', note: 'Yamaha VXL1B-16P, 112 cm hoch. PoE+ und Dante über ein LAN-Kabel (Yamaha Port 7).', size: '5,4 × 112 × 10,4 cm', level: 'wall', axis: 'x', x: -750.0, z: 224.5, r: Math.PI, port: [0, 100, -5] },
   { id: 'saal', b: 'saalcam', room: true, name: 'Saal-Kamera', note: 'Fest auf den ganzen Raum (Empfehlung Yealink UVC30 Room). USB zum Raum-PC, über 5 m aktives USB-Kabel.', size: '14 × 5 cm', level: 'wall', axis: 'x', x: -460.0, z: 226, r: Math.PI, port: [0, 222, -3] },
   { id: 'ez', b: 'ezcast', room: true, name: 'EZCast', note: 'EZCast Pro Dongle II, eigener Hotspot, kein Netz. HDMI → Matrix Eingang 3.', size: '9 × 4,5 cm', level: 'wall', axis: 'x', x: -460.0, z: 226.5, r: Math.PI, port: [0, 87, -2] },
-  { id: 'ptz', b: 'ptz', room: true, name: 'PTZ-Kamera', note: 'Speaker-Kamera an der Decke, schaut immer auf den Sprechertisch. PoE+ (Yamaha Port 8), Kabel über die Decke. Modell offen.', size: 'an der Decke', level: 'ceil', x: -465.0, z: -215.0, r: 0, aim: true, port: [0, 299, 0] },
+  { id: 'ptz', b: 'ptz', room: true, name: 'PTZ-Kamera', note: 'Speaker-Kamera am Deckenhalter des alten Beamers (ersetzt ihn), schaut immer auf den Sprechertisch. PoE+ (Yamaha Port 8), Kabel im alten Beamer-Leitungsweg über die Decke. Modell offen. Lage des Halters geschätzt, bitte verschieben.', size: 'an der Decke', level: 'ceil', x: -430.0, z: -110.0, r: 0, aim: true, port: [0, 299, 0] },
   { id: 'ecke', b: 'ecke', room: true, name: 'Ecke mit Stehtisch', note: 'Aus dem Video: dunkler Stehtisch, zwei Barhocker, Teppich, Kartons. Lage im Raum geschätzt, bitte verschieben.', size: 'ca. 250 × 230 cm', level: 'floor', x: -755.0, z: 80.0, r: 0, port: [0, 0, 0] },
   { id: 'dunkeltisch', b: 'pcdesk', room: true, name: 'PC-Tisch dunkel', note: 'Aus dem Video: anthrazitfarbener Tisch mit zwei Monitoren. Lage geschätzt, bitte verschieben.', size: '160 × 80 cm', level: 'floor', x: -735.0, z: -70.0, r: Math.PI / 2, port: [0, 0, 0] },
-  { id: 'beamer', b: 'beamer', room: true, name: 'Alter Beamer-Halter', note: 'Aus dem Video: alter Projektor an der Decke mit Kabel. Sein Leitungsweg wird für das PTZ-Kabel genutzt. Lage geschätzt.', size: 'an der Decke', level: 'ceil', x: -430.0, z: -110.0, r: 0, port: [0, 278, 0] },
   { id: 'kabelwand', b: 'kabelwand', room: true, name: 'Kabel aus der Wand', note: 'Aus dem Video: orangefarbenes Kabel (vermutlich LWL oder Patchkabel) und graues Kabel hängen aus der Wand. Lage geschätzt.', size: '–', level: 'wall', axis: 'x', x: -140.0, z: 229, r: Math.PI, port: [0, 120, 0] },
   { id: 'bodentank', b: 'bodentank', room: true, name: 'Bodentank', note: 'Aus dem Video: Bodendose im Teppich (Deckel 26 × 26 cm). Ein Anschlusspunkt mitten im Raum – prüfen, was drin ist (Strom, LAN?). Lage geschätzt.', size: '26 × 26 cm', level: 'floor', x: -180.0, z: -5.0, r: 0, port: [0, 0.5, 0] },
   { id: 'tvregal', b: 'tvregal', room: true, name: 'Fernseher auf Regal', note: 'Aus dem Video: vorhandener Fernseher auf niedrigem Regal, daneben Papierkorb. Lage geschätzt.', size: '90 × 40 cm', level: 'floor', x: -200.0, z: 60.0, r: Math.PI, port: [0, 80, 0] },
@@ -410,8 +409,8 @@ const CABLES = [
 
 /* ---------- Zustand ---------- */
 const DEFAULT = Object.fromEntries(DEFS.map(d => [d.id, { x: d.x, z: d.z, r: d.r }]));
-let state = { v: 4, pos: structuredClone(DEFAULT), h: 75, labels: true, laptop: true, raum: true, filter: Object.fromEntries(Object.keys(TYPES).map(k => [k, true])) };
-try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.pos && (s.v || 1) < 4) Object.keys(s.pos).forEach(k => { if (/^(row|tt)\d/.test(k) && (s.v || 1) < 3) delete s.pos[k]; if (k === 'ecke' || k === 'dunkeltisch') delete s.pos[k]; }); if (s && s.pos) state = { ...state, ...s, v: 4, pos: { ...structuredClone(DEFAULT), ...s.pos }, filter: { ...state.filter, ...(s.filter || {}) } }; } catch (e) {}
+let state = { v: 5, pos: structuredClone(DEFAULT), h: 75, labels: true, laptop: true, raum: true, filter: Object.fromEntries(Object.keys(TYPES).map(k => [k, true])) };
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.pos && (s.v || 1) < 4) Object.keys(s.pos).forEach(k => { if (/^(row|tt)\d/.test(k) && (s.v || 1) < 3) delete s.pos[k]; if (k === 'ecke' || k === 'dunkeltisch') delete s.pos[k]; }); if (s && s.pos && (s.v || 1) < 5) { if (s.pos.beamer) s.pos.ptz = { ...s.pos.beamer, r: 0 }; else delete s.pos.ptz; delete s.pos.beamer; } if (s && s.pos) state = { ...state, ...s, v: 5, pos: { ...structuredClone(DEFAULT), ...s.pos }, filter: { ...state.filter, ...(s.filter || {}) } }; } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
 deskH = state.h;
 
@@ -739,8 +738,8 @@ function setView(v) {
   VIEWS[v](); controls.enabled = mode === 'orbit';
   if (mode === 'orbit') controls.update(); else camera.rotation.set(pitch, yaw, 0);
   $('hint').innerHTML = mode === 'orbit'
-    ? '<span>Gerät ziehen: verschieben</span><span><kbd>R</kbd> drehen</span><span><kbd>Strg+Z</kbd> zurück</span><span>Fläche ziehen: Ansicht drehen</span><span>Rechte Maustaste: schieben</span><span><kbd>W A S D</kbd> bewegen</span><span>Rad: Zoom</span>'
-    : '<span><kbd>W A S D</kbd> gehen</span><span><kbd>Q</kbd>/<kbd>E</kbd> runter/hoch</span><span>Fläche ziehen: umsehen</span><span>Gerät ziehen: verschieben</span>';
+    ? '<span>Gerät ziehen: verschieben</span><span><kbd>R</kbd> drehen</span><span><kbd>Strg+Z</kbd> zurück</span><span>Fläche ziehen: Ansicht drehen</span><span>Rechte Maustaste: schieben</span><span><kbd>W A S D</kbd> bewegen</span><span><kbd>Leertaste</kbd>/<kbd>C</kbd> hoch/runter</span><span><kbd>Shift</kbd> schnell</span><span>Rad: Zoom</span>'
+    : '<span><kbd>W A S D</kbd> gehen</span><span><kbd>Leertaste</kbd>/<kbd>C</kbd> hoch/runter</span><span><kbd>Shift</kbd> rennen</span><span>Fläche ziehen: umsehen</span><span>Gerät ziehen: verschieben</span>';
 }
 document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
 
@@ -790,6 +789,9 @@ renderer.domElement.addEventListener('pointerup', endPtr); renderer.domElement.a
 renderer.domElement.addEventListener('wheel', e => { if (mode !== 'fp') return; e.preventDefault(); const f = V(0, 0, -1).applyEuler(camera.rotation); camera.position.addScaledVector(f, -e.deltaY * 0.15); }, { passive: false });
 
 const keys = new Set();
+let sprint = false;
+/* Bewegung: WASD, hoch = E oder Leertaste, runter = Q oder C, Shift = schnell */
+const MOVE = { KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', KeyE: 'up', Space: 'up', KeyQ: 'dn', KeyC: 'dn' };
 addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.target.closest('input[type=text], textarea')) { e.preventDefault(); undo(); return; }
   if (e.target.closest('input, button, textarea')) return;
@@ -797,9 +799,11 @@ addEventListener('keydown', e => {
   if (k === 'r' && selObj) { rotateSel(e.shiftKey ? -15 : 15); return; }
   if (k === 'escape') select(null);
   if (k === 'l') { setLock(!locked); return; }
-  if (k.length === 1 && 'wasdqe'.includes(k) && !e.ctrlKey && !e.metaKey) { keys.add(k); e.preventDefault(); }
+  sprint = e.shiftKey;
+  const mk = MOVE[e.code]; if (mk && !e.ctrlKey && !e.metaKey && !e.altKey) { keys.add(mk); e.preventDefault(); }
 });
-addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
+addEventListener('keyup', e => { sprint = e.shiftKey; const mk = MOVE[e.code]; if (mk) keys.delete(mk); });
+addEventListener('blur', () => { keys.clear(); sprint = false; });
 
 /* ---------- Größe und Schleife ---------- */
 function resize() { const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h); labelR.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); }
@@ -808,17 +812,17 @@ const clock = new THREE.Clock();
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
   if (mode === 'fp' && keys.size) {
-    const f = V(-Math.sin(yaw), 0, -Math.cos(yaw)), r = V(Math.cos(yaw), 0, -Math.sin(yaw)), s = 120 * dt;
+    const f = V(-Math.sin(yaw), 0, -Math.cos(yaw)), r = V(Math.cos(yaw), 0, -Math.sin(yaw)), s = (sprint ? 360 : 120) * dt;
     if (keys.has('w')) camera.position.addScaledVector(f, s); if (keys.has('s')) camera.position.addScaledVector(f, -s);
     if (keys.has('d')) camera.position.addScaledVector(r, s); if (keys.has('a')) camera.position.addScaledVector(r, -s);
-    if (keys.has('e')) camera.position.y += s; if (keys.has('q')) camera.position.y = Math.max(15, camera.position.y - s);
+    if (keys.has('up')) camera.position.y += s; if (keys.has('dn')) camera.position.y = Math.max(15, camera.position.y - s);
   }
   if (mode === 'orbit' && keys.size) {
     const d = controls.target.clone().sub(camera.position); d.y = 0; d.normalize();
-    const r = V(-d.z, 0, d.x), s = 200 * dt, mv = V(0, 0, 0);
+    const r = V(-d.z, 0, d.x), s = (sprint ? 600 : 200) * dt, mv = V(0, 0, 0);
     if (keys.has('w')) mv.addScaledVector(d, s); if (keys.has('s')) mv.addScaledVector(d, -s);
     if (keys.has('d')) mv.addScaledVector(r, s); if (keys.has('a')) mv.addScaledVector(r, -s);
-    if (keys.has('e')) mv.y += s; if (keys.has('q')) mv.y -= s;
+    if (keys.has('up')) mv.y += s; if (keys.has('dn')) mv.y -= s;
     camera.position.add(mv); controls.target.add(mv);
   }
   if (mode === 'orbit') controls.update();
