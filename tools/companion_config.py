@@ -126,9 +126,9 @@ def main(src, dst):
     # Ton aus/an: Lautsprecher-Ausgang des RM-CR stumm schalten (Pegel bleibt) – für Video, Werbung, Rückkopplung
     def rcp(cmd):
         return act('send', rmcr, {'id_send': opt(cmd), 'id_end': opt('\n')})
-    put(1, 1, 6, button('Ton aus', [rcp('set RM:NeOut_Fader/Ch/On 0 0 0'), rcp('set RM:NeOut_Fader/Ch/On 1 0 0'), setvar('r5_spk_mute', '1'), touch()]))
-    put(1, 1, 7, button('Ton an', [rcp('set RM:NeOut_Fader/Ch/On 0 0 1'), rcp('set RM:NeOut_Fader/Ch/On 1 0 1'), setvar('r5_spk_mute', '0'), touch()]))
-    extend(1, 0, 1, rcp('set RM:NeOut_Fader/Ch/On 0 0 1'), rcp('set RM:NeOut_Fader/Ch/On 1 0 1'), setvar('r5_spk_mute', '0'))   # Raum an: Ton immer an
+    put(1, 1, 6, button('Ton aus', [rcp('set RM:NeOut_Fader/Ch/On 0 0 0'), rcp('set RM:NeOut_Fader/Ch/On 1 0 0'), rcp('set RM:NeOut_Fader/Ch/On 2 0 0'), rcp('set RM:NeOut_Fader/Ch/On 3 0 0'), setvar('r5_spk_mute', '1'), touch()]))
+    put(1, 1, 7, button('Ton an', [rcp('set RM:NeOut_Fader/Ch/On 0 0 1'), rcp('set RM:NeOut_Fader/Ch/On 1 0 1'), rcp('set RM:NeOut_Fader/Ch/On 2 0 1'), rcp('set RM:NeOut_Fader/Ch/On 3 0 1'), setvar('r5_spk_mute', '0'), touch()]))
+    extend(1, 0, 1, rcp('set RM:NeOut_Fader/Ch/On 0 0 1'), rcp('set RM:NeOut_Fader/Ch/On 1 0 1'), rcp('set RM:NeOut_Fader/Ch/On 2 0 1'), rcp('set RM:NeOut_Fader/Ch/On 3 0 1'), setvar('r5_spk_mute', '0'))   # Raum an: Ton immer an
     extend(1, 3, 6, setvar('r5_spk_mute', '0'))                                           # Ton zurücksetzen schaltet On=1
 
     # Präsentation ausblenden: in OBS die Szene „Präsentation pausiert“ (Logo + Text) über den Präsentations-Rahmen legen.

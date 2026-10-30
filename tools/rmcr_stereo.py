@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Lautsprecher-Befehle im Companion-Export für beide Kanäle des RM-CR setzen.
 
-Der RM-CR hat zwei Near-End-Ausgänge (L/R). Die Tablet-Lautstärke und „Ton aus“
-änderten bisher nur Kanal 0; die VXL-Lautsprecher hängen auch an Kanal 1.
-Zu jeder Aktion „set RM:NeOut_Fader/Ch/... 0 0 …“ kommt dieselbe für Kanal 1 dazu.
+Der RM-CR hat zwei Near-End-Fader (im Web-UI unter Processing): links = Kanal 0/1
+(analoger SP OUT), rechts = Kanal 2/3 (Dante-Lautsprecher, hier die VXL1B). Am Gerät
+geprüft 30.10.2026: „set RM:NeOut_Fader/Ch/Level 2 0 …“ bewegt den rechten Fader.
+Zu jeder Aktion „set RM:NeOut_Fader/Ch/... 0 0 …“ kommen dieselben für Kanal 1, 2, 3 dazu.
 
 Aufruf:  python3 -I tools/rmcr_stereo.py <ein.companionconfig> <aus.companionconfig>
 """
@@ -30,16 +31,24 @@ def walk(obj, stats):
                 cmd = (a.get('options', {}).get('id_send') or {}).get('value', '')
                 m = PAT.match(cmd)
                 if m:
-                    want = 'set RM:NeOut_Fader/Ch/%s 1 0 %s' % (m.group(1), m.group(2))
-                    nxt = obj[i + 1] if i + 1 < len(obj) else None
-                    have = isinstance(nxt, dict) and (nxt.get('options', {}).get('id_send') or {}).get('value') == want
-                    if not have:
+                    vorhanden = set()
+                    j = i + 1
+                    while j < len(obj) and isinstance(obj[j], dict) and \
+                            (obj[j].get('options', {}).get('id_send') or {}).get('value', '').startswith('set RM:NeOut_Fader/Ch/%s ' % m.group(1)):
+                        vorhanden.add(obj[j]['options']['id_send']['value'])
+                        j += 1
+                    pos = j
+                    for ch in (1, 2, 3):
+                        want = 'set RM:NeOut_Fader/Ch/%s %d 0 %s' % (m.group(1), ch, m.group(2))
+                        if want in vorhanden:
+                            continue
                         b = copy.deepcopy(a)
                         b['id'] = nid()
                         b['options']['id_send']['value'] = want
-                        obj.insert(i + 1, b)
+                        obj.insert(pos, b)
+                        pos += 1
                         stats.append(want)
-                        i += 1
+                    i = pos - 1
             i += 1
 
 
@@ -51,7 +60,7 @@ def main(src, dst):
     walk(data, stats)
     out = json.dumps(data, ensure_ascii=False).encode()
     open(dst, 'wb').write(gzip.compress(out) if gz else out)
-    print('%d Aktionen für Kanal 1 ergänzt' % len(stats))
+    print('%d Aktionen für Kanal 1–3 ergänzt' % len(stats))
     for s in stats:
         print('  ' + s)
 

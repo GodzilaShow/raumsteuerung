@@ -51,7 +51,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Raum5\Raumsteuerung\inst
 - IP 192.168.137.185 (statisch), Firmware V3.0.1. Web-UI: http://192.168.137.185 (Arsenij loggt sich selbst ein).
 - RM-TT Mikrofone: 192.168.137.92 (MAC …8D:E3) und 192.168.137.205 (…8D:E5). **Am 12.10. im RM-CR unter Settings → Peripheral registriert (beide „connected“, SUBMIT).** Vorher: „No devices have been added“ → kein Ton an den Eingängen.
 - RCP: `prmnum` = 166 Parameter, `prminfo N` listet sie. Kein Parameter „Taste gedrückt“. Relevante:
-  - RM:NeOut_Fader/Ch/Level|On (X5) = Lautsprecher – Kanal 0 und 1 sind NICHT gekoppelt, alle Befehle gehen an beide (`tools/rmcr_stereo.py`, 30.10.)
+  - RM:NeOut_Fader/Ch/Level|On (X5) = Lautsprecher – zwei Fader: Kanal 0/1 = analoger SP OUT, Kanal 2/3 = Dante-Lautsprecher (VXL); alle Befehle gehen an 0–3 (`tools/rmcr_stereo.py`, am Gerät geprüft 30.10.)
   - RM:AllMic_Mute/Ch/On (X5), RM:MicMute/All, RM:MicMute/Group (X9)
 - Meter: `mtrnum` = 26, `mtrstart <ID> <ms>` (alle ≤10 s erneuern), Antwort `NOTIFY mtr <ID> level <hex…>` (7E = 0 dBFS). Wichtig: RM:NeInPostFader (16 Kanäle), RM:InputPort (26), RM:NeInAutomixGain (16).
 - Nach der Registrierung kam Signal: InputPort #11/#12 und NeInPostFader #1/#2 (Grundpegel ~0x61, Spitzen ~0x78). Zuordnung Kanal ↔ Mikrofon noch nicht sicher (ein RM-TT kann 2 Kanäle liefern).
