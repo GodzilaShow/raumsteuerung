@@ -273,3 +273,22 @@ Quellen als Word-Datei `docs/Recherche-Kabellos-Publikumkamera-2026-10-23.docx`,
   (Tabs: Gerüst, Arbeitsstand, Einschätzung). Projekt = **ein Raum, Sitzungszimmer 5**; Angebote AN26-0893/-0926
   gehören dazu. Offen: genehmigter Projektantrag aus PAO, Prüfungstermin. Doku schreibt Arsenij selbst, Claude
   prüft; Fachgespräch wird auf Deutsch geübt.
+
+## Stand 30.10.2026 (Test am Arbeitsplatz, Arsenijs PC)
+- **Pfeifen (Rückkopplung) behoben:** RM-CR → Processing → Mixing Bus → Ausgang „ANALOG & DANTE SPEAKER OUT“:
+  Analog Mic Ch. 1 + 2 **OFF** (Headset nur nach USB/Teams, nicht in die Saal-Lautsprecher). USB-Ausgang: Analog Mic,
+  Dante, AUX IN = ON.
+- **RM-CR Dante-IP** war auf DHCP → 169.254.6.54 (kein Ton zu den RM-TT). Jetzt **fest 192.168.137.253/24**
+  (Settings → Network → Dante IP). Dante Controller: RM-CR ist primärer Taktgeber.
+- **RM-TT-128DE3** (MAC …8D:E3, Dante 8D042B): Steuer-IP war DHCP (über ICS) → jetzt **fest 192.168.137.31/24**,
+  Dante-IP 192.168.137.17 (fest). Im RM-CR unter Peripheral „connected“. Zweiter registrierter RM-TT (…8D:E5) und
+  zwei neue RM-TT noch nicht angeschlossen → gleiche Prozedur, Steuer-IP .32/.33/.34.
+- **Prozedur für neue Yamaha-Geräte:** ICS (WLAN → Freigabe für Ethernet) kurz an → Gerät bekommt 192.168.137.x →
+  RM Device Finder (Netzwerkkarte 192.168.137.1) findet es → Web-UI → Network → DHCP aus, feste IP → ICS wieder aus,
+  danach auf dem PC `New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 192.168.137.1 -PrefixLength 24`.
+  Ohne ICS findet RM Device Finder per Suche nichts (nur „Search by IP address“).
+- **Headset (Sennheiser EW-D):** XLR → RM-CR MIC IN 1 funktioniert (vorher Stecker nicht eingerastet). Empfänger:
+  AF OUT war +6 dB → auf ca. 0 dB senken. Sender-Akku schwach (LINK blinkt rot) → laden.
+- Ethernet-Profil „Privat“, Firewall-Regel für RM Device Finder angelegt. Mikrofon-Modi auf dem Tablet getestet: funktionieren.
+- Netzplan (`docs/NETZPLAN.md`) plant 192.168.55.0/24 – im Test läuft alles noch auf 192.168.137.0/24.
+
