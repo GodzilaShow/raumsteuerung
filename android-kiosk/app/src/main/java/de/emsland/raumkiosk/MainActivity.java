@@ -369,6 +369,7 @@ public class MainActivity extends Activity {
                 .setNegativeButton("Abbrechen", (x, w) -> dialogOffen = false)
                 .setOnCancelListener(x -> dialogOffen = false)
                 .create();
+        d.setCanceledOnTouchOutside(false);   // weitere Tipper in der Ecke schliessen den Dialog nicht
         d.show();
         // Ohne Eingabe nach 15 s wieder zu
         ui.postDelayed(() -> { if (d.isShowing() && pin.getText().length() == 0) { d.dismiss(); dialogOffen = false; } }, 15000);
@@ -397,7 +398,8 @@ public class MainActivity extends Activity {
                 })
                 .setNegativeButton("Schließen", (x, w) -> dialogOffen = false)
                 .setOnCancelListener(x -> dialogOffen = false)
-                .show();
+                .show()
+                .setCanceledOnTouchOutside(false);
     }
 
     private void adresseAendern() {
