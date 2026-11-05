@@ -70,11 +70,13 @@ h2{margin:0;font-size:21px;font-weight:600}
 .toggle i:after{content:"";width:24px;height:24px;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .3s cubic-bezier(.3,1.4,.5,1)}
 .toggle.on i{background:var(--green)}.toggle.on i:after{transform:translateX(22px)}
 /* scenes */
-.scenes{flex-grow:1;min-height:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:minmax(0,1fr);gap:14px}
+.scenes{flex-grow:1;min-height:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:minmax(0,1fr);gap:14px}
 .scene{display:flex;flex-direction:column;padding:0;border:1px solid var(--line2);border-radius:6px;overflow:hidden;background:var(--bg);text-align:left;box-shadow:0 0 0 3px transparent}
 .thumb{position:relative;display:block;width:100%;flex-grow:1;min-height:0;overflow:hidden;background:#1E3A52}
 /* Teams-Modus „teilen“: Präsentation kommt scharf über das Teilen, die Kamera zeigt nur Personen */
-.scenes.teilen{grid-template-columns:repeat(4,minmax(0,1fr))}
+.scenes.teilen{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* Pause ist ein eigener Knopf (Teams + Saal + Mikrofone), keine Kamera-Ansicht mehr */
+.scenes [data-scene=pause]{display:none}
 .scenes.teilen [data-scene=alles],.scenes.teilen [data-scene=folien]{display:none}
 .scenes.teilen [data-scene=redner]{order:-1}   /* „Nur Redner“ wird am häufigsten gebraucht -> links oben */
 .scene .lbl{display:block;padding:8px 10px;font-size:16px;font-weight:600}
@@ -116,8 +118,8 @@ h2{margin:0;font-size:21px;font-weight:600}
 .volnum b{font-size:42px;line-height:1}.volnum small{font-size:18px;font-weight:600}
 .volrow{flex-direction:row;align-items:center;gap:14px;padding:12px 22px}.volrow h2{min-width:130px}.volrow .volnum{min-width:110px;justify-content:center}
 .vbtn{width:72px;min-height:60px;padding:0;font-size:34px;font-weight:500}.volrow .btn.spk{min-height:60px;padding:4px 18px;font-size:17px}
-/* feste Breite: „Ton aus“ ↔ „Ton ist aus“ darf die Zeile nicht verschieben */
-.volrow .btn.spk{width:184px;flex:none;justify-content:center}
+/* feste Breite: „Ton aus“ ↔ „Ton an“ darf die Zeile nicht verschieben (Zeile ist voll) */
+.volrow .btn.spk{width:126px;flex:none;justify-content:center}
 /* nav */
 .tabs{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;padding:5px;background:#fff;border:1px solid var(--line2);border-radius:30px;box-shadow:0 2px 8px rgba(14,42,63,.08)}
 .tabs button{height:46px;min-width:150px;padding:0 24px;border-radius:23px;border:0;background:none;color:var(--muted);font-size:18px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
@@ -285,7 +287,7 @@ h2{margin:0;font-size:21px;font-weight:600}
 <h2 style="margin-right:10px">Quelle</h2>
 <div class="seg" id="srcSeg"><button data-src="pc">Raum-PC</button><button data-src="laptop">Laptop (HDMI)</button><button data-src="cast">Kabellos</button></div>
 <div class="grow"></div>
-<button class="btn" id="blankBtn" data-act="blank" style="white-space:nowrap">Pausenbild zeigen</button>
+<button class="btn" id="blankBtn" data-act="blank" style="white-space:nowrap">Pause</button>
 <button class="btn" id="dispBtn" data-act="disp" style="white-space:nowrap">Displays ausschalten</button>
 </div>
 <div id="srcHint" style="font-size:16px;line-height:1.4;color:var(--muted)"></div>
@@ -449,7 +451,7 @@ var $$ = function (q, el) { return Array.prototype.slice.call((el || document).q
 $$('img[data-logo]').forEach(function (i) { i.src = $('#logoImg').src; });
 
 // Publikum-Kamera ist fest (ganzer Raum) -> nur die Redner-Kamera wird bedient (S.cam immer 'r')
-var S = { screen: 'start', scene: 'alles', src: 'pc', mic: 'alle', vol: 6, blank: false, disp: true, track: true, cam: 'r', rPreset: 'r_pult' };
+var S = { screen: 'start', scene: 'alles', src: 'pc', mic: 'alle', vol: 6, blank: false, pause: false, pre: null, disp: true, track: true, cam: 'r', rPreset: 'r_pult' };
 try { var saved = JSON.parse(localStorage.getItem('raum5') || '{}'); for (var k in saved) S[k] = saved[k]; } catch (e) {}
 S.cam = 'r'; delete S.pAuto; delete S.pMic; delete S.pPreset;   // gespeicherter Stand von früher (mit Publikum-Kamera)
 function save() { try { localStorage.setItem('raum5', JSON.stringify(S)); } catch (e) {} }
@@ -545,16 +547,17 @@ function render() {
   $$('[data-src]').forEach(function (b) { b.classList.toggle('on', b.dataset.src === S.src); });
   $$('[data-mic]').forEach(function (b) { b.classList.toggle('on', b.dataset.mic === S.mic); });
   $('#srcHint').textContent = HINTS[S.src]; $('#srcHint').hidden = S.src === 'pc';   // Hinweis nur, wenn man etwas tun muss
-  $('#blankBtn').className = 'btn' + (S.blank ? ' danger' : '');
-  $('#blankBtn').textContent = S.blank ? 'Pausenbild beenden' : 'Pausenbild zeigen';
+  // Pause ist beendet, wenn woanders (Stream Deck) Pausenbild und Pause-Szene weggenommen wurden
+  if (S.pause && !S.blank && S.scene !== 'pause') { S.pause = false; S.pre = null; }
+  $('#blankBtn').className = 'btn' + (S.pause ? ' danger' : '');
+  $('#blankBtn').textContent = S.pause ? 'Pause beenden' : 'Pause';
   $('#dispBtn').className = 'btn' + (!S.disp ? ' primary' : '');
   $('#dispBtn').textContent = S.disp ? 'Displays ausschalten' : 'Displays einschalten';
-  $('#blankBtn').disabled = !S.disp;
   // Modus teilen: Folien kommen scharf über „Präsentation zeigen“ -> Kamera-Ansichten nur mit Personen
   // (Gesamtansichten würden die Folien unscharf doppeln)
   var tl = T.mode === 'teilen'; $('.scenes').classList.toggle('teilen', tl);
   $('#scenesH').textContent = tl ? 'Was zeigt die Kamera in Teams?' : 'Was sehen die Online-Teilnehmer?';
-  var sb = $('#spkBtn'); sb.classList.toggle('muted', !!S.spkMute); sb.lastChild.textContent = S.spkMute ? 'Ton ist aus' : 'Ton aus';
+  var sb = $('#spkBtn'); sb.classList.toggle('muted', !!S.spkMute); sb.lastChild.textContent = S.spkMute ? 'Ton an' : 'Ton aus';   // gleich lang -> nichts verrutscht; „aus“ zeigt Rot + durchgestrichener Lautsprecher
   sb.closest('.panel').classList.toggle('mutedvol', !!S.spkMute);
   $('[data-act=volDown]').disabled = S.vol <= 0;
   $('[data-act=volUp]').disabled = S.vol >= 10;
@@ -591,6 +594,7 @@ var ACTIONS = {
   start: function () {
     call('raum_an').then(function (ok) { if (!ok && S.screen !== 'start') go('start'); });
     S.src = 'pc'; touched.src = Date.now();   // „Raum an“ schaltet die Matrix auf den Raum-PC (nicht der Laptop von gestern)
+    S.pause = false; S.pre = null; S.blank = false;
     S.mic = 'alle'; touched.mic = Date.now(); // „Raum an“ schaltet alle Saal-Mikrofone an (Companion 1/0/1 drückt 1/4/1)
     touched.room = Date.now(); stopIdle(); nextAsk = Date.now() + CONFIG.askEveryMinutes * 60000; go('main');
   },
@@ -607,7 +611,20 @@ var ACTIONS = {
   spk: function () { S.spkMute = !S.spkMute; touched.spk = Date.now(); call(S.spkMute ? 'spk_off' : 'spk_on'); },
   volDown: function () { setVol(S.vol - 1); },
   volUp: function () { setVol(S.vol + 1); },
-  blank: function () { S.blank = !S.blank; touched.blank = Date.now(); call(S.blank ? 'blank_on' : 'blank_off'); },
+  // Pause: Teams zeigt das Pausenbild, im Saal das Pausenbild, Saal-Mikrofone stumm. Beenden stellt den Stand davor her.
+  blank: function () {
+    var t = Date.now(); touched.blank = touched.scene = touched.mic = t;
+    if (!S.pause) {
+      S.pre = { scene: S.scene === 'pause' ? 'redner' : S.scene, mic: S.mic === 'stumm' ? 'alle' : S.mic };
+      S.pause = true; S.blank = true; S.scene = 'pause'; S.mic = 'stumm';
+      if (S.disp) call('blank_on');
+      call('scene_pause'); call('mic_stumm');
+    } else {
+      var pre = S.pre || { scene: 'redner', mic: 'alle' };
+      S.pause = false; S.pre = null; S.blank = false; S.scene = pre.scene; S.mic = pre.mic;
+      call('blank_off'); call('scene_' + pre.scene); call('mic_' + pre.mic);
+    }
+  },
   disp: function () { S.disp = !S.disp; if (!S.disp) S.blank = false; call(S.disp ? 'disp_on' : 'disp_off'); },
   camHome: function () {
     call('r_home'); S.rPreset = null;
@@ -667,7 +684,7 @@ function forgetTeams() {
   T.inMeeting = false; T.muted = false; T.video = true; T.share = false; T.status = ''; T.joinAt = 0; T.offAt = Date.now();
 }
 function roomOff() {
-  forgetTeams(); call('raum_aus'); touched.room = Date.now();
+  forgetTeams(); call('raum_aus'); touched.room = Date.now(); S.pause = false; S.pre = null;
   $('#dlgOff').classList.remove('show'); stopIdle(); go('start');
 }
 
@@ -749,7 +766,7 @@ function setLive(on) {
   else if (/^fehler: (kein teilen|präsentation)/i.test(T.status)) { txt = 'Präsentation nicht geteilt'; sub = 'Am Rednerplatz in Teams „Teilen“ tippen und den Bildschirm wählen.'; kind = 'warn'; }
   else if (on !== true) { txt = 'Teams sieht kein Bild'; sub = 'Hilfe → „Kamera neu starten“ tippen.'; kind = 'warn'; }
   else if (!T.video) { txt = 'In Teams, Kamera aus'; sub = 'Oben „Kamera an“ tippen, damit man den Raum sieht.'; kind = 'warn'; }
-  else { txt = S.scene === 'pause' ? 'Pausenbild live' : 'Live in Teams'; sub = 'Die Online-Teilnehmer sehen diese Ansicht.' + (T.muted ? ' Mikro ist aus.' : ''); kind = 'live'; }
+  else { txt = S.scene === 'pause' ? 'Pause' : 'Live in Teams'; sub = S.scene === 'pause' ? 'Online sieht man das Pausenbild. Saal-Mikrofone sind aus.' : 'Die Online-Teilnehmer sehen diese Ansicht.' + (T.muted ? ' Mikro ist aus.' : ''); kind = 'live'; }
   el.classList.toggle('off', kind === 'off'); el.classList.toggle('warn', kind === 'warn');
   $('#liveTxt').textContent = txt; $('#liveSub').textContent = sub;
 }
