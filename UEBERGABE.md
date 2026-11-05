@@ -292,3 +292,15 @@ Quellen als Word-Datei `docs/Recherche-Kabellos-Publikumkamera-2026-10-23.docx`,
 - Ethernet-Profil „Privat“, Firewall-Regel für RM Device Finder angelegt. Mikrofon-Modi auf dem Tablet getestet: funktionieren.
 - Netzplan (`docs/NETZPLAN.md`) plant 192.168.55.0/24 – im Test läuft alles noch auf 192.168.137.0/24.
 
+
+## Stand 05.11.2026
+- **Teams-Beitritt (entschieden):** keine feste Raum-Besprechung mehr (eigener Chat je Sitzung, Datenschutz).
+  Zwei Wege: (1) Tablet „Neues Teams-Meeting“ → `r5_tcmd = neu` → teams-steuerung.ps1: Kalender → „Jetzt besprechen“
+  → „Jetzt teilnehmen“ (**noch nicht mit echtem Teams getestet**); (2) Nutzer öffnet seinen Link (z. B. aus Just Social)
+  am Raum-PC → „In Teams öffnen“, das Skript erkennt jedes Meeting. Kein Meeting-ID-Eingabefeld (bewusst nicht).
+- **Tablet:** ein Knopf „Pause“ (Teams-Pausenbild + Saal-Pausenbild + Mikrofone stumm, Beenden stellt Szene und
+  Mikro-Modus wieder her), Pausenbild-Kachel weg. Ton aus: „AUS“ statt Prozent, Knopf „Ton an“ (feste Breite).
+- **Kiosk 1.4:** Admin-Dialoge schließen nicht mehr bei Tippern außerhalb.
+- **Raumkonto:** `tools/raumkonto-einrichten.ps1` (lokaler Benutzer Sitzungszimmer5, Sperren, Companion/OBS-Kopie;
+  bricht ab, wenn Companion/OBS laufen). Schritt 1/2 macht Arsenij selbst (Passwort), dann Schritt 3, Autologon selbst.
+- Teams-API (Drittanbieter-App-API) bewusst nicht genutzt: kann weder beitreten noch teilen, braucht M365-Admin.
