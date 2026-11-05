@@ -4,7 +4,7 @@ param([int]$Port = 8080)
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $types = @{ '.html'='text/html; charset=utf-8'; '.json'='application/json'; '.png'='image/png'; '.ico'='image/x-icon'; '.apk'='application/vnd.android.package-archive' }
 # JSON nur diese beiden (keine Einstellungsdateien ausliefern); APK nur die Kiosk-App
-$erlaubt = @('manifest.json', 'kiosk-freigabe.json', 'raumkiosk.apk')
+$erlaubt = @('manifest.json', 'kiosk-freigabe.json', 'raumkiosk.apk', 'teams-info.json')   # teams-info.json: Meeting-Link + Wartende (teams-steuerung.ps1)
 $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Any, $Port)
 # Port evtl. noch belegt (z. B. alte Instanz) -> warten statt ohne Listener weiterzulaufen
 while ($true) { try { $listener.Start(); break } catch { Start-Sleep -Seconds 5 } }

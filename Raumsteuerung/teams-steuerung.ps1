@@ -21,7 +21,7 @@
 #   .\teams-steuerung.ps1 -Befehl mute   einmal Mikro umschalten (Test, ohne Companion)
 param(
   [switch]$Status,
-  [ValidateSet('', 'mute', 'video', 'leave', 'join', 'neu', 'share_on', 'share_off')][string]$Befehl = '',
+  [ValidateSet('', 'mute', 'video', 'leave', 'join', 'neu', 'link', 'admit', 'share_on', 'share_off')][string]$Befehl = '',
   [string]$Companion = '',
   [string]$Log = (Join-Path $PSScriptRoot 'teams-steuerung.log')
 )
@@ -582,6 +582,78 @@ function Start-MeetNow {
   return $true
 }
 
+# ---------- Einladen: Meeting-Link + Wartebereich (fuer das Tablet, Datei teams-info.json) ----------
+$infoDatei = Join-Path $PSScriptRoot 'teams-info.json'
+$script:info = @{ link = ''; wait = 0 }; $script:infoText = ''
+function Write-TeamsInfo {
+  $t = '{"link":"' + ($script:info.link -replace '[\\"]', '') + '","wait":' + [int]$script:info.wait + '}'
+  if ($t -eq $script:infoText) { return }
+  try { [IO.File]::WriteAllText($infoDatei, $t, (New-Object Text.UTF8Encoding($false))); $script:infoText = $t } catch { }
+}
+function Get-TeamsWindows {
+  $ids = @(Get-Process ms-teams -ErrorAction SilentlyContinue).Id
+  foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+    try { if ($ids -contains $w.Current.ProcessId) { $w } } catch { }
+  }
+}
+# Link holen wie ein Mensch: Personen -> "Einladung teilen" -> "Besprechungslink kopieren" -> Zwischenablage
+function Get-MeetingLink {
+  $w = Find-Meeting; if (-not $w) { return '' }
+  $alt = try { Get-Clipboard -Raw } catch { $null }
+  try { Set-Clipboard -Value ' ' } catch { }
+  $roster = $w.FindFirst($Scope::Descendants, (Cond 'roster-button')); $offen = $false
+  try {
+    if ($roster) { $roster.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); $offen = $true }
+    elseif (Invoke-ByName $w '(?i)^(personen|people|teilnehmer|participants)\b') { $offen = $true }
+  } catch { }
+  Start-Sleep -Milliseconds 1500
+  $n = $null; $ende = [DateTime]::Now.AddSeconds(5)
+  while (-not $n -and [DateTime]::Now -lt $ende) {
+    foreach ($tw in Get-TeamsWindows) { $n = Invoke-ByName $tw '(?i)einladung teilen|share invite|(besprechungs|teilnahme)link kopieren|copy (meeting |join )?link'; if ($n) { break } }
+    if (-not $n) { Start-Sleep -Milliseconds 700 }
+  }
+  if ($n -and $n -notmatch '(?i)kopieren|copy') {
+    # erst "Einladung teilen" -> im Dialog "Besprechungslink kopieren"
+    Start-Sleep -Milliseconds 1200; $n2 = $null; $ende = [DateTime]::Now.AddSeconds(5)
+    while (-not $n2 -and [DateTime]::Now -lt $ende) {
+      foreach ($tw in Get-TeamsWindows) { $n2 = Invoke-ByName $tw '(?i)(besprechungs|teilnahme)?link kopieren|copy (meeting |join )?link'; if ($n2) { break } }
+      if (-not $n2) { Start-Sleep -Milliseconds 700 }
+    }
+    Write-Log "Einladen: '$n' -> '$n2'"
+  } else { Write-Log "Einladen: '$n'" }
+  Start-Sleep -Milliseconds 800
+  $txt = try { Get-Clipboard -Raw } catch { '' }
+  # Dialog schliessen (Esc im Meetingfenster), Personenliste wieder zu, Zwischenablage zurueck
+  try { [void][Fenster]::SetForegroundWindow([IntPtr]$w.Current.NativeWindowHandle); Start-Sleep -Milliseconds 200; [System.Windows.Forms.SendKeys]::SendWait('{ESC}') } catch { }
+  if ($offen -and $roster) { try { Start-Sleep -Milliseconds 400; $roster.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke() } catch { } }
+  if ($null -ne $alt) { try { Set-Clipboard -Value $alt } catch { } }
+  if ($txt -match 'https://teams\.(microsoft|live)\.com/\S+') { Write-Log 'Einladen: Link geholt'; return $Matches[0] }
+  Write-Log 'Einladen: kein Link in der Zwischenablage'; return ''
+}
+# Wartende zaehlen: "Zulassen"-Knoepfe (Hinweis im Meeting, Personenliste) oder "Wartebereich (3)"
+function Get-LobbyCount {
+  $n = 0; $cBtn = New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+  foreach ($tw in Get-TeamsWindows) {
+    try {
+      foreach ($b in $tw.FindAll($Scope::Descendants, $cBtn)) {
+        $nm = $b.Current.Name
+        if ($nm -match '(?i)^(zulassen|admit)$') { $n++ }
+        elseif ($nm -match '(?i)(wartebereich|lobby)\D*\((\d+)\)' -and [int]$Matches[2] -gt $n) { $n = [int]$Matches[2] }
+      }
+    } catch { }
+  }
+  return $n
+}
+function Admit-All {
+  foreach ($tw in Get-TeamsWindows) { $n = Invoke-ByName $tw '(?i)^(alle zulassen|admit all)$'; if ($n) { Write-Log "Zulassen: '$n'"; return } }
+  for ($i = 0; $i -lt 10; $i++) {
+    $n = $null
+    foreach ($tw in Get-TeamsWindows) { $n = Invoke-ByName $tw '(?i)^(zulassen|admit)$'; if ($n) { break } }
+    if (-not $n) { break }
+    Write-Log "Zulassen: '$n'"; Start-Sleep -Milliseconds 600
+  }
+}
+
 function Join-Teams([switch]$Neu) {
   if (Find-Meeting) { Write-Log 'Beitritt: Raum ist schon im Meeting'; [void](Set-Var 'r5_t_status' ''); return $true }
   if ($Neu) {
@@ -652,6 +724,8 @@ function Join-Teams([switch]$Neu) {
 # ---------- Testaufrufe ----------
 if ($Status) { $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}  Teilt: {3}  Menue offen: {4}  Modus: {5}' -f $s.In, $s.Mute, $s.Video, $s.Share, $s.Menue, $(if ($Teilen) { 'teilen' } else { 'kamera' }); exit 0 }
 if ($Befehl -in 'share_on', 'share_off') { [void]$(if ($Befehl -eq 'share_on') { Start-Share } else { Stop-Share }); $s = Get-TeamsState; 'Im Meeting: {0}  Teilt: {1}' -f $s.In, $s.Share; exit 0 }
+if ($Befehl -eq 'link') { Get-MeetingLink; exit 0 }
+if ($Befehl -eq 'admit') { Admit-All; 'Wartende: {0}' -f (Get-LobbyCount); exit 0 }
 if ($Befehl -eq 'neu') { [void](Join-Teams -Neu); $s = Get-TeamsState; 'Im Meeting: {0}' -f $s.In; exit 0 }
 if ($Befehl -eq 'join') { [void](Join-Teams); $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}' -f $s.In, $s.Mute, $s.Video; exit 0 }
 if ($Befehl) { [void](Invoke-Teams $Befehl); Start-Sleep -Milliseconds 800; $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}' -f $s.In, $s.Mute, $s.Video; exit 0 }
@@ -662,6 +736,7 @@ Write-Log ('Start Teams-Steuerung, Companion ' + $Companion + ', Benutzer ' + $e
 # sonst tritt Teams nach der naechsten Anmeldung/Neustart unerwartet dem Meeting bei
 $alt = Get-Var 'r5_tcmd'
 if ($alt) { [void](Set-Var 'r5_tcmd' ''); Write-Log "Alter Befehl beim Start verworfen: $alt" }
+$script:linkVersucht = $false; $script:nextLobby = [DateTime]::MinValue; Write-TeamsInfo
 $script:wartenSeit = $null; $script:spaetSeit = $null; $script:lastLobby = [DateTime]::MinValue; $script:leaveZeit = [DateTime]::MinValue; $script:wegSeit = $null
 $last = @{}; $lastPush = [DateTime]::MinValue; $nextState = [DateTime]::MinValue; $companionOk = $true; $script:lastClose = [DateTime]::MinValue; $script:lastObs = [DateTime]::MinValue
 while ($true) {
@@ -688,6 +763,8 @@ while ($true) {
         if (-not $cmd) { }
         elseif ($cmd -eq 'join') { [void](Join-Teams); $nextState = [DateTime]::MinValue }
         elseif ($cmd -eq 'neu') { [void](Join-Teams -Neu); $nextState = [DateTime]::MinValue }
+        elseif ($cmd -eq 'link') { if ((Get-TeamsState).In) { $script:info.link = Get-MeetingLink; Write-TeamsInfo } }
+        elseif ($cmd -eq 'admit') { Admit-All; $script:nextLobby = [DateTime]::MinValue }
         elseif ($cmd -match '^(mic|video)_(on|off)$') {
           # Zielzustand statt Umschalten (vom Tablet): nur druecken, wenn Teams anders steht -> verlorene oder
           # doppelte Befehle koennen den Zustand nicht verdrehen
@@ -735,6 +812,12 @@ while ($true) {
         if ($alle -or $last[$k] -ne $neu[$k]) { if (Set-Var $k ([string]$neu[$k])) { $last[$k] = $neu[$k] } }
       }
       if ($alle) { $lastPush = [DateTime]::Now }
+      if ($s.In) {
+        if (-not $script:linkVersucht) { $script:linkVersucht = $true; $script:info.link = Get-MeetingLink; Write-TeamsInfo }
+        if ([DateTime]::Now -ge $script:nextLobby) { $script:nextLobby = [DateTime]::Now.AddSeconds(3); $script:info.wait = Get-LobbyCount; Write-TeamsInfo }
+      } elseif ($script:linkVersucht -or $script:info.wait) {
+        $script:linkVersucht = $false; $script:info.link = ''; $script:info.wait = 0; Write-TeamsInfo
+      }
       # Meeting von anderen beendet oder in Teams selbst verlassen -> Abschlussfenster ebenfalls schliessen
       if (([DateTime]::Now - $script:lastObs).TotalSeconds -ge 30) {
         $script:lastObs = [DateTime]::Now; Ensure-Obs
