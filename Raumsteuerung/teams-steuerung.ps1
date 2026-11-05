@@ -21,7 +21,7 @@
 #   .\teams-steuerung.ps1 -Befehl mute   einmal Mikro umschalten (Test, ohne Companion)
 param(
   [switch]$Status,
-  [ValidateSet('', 'mute', 'video', 'leave', 'join', 'share_on', 'share_off')][string]$Befehl = '',
+  [ValidateSet('', 'mute', 'video', 'leave', 'join', 'neu', 'share_on', 'share_off')][string]$Befehl = '',
   [string]$Companion = '',
   [string]$Log = (Join-Path $PSScriptRoot 'teams-steuerung.log')
 )
@@ -532,8 +532,62 @@ function Set-Switch($w, [string]$muster, [bool]$an = $true) {
     return
   }
 }
-function Join-Teams {
+# ---------- Neues Meeting ("Jetzt besprechen") ----------
+# Jedes Mal ein neues Meeting mit eigenem Chat statt einer festen Raum-Besprechung (Datenschutz).
+# Kennungen der Teams-Oberflaeche wechseln -> Suche per Name (deutsch/englisch).
+function Invoke-ByName($root, [string]$muster) {
+  foreach ($el in $root.FindAll($Scope::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
+    try {
+      if ($el.Current.Name -notmatch $muster -or -not $el.Current.IsEnabled) { continue }
+      $o = $null
+      if ($el.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$o)) { $o.Invoke(); return $el.Current.Name }
+      if ($el.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref]$o)) { $o.Select(); return $el.Current.Name }
+    } catch { }
+  }
+  return $null
+}
+function Find-TeamsMain {
+  $ids = @(Get-Process ms-teams -ErrorAction SilentlyContinue).Id
+  $best = $null; $flaeche = 0
+  foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+    try {
+      if ($ids -notcontains $w.Current.ProcessId) { continue }
+      $r = $w.Current.BoundingRectangle; $a = $r.Width * $r.Height
+      if ($a -gt $flaeche) { $best = $w; $flaeche = $a }
+    } catch { }
+  }
+  return $best
+}
+function Start-MeetNow {
+  Start-Process 'msteams:'   # Hauptfenster nach vorne (startet Teams, falls es nicht laeuft)
+  $ende = [DateTime]::Now.AddSeconds(20); $main = $null
+  while (-not $main -and [DateTime]::Now -lt $ende) { Start-Sleep -Milliseconds 800; $main = Find-TeamsMain }
+  if (-not $main) { Write-Log 'Neues Meeting: Teams-Hauptfenster nicht gefunden'; return $false }
+  $n = Invoke-ByName $main '(?i)^(kalender|calendar)\b'
+  Write-Log "Neues Meeting: Kalender -> '$n'"
+  $ende = [DateTime]::Now.AddSeconds(10); $n = $null
+  while (-not $n -and [DateTime]::Now -lt $ende) { Start-Sleep -Milliseconds 700; $n = Invoke-ByName (Find-TeamsMain) '(?i)jetzt besprechen|meet now' }
+  if (-not $n) { Write-Log 'Neues Meeting: Knopf "Jetzt besprechen" nicht gefunden'; return $false }
+  Write-Log "Neues Meeting: '$n' gedrueckt"
+  # Teams fragt im Flyout noch "Besprechung starten" (je nach Version) - sonst kommt direkt der Beitrittsbildschirm
+  $ende = [DateTime]::Now.AddSeconds(6)
+  while ([DateTime]::Now -lt $ende) {
+    Start-Sleep -Milliseconds 700
+    if (Find-Prejoin) { break }
+    $ids = @(Get-Process ms-teams -ErrorAction SilentlyContinue).Id
+    foreach ($w in $AE::RootElement.FindAll($Scope::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+      try { if ($ids -contains $w.Current.ProcessId) { $n = Invoke-ByName $w '(?i)^(besprechung starten|start meeting)$'; if ($n) { Write-Log "Neues Meeting: '$n' gedrueckt"; $ende = [DateTime]::MinValue; break } } } catch { }
+    }
+  }
+  return $true
+}
+
+function Join-Teams([switch]$Neu) {
   if (Find-Meeting) { Write-Log 'Beitritt: Raum ist schon im Meeting'; [void](Set-Var 'r5_t_status' ''); return $true }
+  if ($Neu) {
+    [void](Set-Var 'r5_t_status' 'start')
+    if (-not (Start-MeetNow)) { [void](Set-Var 'r5_t_status' 'fehler: Neues Meeting'); return $false }
+  } else {
   $f = Join-Path $PSScriptRoot 'teams-link.txt'
   $link = if (Test-Path $f) { (Get-Content $f -Encoding UTF8 | Where-Object { $_.Trim() } | Select-Object -First 1) } else { $null }
   if (-not $link) { Write-Log 'Beitritt: teams-link.txt fehlt oder ist leer'; [void](Set-Var 'r5_t_status' 'fehler: kein Meeting-Link'); return $false }
@@ -542,6 +596,7 @@ function Join-Teams {
   [void](Set-Var 'r5_t_status' 'start')
   Write-Log 'Beitritt: oeffne Meeting-Link'
   Start-Process $uri
+  }
   # Beitrittsbildschirm abwarten. War schon einer offen, baut Teams ihn neu auf -> bei "Element nicht verfuegbar"
   # kurz warten und neu suchen (bis 45 s).
   $ende = [DateTime]::Now.AddSeconds(45); $gedrueckt = $false
@@ -597,6 +652,7 @@ function Join-Teams {
 # ---------- Testaufrufe ----------
 if ($Status) { $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}  Teilt: {3}  Menue offen: {4}  Modus: {5}' -f $s.In, $s.Mute, $s.Video, $s.Share, $s.Menue, $(if ($Teilen) { 'teilen' } else { 'kamera' }); exit 0 }
 if ($Befehl -in 'share_on', 'share_off') { [void]$(if ($Befehl -eq 'share_on') { Start-Share } else { Stop-Share }); $s = Get-TeamsState; 'Im Meeting: {0}  Teilt: {1}' -f $s.In, $s.Share; exit 0 }
+if ($Befehl -eq 'neu') { [void](Join-Teams -Neu); $s = Get-TeamsState; 'Im Meeting: {0}' -f $s.In; exit 0 }
 if ($Befehl -eq 'join') { [void](Join-Teams); $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}' -f $s.In, $s.Mute, $s.Video; exit 0 }
 if ($Befehl) { [void](Invoke-Teams $Befehl); Start-Sleep -Milliseconds 800; $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}' -f $s.In, $s.Mute, $s.Video; exit 0 }
 
@@ -631,6 +687,7 @@ while ($true) {
         }
         if (-not $cmd) { }
         elseif ($cmd -eq 'join') { [void](Join-Teams); $nextState = [DateTime]::MinValue }
+        elseif ($cmd -eq 'neu') { [void](Join-Teams -Neu); $nextState = [DateTime]::MinValue }
         elseif ($cmd -match '^(mic|video)_(on|off)$') {
           # Zielzustand statt Umschalten (vom Tablet): nur druecken, wenn Teams anders steht -> verlorene oder
           # doppelte Befehle koennen den Zustand nicht verdrehen
