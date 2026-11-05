@@ -104,6 +104,9 @@ h2{margin:0;font-size:21px;font-weight:600}
 .btn.spk.muted{background:var(--red);border-color:var(--red);color:#fff}
 .btn.spk.muted .x{display:inline}.btn.spk.muted .w1,.btn.spk.muted .w2{display:none}
 .panel.mutedvol .volnum{color:var(--muted)}
+/* Ton aus: statt der Prozentzahl gross „AUS“ – der Knopf daneben sagt dann „Ton an“ (was er tut) */
+.panel.mutedvol .volnum b,.panel.mutedvol .volnum small{display:none}
+.panel.mutedvol .volnum::after{content:'AUS';font-size:34px;font-weight:700;line-height:1;color:var(--red)}
 /* Saal-Mikrofone (RM-CR): Alle sprechen | Nur Sprecher | Alle stumm – links in der Lautsprecher-Zeile */
 .micgrp{display:flex;align-items:center;gap:14px}
 .volrow h2{min-width:0}
