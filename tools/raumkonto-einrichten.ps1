@@ -104,6 +104,10 @@ if (Get-Process -IncludeUserName -ErrorAction SilentlyContinue | Where-Object { 
   Write-Host "$Name ist noch angemeldet. Bitte erst abmelden." -ForegroundColor Red; exit 1
 }
 
+if ($VonBenutzer -and (Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -like '*companion*' -or $_.ProcessName -like 'obs64' })) {
+  Write-Host 'Companion oder OBS laeuft noch - bitte zuerst beenden (sonst wird eine halbfertige Datenbank kopiert).' -ForegroundColor Red; exit 1
+}
+
 Benutzerzweig {
   param($wurzel, $pfad)
   if ($VonBenutzer) {
