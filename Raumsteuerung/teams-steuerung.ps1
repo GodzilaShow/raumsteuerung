@@ -669,6 +669,19 @@ function Close-PrivateEdge {
   }
 }
 
+# Teams abgemeldet? (Kontoauswahl / Anmeldebildschirm statt Teams-Oberflaeche)
+function Test-TeamsAbgemeldet {
+  foreach ($tw in Get-TeamsWindows) {
+    try {
+      $t = New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text)
+      foreach ($e in $tw.FindAll($Scope::Descendants, $t)) {
+        if ($e.Current.Name -match '(?i)^(ein konto ausw.hlen|pick an account|willkommen bei teams|welcome to teams|anmelden|sign in)\b') { return $true }
+      }
+    } catch { }
+  }
+  return $false
+}
+
 function Join-Teams([switch]$Neu) {
   if (Find-Meeting) { Write-Log 'Beitritt: Raum ist schon im Meeting'; [void](Set-Var 'r5_t_status' ''); return $true }
   if ($Neu) {
@@ -753,6 +766,7 @@ Write-Log ('Start Teams-Steuerung, Companion ' + $Companion + ', Benutzer ' + $e
 $alt = Get-Var 'r5_tcmd'
 if ($alt) { [void](Set-Var 'r5_tcmd' ''); Write-Log "Alter Befehl beim Start verworfen: $alt" }
 $script:linkVersucht = $false; $script:nextLobby = [DateTime]::MinValue; Write-TeamsInfo
+$script:abgemeldet = $false; $script:nextAbm = [DateTime]::MinValue
 $script:wartenSeit = $null; $script:spaetSeit = $null; $script:lastLobby = [DateTime]::MinValue; $script:leaveZeit = [DateTime]::MinValue; $script:wegSeit = $null
 $last = @{}; $lastPush = [DateTime]::MinValue; $nextState = [DateTime]::MinValue; $companionOk = $true; $script:lastClose = [DateTime]::MinValue; $script:lastObs = [DateTime]::MinValue
 while ($true) {
@@ -829,6 +843,13 @@ while ($true) {
         if ($alle -or $last[$k] -ne $neu[$k]) { if (Set-Var $k ([string]$neu[$k])) { $last[$k] = $neu[$k] } }
       }
       if ($alle) { $lastPush = [DateTime]::Now }
+      if (-not $s.In -and [DateTime]::Now -ge $script:nextAbm) {
+        $script:nextAbm = [DateTime]::Now.AddSeconds(10)
+        $ab = Test-TeamsAbgemeldet
+        if ($ab -and -not $script:abgemeldet) { Write-Log 'Teams ist abgemeldet'; [void](Set-Var 'r5_t_status' 'fehler: abgemeldet') }
+        elseif (-not $ab -and $script:abgemeldet) { Write-Log 'Teams wieder angemeldet'; if ((Get-Var 'r5_t_status') -like '*abgemeldet*') { [void](Set-Var 'r5_t_status' '') } }
+        $script:abgemeldet = $ab
+      }
       if ($s.In) {
         if (-not $script:linkVersucht) { $script:linkVersucht = $true; $script:info.link = Get-MeetingLink; Write-TeamsInfo }
         if ([DateTime]::Now -ge $script:nextLobby) { $script:nextLobby = [DateTime]::Now.AddSeconds(3); $script:info.wait = Get-LobbyCount; Write-TeamsInfo }

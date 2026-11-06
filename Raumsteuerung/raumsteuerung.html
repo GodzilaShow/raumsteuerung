@@ -2910,7 +2910,9 @@ function renderTeams() {
   var err = !T.inMeeting && /^fehler/i.test(T.status);
   var wait = !T.inMeeting && /^warten/i.test(T.status);   // Wartebereich: Raum wartet, bis ihn jemand in Teams einlässt
   j.hidden = T.inMeeting; $('#tHint').hidden = T.inMeeting || !!busy || wait; j.classList.toggle('busy', !!busy || wait); j.classList.toggle('err', err);
-  j.lastChild.textContent = wait ? 'Wartet auf Einlass …' : busy ? 'Teams-Meeting startet …' : err ? 'Teams-Start fehlgeschlagen – erneut' : 'Neues Teams-Meeting';
+  var abm = err && /abgemeldet/i.test(T.status);   // Teams am Raum-PC abgemeldet: nur IT kann wieder anmelden
+  j.disabled = abm;
+  j.lastChild.textContent = abm ? 'Teams ist abgemeldet – IT-Service 2020 anrufen' : wait ? 'Wartet auf Einlass …' : busy ? 'Teams-Meeting startet …' : err ? 'Teams-Start fehlgeschlagen – erneut' : 'Neues Teams-Meeting';
   $('#tLeave').hidden = !T.inMeeting;   // Verlassen klein im Kopf, nur im Meeting
   var sb2 = $('#tShare'); sb2.hidden = T.mode === 'kamera'; sb2.classList.toggle('on', T.share); sb2.lastChild.textContent = T.share ? 'Präsentation beenden' : 'Präsentation zeigen';
   var iv = $('#tInvite'), wn = T.wait || 0;

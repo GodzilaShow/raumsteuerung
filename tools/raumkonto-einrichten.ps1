@@ -35,6 +35,9 @@ function Profilpfad([string]$benutzer) {
 $sperren = @(
   @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Policies\Explorer'; Name = 'NoControlPanel';      Wert = 1 },
   @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Policies\Explorer'; Name = 'NoRun';               Wert = 1 },
+  # Kein „Abmelden“ (Start-Menue und Strg+Alt+Entf); „Benutzer wechseln“ bleibt fuer den Admin
+  @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Policies\Explorer'; Name = 'NoLogoff';            Wert = 1 },
+  @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Policies\Explorer'; Name = 'StartMenuLogOff';     Wert = 1 },
   @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Policies\System';   Name = 'DisableTaskMgr';      Wert = 1 },
   @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Policies\System';   Name = 'DisableRegistryTools';Wert = 1 },
   @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Policies\System';   Name = 'DisableChangePassword';Wert = 1 },
@@ -63,7 +66,8 @@ if ($Aufheben) {
     param($wurzel, $pfad)
     foreach ($s in $sperren) { Remove-ItemProperty -Path "$wurzel\$($s.Key)" -Name $s.Name -ErrorAction SilentlyContinue }
   }
-  Write-Host "Sperren fuer $Name aufgehoben (wirkt nach der naechsten Anmeldung)." -ForegroundColor Green
+  Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'ForceAutoLogon' -ErrorAction SilentlyContinue
+  Write-Host "Sperren fuer $Name aufgehoben (wirkt nach der naechsten Anmeldung), ForceAutoLogon entfernt." -ForegroundColor Green
   exit 0
 }
 
@@ -128,5 +132,9 @@ Benutzerzweig {
     Set-ItemProperty -Path "$wurzel\$($s.Key)" -Name $s.Name -Value $s.Wert -Type DWord
   }
 }
-Write-Host "Sperren fuer $Name gesetzt. Rueckgaengig: -Aufheben" -ForegroundColor Green
+# Nach einem Abmelden sofort wieder automatisch anmelden (wirkt zusammen mit Autologon aus Schritt 4).
+# Zum Admin: Strg+Alt+Entf -> „Benutzer wechseln“, oder beim Neustart Umschalt gedrueckt halten.
+Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -Name 'ForceAutoLogon' -Value '1' -Type String
+Write-Host "Sperren fuer $Name gesetzt, ForceAutoLogon an. Rueckgaengig: -Aufheben" -ForegroundColor Green
+Write-Host 'Zum Admin: Strg+Alt+Entf -> Benutzer wechseln (oder beim Neustart Umschalt halten).' -ForegroundColor Cyan
 Write-Host 'Letzter Schritt: automatische Anmeldung mit Sysinternals Autologon (Passwort dort selbst eingeben).' -ForegroundColor Cyan

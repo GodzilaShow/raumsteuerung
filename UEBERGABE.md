@@ -304,3 +304,11 @@ Quellen als Word-Datei `docs/Recherche-Kabellos-Publikumkamera-2026-10-23.docx`,
 - **Raumkonto:** `tools/raumkonto-einrichten.ps1` (lokaler Benutzer Sitzungszimmer5, Sperren, Companion/OBS-Kopie;
   bricht ab, wenn Companion/OBS laufen). Schritt 1/2 macht Arsenij selbst (Passwort), dann Schritt 3, Autologon selbst.
 - Teams-API (Drittanbieter-App-API) bewusst nicht genutzt: kann weder beitreten noch teilen, braucht M365-Admin.
+- **Raumkonto gegen Abmelden (06.11.):** `raumkonto-einrichten.ps1 -Einschraenken` setzt fuer Sitzungszimmer5 `NoLogoff`
+  + `StartMenuLogOff` und rechnerweit `ForceAutoLogon = 1` (nach Abmelden sofort wieder angemeldet, zusammen mit Autologon).
+  **Zum Admin:** Strg+Alt+Entf → „Benutzer wechseln“ (oder beim Neustart Umschalt halten). `-Aufheben` nimmt beides zurück.
+- **Teams abgemeldet:** teams-steuerung.ps1 erkennt die Kontoauswahl (alle 10 s ausserhalb eines Meetings) →
+  `r5_t_status = fehler: abgemeldet` → Tablet: „Teams ist abgemeldet – IT-Service 2020 anrufen“ (Knopf gesperrt).
+- **Just Social:** Tablet „Schon ein Meeting-Link?“ → Fenster mit 3 Schritten → `r5_tcmd = social` → Edge InPrivate mit
+  kreisverwaltung.emsland.social; Fenster schliesst beim Meeting-Beginn/-Ende. Bewusst Edge (nicht Chrome).
+- **Pause** ist wieder eine Kachel bei den Kamera-Ansichten (ganze Pause wie oben), unten kein Pause-Knopf mehr.
