@@ -2907,11 +2907,11 @@ function renderTeams() {
   $('#teamsBar').hidden = !T.inMeeting;
   // nicht im Meeting: Knopf zum Starten; während des Beitritts (bis 60 s) „Teams startet …“, bei Fehler Hinweis
   var j = $('#tJoin'), busy = !T.inMeeting && T.joinAt && Date.now() - T.joinAt < 60000 && !/^fehler/i.test(T.status);
-  var err = !T.inMeeting && /^fehler/i.test(T.status);
+  // Fehler nur 10 s rot (Knopf bleibt drückbar), danach wieder der normale Knopf
+  var err = !T.inMeeting && /^fehler/i.test(T.status) && Date.now() - (T.errAt || 0) < 10000;
   var wait = !T.inMeeting && /^warten/i.test(T.status);   // Wartebereich: Raum wartet, bis ihn jemand in Teams einlässt
   j.hidden = T.inMeeting; $('#tHint').hidden = T.inMeeting || !!busy || wait; j.classList.toggle('busy', !!busy || wait); j.classList.toggle('err', err);
   var abm = err && /abgemeldet/i.test(T.status);   // Teams am Raum-PC abgemeldet: nur IT kann wieder anmelden
-  j.disabled = abm;
   j.lastChild.textContent = abm ? 'Teams ist abgemeldet – IT-Service 2020 anrufen' : wait ? 'Wartet auf Einlass …' : busy ? 'Teams-Meeting startet …' : err ? 'Teams-Start fehlgeschlagen – erneut' : 'Neues Teams-Meeting';
   $('#tLeave').hidden = !T.inMeeting;   // Verlassen klein im Kopf, nur im Meeting
   var sb2 = $('#tShare'); sb2.hidden = T.mode === 'kamera'; sb2.classList.toggle('on', T.share); sb2.lastChild.textContent = T.share ? 'Präsentation beenden' : 'Präsentation zeigen';
@@ -3201,7 +3201,7 @@ function poll() {
     if (r[10] !== null && now - touched.share > 15000 && !T.offAt) { var sh = isOn(r[10]); if (sh !== T.share) { T.share = sh; changed = true; } }   // Teilen dauert bis ~15 s
     var tst = r[7] === null ? T.status : String(r[7]).trim();
     if (tst !== T.status) {
-      T.status = tst; if (/^fehler/i.test(tst)) T.joinAt = 0;
+      T.status = tst; if (/^fehler/i.test(tst)) { T.joinAt = 0; T.errAt = Date.now(); setTimeout(render, 10100); }   // Fehler 10 s rot zeigen
       if (/^fehler: (kein teilen|präsentation)/i.test(tst)) { T.share = false; touched.share = 0; }   // Knopf wieder „zeigen“
       changed = true;
     }

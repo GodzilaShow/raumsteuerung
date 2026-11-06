@@ -685,6 +685,7 @@ function Test-TeamsAbgemeldet {
 function Join-Teams([switch]$Neu) {
   if (Find-Meeting) { Write-Log 'Beitritt: Raum ist schon im Meeting'; [void](Set-Var 'r5_t_status' ''); return $true }
   if ($Neu) {
+    if (Test-TeamsAbgemeldet) { Write-Log 'Neues Meeting: Teams ist abgemeldet'; [void](Set-Var 'r5_t_status' 'fehler: abgemeldet'); return $false }
     [void](Set-Var 'r5_t_status' 'start')
     if (-not (Start-MeetNow)) { [void](Set-Var 'r5_t_status' 'fehler: Neues Meeting'); return $false }
   } else {
