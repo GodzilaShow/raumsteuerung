@@ -82,13 +82,12 @@ h2{margin:0;font-size:21px;font-weight:600}
 .toggle i:after{content:"";width:24px;height:24px;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .3s cubic-bezier(.3,1.4,.5,1)}
 .toggle.on i{background:var(--green)}.toggle.on i:after{transform:translateX(22px)}
 /* scenes */
-.scenes{flex-grow:1;min-height:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:minmax(0,1fr);gap:14px}
+.scenes{flex-grow:1;min-height:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:minmax(0,1fr);gap:14px}
 .scene{display:flex;flex-direction:column;padding:0;border:1px solid var(--line2);border-radius:6px;overflow:hidden;background:var(--bg);text-align:left;box-shadow:0 0 0 3px transparent}
 .thumb{position:relative;display:block;width:100%;flex-grow:1;min-height:0;overflow:hidden;background:#1E3A52}
 /* Teams-Modus „teilen“: Präsentation kommt scharf über das Teilen, die Kamera zeigt nur Personen */
-.scenes.teilen{grid-template-columns:repeat(3,minmax(0,1fr))}
-/* Pause ist ein eigener Knopf (Teams + Saal + Mikrofone), keine Kamera-Ansicht mehr */
-.scenes [data-scene=pause]{display:none}
+.scenes.teilen{grid-template-columns:repeat(4,minmax(0,1fr))}
+/* Kachel „Pause“: Teams-Pausenbild + Saal-Pausenbild + Saal-Mikrofone stumm (ACT.blank) */
 .scenes.teilen [data-scene=alles],.scenes.teilen [data-scene=folien]{display:none}
 .scenes.teilen [data-scene=redner]{order:-1}   /* „Nur Redner“ wird am häufigsten gebraucht -> links oben */
 .scene .lbl{display:block;padding:8px 10px;font-size:16px;font-weight:600}
@@ -282,7 +281,7 @@ h2{margin:0;font-size:21px;font-weight:600}
 </span><span class="lbl">Nur Redner</span></button>
 <button class="scene" data-scene="pause"><span class="thumb" style="background:#F4F7F9">
 <span style="inset:0;display:flex;align-items:center;justify-content:center;gap:8px"><img data-logo alt="" style="height:30px"><span style="position:static;font-size:13px;font-weight:500;color:var(--blue)">Gleich geht es weiter</span></span>
-</span><span class="lbl">Pausenbild</span></button>
+</span><span class="lbl" id="pauseLbl">Pause</span></button>
 <div class="live off" id="live"><b id="liveTxt">Status …</b><small id="liveSub">Wird geprüft</small></div>
 </div>
 </div>
@@ -302,7 +301,7 @@ h2{margin:0;font-size:21px;font-weight:600}
 <h2 style="margin-right:10px">Quelle</h2>
 <div class="seg" id="srcSeg"><button data-src="pc">Raum-PC</button><button data-src="laptop">Laptop (HDMI)</button><button data-src="cast">Kabellos</button></div>
 <div class="grow"></div>
-<button class="btn" id="blankBtn" data-act="blank" style="white-space:nowrap">Pause</button>
+
 <button class="btn" id="dispBtn" data-act="disp" style="white-space:nowrap">Displays ausschalten</button>
 </div>
 <div id="srcHint" style="font-size:16px;line-height:1.4;color:var(--muted)"></div>
@@ -2880,8 +2879,7 @@ function render() {
   $('#srcHint').textContent = HINTS[S.src]; $('#srcHint').hidden = S.src === 'pc';   // Hinweis nur, wenn man etwas tun muss
   // Pause ist beendet, wenn woanders (Stream Deck) Pausenbild und Pause-Szene weggenommen wurden
   if (S.pause && !S.blank && S.scene !== 'pause') { S.pause = false; S.pre = null; }
-  $('#blankBtn').className = 'btn' + (S.pause ? ' danger' : '');
-  $('#blankBtn').textContent = S.pause ? 'Pause beenden' : 'Pause';
+  $('#pauseLbl').textContent = S.pause ? 'Pause beenden' : 'Pause';
   $('#dispBtn').className = 'btn' + (!S.disp ? ' primary' : '');
   $('#dispBtn').textContent = S.disp ? 'Displays ausschalten' : 'Displays einschalten';
   // Modus teilen: Folien kommen scharf über „Präsentation zeigen“ -> Kamera-Ansichten nur mit Personen
@@ -3004,7 +3002,9 @@ document.addEventListener('click', function (e) {
   var t = e.target.closest('button'); if (!t) return;
   if (t.dataset.go) go(t.dataset.go);
   else if (t.dataset.act && ACTIONS[t.dataset.act]) { ACTIONS[t.dataset.act](); save(); render(); }
-  else if (t.dataset.scene) { S.scene = t.dataset.scene; touched.scene = Date.now(); call('scene_' + t.dataset.scene); save(); render(); }
+  else if (t.dataset.scene === 'pause') { ACTIONS.blank(); save(); render(); }   // ganze Pause an/aus
+  else if (t.dataset.scene) { if (S.pause) ACTIONS.blank();   // andere Ansicht gewählt: Pause beenden, dann diese Ansicht
+    S.scene = t.dataset.scene; touched.scene = Date.now(); call('scene_' + t.dataset.scene); save(); render(); }
   else if (t.dataset.src) { S.src = t.dataset.src; touched.src = Date.now(); call('src_' + t.dataset.src); save(); render(); }
   else if (t.dataset.mic) { S.mic = t.dataset.mic; touched.mic = Date.now(); call('mic_' + t.dataset.mic); save(); render(); }
   else if (t.dataset.preset) {
