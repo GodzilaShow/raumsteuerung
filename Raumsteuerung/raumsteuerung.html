@@ -3182,6 +3182,9 @@ function poll() {
     // Nur auf echte Wechsel reagieren, damit eine nie gesetzte Variable nichts kaputt macht.
     if (room !== null) {
       var ro = isOn(room);
+      // Beim Laden: Tablet zeigt die Steuerung, Companion sagt aber „Raum aus“ (z. B. nach Neustart) -> Startseite,
+      // sonst wirken Pause u. a. nicht (Raumsteuerung.exe zeigt das Pausenbild nur bei Raum an)
+      if (roomPrev === null && !ro && S.screen !== 'start' && now - touched.room > grace) { stopIdle(); forgetTeams(); S.screen = 'start'; changed = true; }
       if (roomPrev !== null && ro !== roomPrev && now - touched.room > grace) {
         if (!ro && S.screen !== 'start') { $('#dlgOff').classList.remove('show'); stopIdle(); forgetTeams(); S.screen = 'start'; changed = true; }
         if (ro && S.screen === 'start') { lastUse = Date.now(); S.screen = 'main'; changed = true; }
