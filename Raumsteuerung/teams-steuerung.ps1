@@ -21,7 +21,7 @@
 #   .\teams-steuerung.ps1 -Befehl mute   einmal Mikro umschalten (Test, ohne Companion)
 param(
   [switch]$Status,
-  [ValidateSet('', 'mute', 'video', 'leave', 'join', 'neu', 'link', 'admit', 'share_on', 'share_off')][string]$Befehl = '',
+  [ValidateSet('', 'mute', 'video', 'leave', 'join', 'neu', 'link', 'admit', 'social', 'share_on', 'share_off')][string]$Befehl = '',
   [string]$Companion = '',
   [string]$Log = (Join-Path $PSScriptRoot 'teams-steuerung.log')
 )
@@ -654,6 +654,20 @@ function Admit-All {
   }
 }
 
+# ---------- Just Social am Raum-PC oeffnen (privates Fenster: Anmeldung wird nicht gespeichert) ----------
+$socialUrl = 'https://kreisverwaltung.emsland.social'
+function Open-Social {
+  $edge = @("${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe", "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
+  if ($edge) { Start-Process $edge -ArgumentList '--inprivate', '--new-window', $socialUrl } else { Start-Process $socialUrl }
+  Write-Log 'Just Social geoeffnet (InPrivate)'
+}
+# Private Edge-Fenster schliessen (nach dem Beitritt und beim Meeting-Ende): niemand bleibt dort angemeldet
+function Close-PrivateEdge {
+  foreach ($p in Get-Process msedge -ErrorAction SilentlyContinue) {
+    try { if ($p.MainWindowHandle -ne 0 -and $p.MainWindowTitle -match 'InPrivate') { [void]$p.CloseMainWindow(); Write-Log 'Privates Edge-Fenster geschlossen' } } catch { }
+  }
+}
+
 function Join-Teams([switch]$Neu) {
   if (Find-Meeting) { Write-Log 'Beitritt: Raum ist schon im Meeting'; [void](Set-Var 'r5_t_status' ''); return $true }
   if ($Neu) {
@@ -724,6 +738,7 @@ function Join-Teams([switch]$Neu) {
 # ---------- Testaufrufe ----------
 if ($Status) { $s = Get-TeamsState; 'Im Meeting: {0}  Mikro stumm: {1}  Bild an: {2}  Teilt: {3}  Menue offen: {4}  Modus: {5}' -f $s.In, $s.Mute, $s.Video, $s.Share, $s.Menue, $(if ($Teilen) { 'teilen' } else { 'kamera' }); exit 0 }
 if ($Befehl -in 'share_on', 'share_off') { [void]$(if ($Befehl -eq 'share_on') { Start-Share } else { Stop-Share }); $s = Get-TeamsState; 'Im Meeting: {0}  Teilt: {1}' -f $s.In, $s.Share; exit 0 }
+if ($Befehl -eq 'social') { Open-Social; exit 0 }
 if ($Befehl -eq 'link') { Get-MeetingLink; exit 0 }
 if ($Befehl -eq 'admit') { Admit-All; 'Wartende: {0}' -f (Get-LobbyCount); exit 0 }
 if ($Befehl -eq 'neu') { [void](Join-Teams -Neu); $s = Get-TeamsState; 'Im Meeting: {0}' -f $s.In; exit 0 }
@@ -764,6 +779,7 @@ while ($true) {
         elseif ($cmd -eq 'join') { [void](Join-Teams); $nextState = [DateTime]::MinValue }
         elseif ($cmd -eq 'neu') { [void](Join-Teams -Neu); $nextState = [DateTime]::MinValue }
         elseif ($cmd -eq 'link') { if ((Get-TeamsState).In) { $script:info.link = Get-MeetingLink; Write-TeamsInfo } }
+        elseif ($cmd -eq 'social') { Open-Social }
         elseif ($cmd -eq 'admit') { Admit-All; $script:nextLobby = [DateTime]::MinValue }
         elseif ($cmd -match '^(mic|video)_(on|off)$') {
           # Zielzustand statt Umschalten (vom Tablet): nur druecken, wenn Teams anders steht -> verlorene oder
@@ -827,6 +843,8 @@ while ($true) {
       if (-not $s.In -and ([DateTime]::Now - $script:lastClose).TotalSeconds -ge 5) { $script:lastClose = [DateTime]::Now; Close-AfterMeeting }
       if ($s.In -ne $script:warIn) {
         Write-Log $(if ($s.In) { 'Teams-Meeting erkannt' } else { 'kein Teams-Meeting' })
+        # Beitritt ueber Just Social geschafft bzw. Meeting vorbei -> privates Browserfenster zu
+        Close-PrivateEdge
         # Meeting zu Ende: alte Fehlermeldung (z. B. "fehler: Präsentation teilen") nicht ins naechste Meeting mitnehmen
         if (-not $s.In -and $script:warIn) { if ((Get-Var 'r5_t_status') -like 'fehler*') { [void](Set-Var 'r5_t_status' '') } }
         # Meeting zu Ende (verlassen oder von anderen beendet): Kamera-Szene auf "Pausenbild" (Wunsch 23.10.2026),
