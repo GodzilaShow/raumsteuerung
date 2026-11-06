@@ -536,6 +536,7 @@ function Set-Switch($w, [string]$muster, [bool]$an = $true) {
 # Jedes Mal ein neues Meeting mit eigenem Chat statt einer festen Raum-Besprechung (Datenschutz).
 # Kennungen der Teams-Oberflaeche wechseln -> Suche per Name (deutsch/englisch).
 function Invoke-ByName($root, [string]$muster) {
+  if (-not $root) { return $null }
   foreach ($el in $root.FindAll($Scope::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
     try {
       if ($el.Current.Name -notmatch $muster -or -not $el.Current.IsEnabled) { continue }
