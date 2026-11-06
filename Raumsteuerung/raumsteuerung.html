@@ -2961,7 +2961,7 @@ var ACTIONS = {
     if (!S.pause) {
       S.pre = { scene: S.scene === 'pause' ? 'redner' : S.scene, mic: S.mic === 'stumm' ? 'alle' : S.mic };
       S.pause = true; S.blank = true; S.scene = 'pause'; S.mic = 'stumm';
-      if (S.disp) call('blank_on');
+      call('blank_on');   // immer: Pausenbild auf dem Präsentations-Bildschirm (auch wenn das Tablet „Displays aus“ meint)
       call('scene_pause'); call('mic_stumm');
     } else {
       var pre = S.pre || { scene: 'redner', mic: 'alle' };
